@@ -10,6 +10,8 @@ data Lexeme = Lex String Int Int String deriving (Show)
 -- structure: type, lexeme
 data Token = Tok TokId Lexeme deriving (Show)
 
+tokenSize tok = 
+
 -- simple [0-9] character test
 isDigit :: Char -> Bool
 isDigit x = Char.isDigit x
@@ -70,5 +72,10 @@ tokenizeSingle ch lineno colno fname =
       where lex = Lex [ch] lineno colno fname
 
 tokenize fname lineno colno (h:tl) 
-   | isSingle h = ( tokenizeSingle h lineno colno fname : tokenize fname lineno (colno+1) tl )
+   | isSpace h = tokenize fname lineno colno+1 tl
+   | isSingle h = ( tokenizeSingle h lineno colno fname : 
+                     tokenize fname lineno (colno+1) tl )
+   | isDigit h = let tok = tokenizeDigit (h:tl) lineno colno fname 
+                     colno' = colno + tokenSize tok
+                  in result : ( tokenize fname lineno colno' )
    | otherwise = [] 
