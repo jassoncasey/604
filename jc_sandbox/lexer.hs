@@ -2,15 +2,25 @@ import Char as Char
 
 -- SPL Token types and data structure
 -- types: let, =, \, ., <natural number>, <identifier>, ;, (, )
-data TokId = LetTok | EqTok | LmTok | DotTok | NatTok | IdTok | SemiTok
-            | LParenTok | RParenTok 
-
--- structure: type, lexeme, line #, column #, filename
-data Lexeme = Token TokId String Int Int String
+data TokId = LetTok | EqTok | LamdaTok | DotTok | NatTok | IdTok | SemiTok
+            | LParenTok | RParenTok | PlusTok | MinusTok | MultTok | DivTok
+            deriving (Show)
+-- structure: string, line #, column #, filename
+data Lexeme = Lex String Int Int String deriving (Show)
+-- structure: type, lexeme
+data Token = Tok TokId Lexeme deriving (Show)
 
 -- simple [0-9] character test
 isDigit :: Char -> Bool
 isDigit x = Char.isDigit x
+
+digitCls    = ['0'..'9']
+lalphaCls   = ['a'..'z']
+ualphaCls   = ['A'..'Z']
+alphaCls    = lalphaCls ++ ualphaCls
+alphaNumCls = digitCls ++ alphaCls
+firstIdCls  = alphaCls ++ ['_']
+--IdCls       = firstIdCls ++ digitCls
 
 -- simple [a-zA-Z_] character test
 isAlphaId :: Char -> Bool
@@ -21,22 +31,6 @@ isAlphaId x = isAlpha x
 isAlphaNumId :: Char -> Bool
 isAlphaNumId '_' = True
 isAlphaNumId x = Char.isAlphaNum x
-
-isLet x = x == "let"
-isEq x = x == "="
-isLm x = x == "\\"
-isDot x = x == "."
-isSemi x = x == ";"
-isLParen x = x == "("
-isRParen x = x == ")"
-
-isKeyword :: String -> Bool
-isKeyword x = elem x keywords
-               where keywords = [ "let", "=", "\\", "." ]
-
-isSeperator :: Char -> Bool
-isSeperator x = elem x seperators || Char.isSpace x
-                  where seperators = [ '(', ')', ';' ]
 
 -- simple head of line whitespace trim
 trim :: String -> String
@@ -55,5 +49,26 @@ trimPatternImpl _ [] _ = ( [], [] )
 trimPattern :: String -> String -> (String, String)
 trimPattern line pattern = trimPatternImpl [] line pattern
 
-tokenize [] = []
-            
+-- simple single character operators, keywords, separators
+singleChar = [ '(', ')', '.', ';', '\\', '+', '-', '*', '/']
+isSingle x = elem x singleChar
+
+-- simple function to create a single character token
+tokenizeSingle :: Char -> Int -> Int -> String -> Token
+tokenizeSingle ch lineno colno fname = 
+   case ch of
+      '('   -> Tok LParenTok lex 
+      ')'   -> Tok RParenTok lex 
+      ';'   -> Tok SemiTok lex
+      '='   -> Tok EqTok lex
+      '\\'  -> Tok LamdaTok lex
+      '.'   -> Tok DotTok lex
+      '+'   -> Tok PlusTok lex 
+      '-'   -> Tok MinusTok lex
+      '*'   -> Tok MultTok lex
+      '/'   -> Tok DivTok lex
+      where lex = Lex [ch] lineno colno fname
+
+tokenize fname lineno colno (h:tl) 
+   | isSingle h = ( tokenizeSingle h lineno colno fname : tokenize fname lineno (colno+1) tl )
+   | otherwise = [] 
