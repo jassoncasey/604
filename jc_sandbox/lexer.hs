@@ -16,22 +16,31 @@ data Token = Tok TokId Lexeme deriving (Show)
 tokenSize :: Token -> Int
 tokenSize (Tok _ ( Lex str _ _ _ ) ) = length str
 
+fixTokId (Tok a ( Lex str b c d ) ) =
+   case str of
+      "let" -> Tok LetTok ( Lex str b c d )
+      _     -> Tok a ( Lex str b c d )
+
 -- trim the head of the line that matches a character class
-trimPatternImpl :: String -> String -> String -> ( String, String )
-trimPatternImpl mtch (hline:tline) ptrn =
+trimPatternImp :: String -> String -> String -> ( String, String )
+trimPatternImp mtch (hline:tline) ptrn =
    if elem hline ptrn 
-   then trimPatternImpl (mtch ++ [hline]) tline ptrn
+   then trimPatternImp (mtch ++ [hline]) tline ptrn
    else ( mtch, (hline:tline) )
-trimPatternImpl _ [] _ = ( [], [] )
+trimPatternImp mtch [] _ = ( mtch, [] )
 
 -- generic character class trim function
 trimPattern :: String -> String -> (String, String)
-trimPattern line pattern = trimPatternImpl [] line pattern
+trimPattern line pattern = trimPatternImp [] line pattern
 
 -- simple single character operators, keywords, separators
 singleChar = [ '(', ')', '.', ';', '\\', '+', '-', '*', '/']
 isSingle :: Char -> Bool
 isSingle x = elem x singleChar
+
+-- simple identifier predicate
+isId :: Char -> Bool
+isId x = x == '_' || Char.isAlpha x
 
 -- simple function to create a single character token
 tokenizeSingle :: Char -> Int -> Int -> String -> Token
@@ -55,6 +64,15 @@ tokenizeDigits line lineno colno fname =
    let result = trimPattern line ['0'..'9']
    in Tok NatTok (Lex (fst result) lineno colno fname)
 
+-- tokenize the leading characters that fall within the id class
+-- the predicate to get to the is function guards against leading digits
+-- if this token is a let it will later be retyped
+tokenizeId :: String -> Int -> Int -> String -> Token
+tokenizeId line lineno colno fname =
+   let cls = ['a'..'z'] ++ ['A'..'Z'] ++ ['_'] ++ ['0'..'9']
+       result = trimPattern line cls 
+   in Tok IdTok (Lex (fst result) lineno colno fname)
+
 -- tokneize a string into its possible compoents
 tokenizeImp :: String -> Int -> Int -> String -> [Token]
 tokenizeImp fname lineno colno (h:tl) 
@@ -69,8 +87,24 @@ tokenizeImp fname lineno colno (h:tl)
                             colno' = colno + tok_size
                         in tok : ( tokenizeImp fname lineno 
                                        colno' ( drop tok_size (h:tl) ) )
-   | otherwise = [] 
+   | isId h = let tok = tokenizeId (h:tl) lineno colno fname
+                  tok_size = tokenSize tok
+                  colno' = colno + tok_size
+               in (fixTokId tok) : ( tokenizeImp fname lineno colno' 
+                           ( drop tok_size (h:tl) ) )
+   | otherwise = tokenizeImp fname lineno (colno+1) tl
+tokenizeImp fname lineno colno [] = []
 
 -- tokenize interface
-tokenize :: String -> Int -> String -> [Token]
-tokenize fname lineno line = tokenizeImp fname lineno 1 line
+tokenizeLine :: String -> Int -> String -> [Token]
+tokenizeLine fname lineno line = tokenizeImp fname lineno 1 line
+
+-- given a filename and list of strings produce a list of tokens
+tokenizeBuffImp :: String -> [String] -> Int -> [Token]
+tokenizeBuffImp fname (h:tl) lineno = 
+   (tokenizeLine fname lineno h) ++ tokenizeBuffImp fname tl (lineno+1) 
+tokenizeBuffImp fname [] lineno = []
+
+-- given a filename and a string-buffer produce a list of tokens
+tokenizeBuff :: String -> String -> [Token] 
+tokenizeBuff fname buff = tokenizeBuffImp fname (lines buff) 1
