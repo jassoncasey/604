@@ -81,7 +81,7 @@ tokenizeId line lineno colno fname =
        result = trimPattern line cls 
    in Tok IdTok (Lex (fst result) lineno colno fname)
 
--- tokneize a string into its possible compoents
+-- tokneize a string into its possible components
 tokenizeImp :: String -> Int -> Int -> String -> [Token]
 tokenizeImp fname lineno colno (h:tl) 
    -- remove whitespace
