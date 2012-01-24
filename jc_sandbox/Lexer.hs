@@ -1,3 +1,11 @@
+module Lexer (
+   tokenizeLine,  -- String:filename -> Int:lineno -> String:line -> [Token]
+   tokenizeBuff,  -- String:filename -> String:buffer -> [Token]
+   TokId,
+   Lexeme,
+   Token
+) where
+
 import Char as Char
 
 -- SPL Token types and data structure
