@@ -16,8 +16,8 @@ breakAfter p l
 -- splitAfter splits a list when it encounters an element that does not satisfy
 -- the predicate and includes the predicate with the preceding elements
 -- Example splitAfter (< 3) [1,2,3,1,2,4,2,4] = [[1,2,3],[1,2,4],[2,4]]
-splitAfter :: (Eq a) => (a -> Bool) -> [a] -> [[a]]
-splitAfter p l = filter (not . (==[])) $ splitAfterImpl p l
+splitAfter :: (a -> Bool) -> [a] -> [[a]]
+splitAfter p l = filter (not . null) $ splitAfterImpl p l
 
 splitAfterImpl :: (a -> Bool) -> [a] -> [[a]]
 splitAfterImpl p s =

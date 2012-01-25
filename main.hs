@@ -3,11 +3,14 @@ import System.IO
 import Tokenizer
 import Data.Maybe as Maybe
 import Data.List as List
-import TokenizerPrint
+import PrettyPrint
 import CmdOpts  -- for command-line work
 import ListAux  -- For splitAfter
+import Parse
 
 
+
+-- TokenizedStatements
 
 main = do
   args <- getArgs
@@ -16,12 +19,11 @@ main = do
   let (argsGood, errorMessage) = verifyArgs args
   if argsGood
     then do
-      mapM putStrLn $ map (\x -> "Parsing " ++ x) args
-      -- for each file
-        -- print filename
-        -- pf = parsed file into tokens
-        -- statements = split on terminal
-        -- 
+      --mapM putStrLn $ map (\x -> "Parsing " ++ x) args
+      fileContents <- mapM readFile args
+      --print $ tokenStatements (head args) (head fileContents)
+      --mapM putStrLn fileContents
+      --mapM print $ tokenizeToStatements fileContents
       return ()
     else putStr errorMessage
   -- verify that there are arguments
