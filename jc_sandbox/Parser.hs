@@ -16,7 +16,12 @@ data Expression = Id Lexer.Token
 data Statement = Stmt Expression deriving (Show)
 data Program   = Prog [Statement] deriving (Show)
 
+-- parse a single statement
+parseStmt :: [Lexer.Token] -> ([Lexer.Token], Statement, String)
+parseStmt = 
+parseStmt [] = ( None, "" )
 
+-- simple statement collector
 parseStmts :: [Lexer.Token] -> ([Statement], String)
 parseStmts tks = ( (stmt:stmts), msg++msgs )
    where ( remainder, stmt, msg ) = parseStmt tks
