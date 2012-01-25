@@ -1,12 +1,18 @@
 import System
 import Parser
 
+-- take a filename and make sure it is a *.spl format
+badPostFix :: String -> Bool
 badPostFix name = 
-   show length name < 5 || ( take 4 (reverse name) ) != "lps."
+   ((length name) < 5) || (( take 4 (reverse name) ) /= "lps.")
 
+-- take a list of filenames and verify they are not incorrect
+badPostFixes :: [String] -> Bool
 badPostFixes (h:tl) = badPostFix || badPostFixes tl
 badPostFixes [] = False
 
+-- Verify at least 1 input file is given and they are *.spl files
+badUsage :: [String] -> Bool
 badUsage args = 
    show length args < 1 || badPostFixes args
 
