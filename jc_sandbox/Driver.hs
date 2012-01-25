@@ -1,12 +1,13 @@
 import System
 import Parser
 
-process :: [String] -> IO ()
+--process :: [String] -> ()
 process ( file : files ) = 
    do buf <- readFile file 
-      x <- parse file buf
+      putStrLn (parse file buf)
       process files
-process [] = ()
+--process [] = ()
 
-main = do   args <- getArgs
-            process args
+main = 
+   do args <- getArgs
+      process args
