@@ -1,7 +1,6 @@
 module TokenizerPrint
 ( printToken
 , printTokenInfo
-, printUsage
 ) where
 
 import Tokenizer
@@ -9,6 +8,8 @@ import Tokenizer
 printTokenInfo :: Token_info -> String
 printTokenInfo (Token_info fn sym line col _) =
   "'" ++ sym ++ "'" ++ " in file " ++ fn ++ " line " ++ (show line) ++ " column " ++ (show col)
+
+
 
 printToken :: Token -> String
 printToken (Token_identifier info) =
@@ -32,5 +33,3 @@ printToken (Token_define info) =
 printToken (Token_terminal info) = 
   "Terminal " ++ (printTokenInfo info) ++ ".\n"
 
-printUsage :: String
-printUsage = "usage: spl-parser file1.spl ... filen.spl\n"

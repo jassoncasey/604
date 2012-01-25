@@ -19,7 +19,7 @@ data Program   = Prog [Statement] deriving (Show)
 
 parseStmts :: [Lexer.Token] -> ([Statement], String)
 parseStmts tks = ( (stmt:stmts), msg++msgs )
-   where ( remainder, stmt, msg ) = parseStmt tks
+   where ( remainder, stmt, msg ) = parseStmts tks
          (stmts, msgs) = parseStmts remainder
 parseStmts [] = [] 
 

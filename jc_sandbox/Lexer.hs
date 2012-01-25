@@ -1,7 +1,7 @@
 module Lexer (
    tokenizeLine,  -- String:filename -> Int:lineno -> String:line -> [Token]
    tokenizeBuff,  -- String:filename -> String:buffer -> [Token]
-   TokId,
+   TokId(..),
    Lexeme,
    Token
 ) where
@@ -11,7 +11,7 @@ import Char as Char
 -- SPL Token types and data structure
 -- types: let, =, \, ., <natural number>, <identifier>, ;, (, )
 data TokId = LetTok | EqTok | LamdaTok | DotTok | NatTok | IdTok | SemiTok
-            | LParenTok | RParenTok | PlusTok | MinusTok | MultTok | DivTok
+           | LParenTok | RParenTok | PlusTok | MinusTok | MultTok | DivTok
             deriving (Show)
 
 -- structure: string, line #, column #, filename
