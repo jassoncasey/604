@@ -4,7 +4,7 @@ import Parser
 -- take a filename and make sure it is a *.spl format
 badPostFix :: String -> Bool
 badPostFix name = 
-   ((length name) < 5) || (( take 4 (reverse name) ) /= "lps.")
+   (length name) < 5 || ( take 4 (reverse name) ) /= "lps."
 
 -- take a list of filenames and verify they are not incorrect
 badPostFixes :: [String] -> Bool
@@ -19,15 +19,15 @@ badUsage args =
 --process :: [String] -> ()
 process ( file : files ) = 
    do buf <- readFile file 
-      putStrLn (parse file buf)
+      putStrLn ("Compiling: " ++ file)
+      putStrLn snd (parse file buf)
       process files
--- what is the proper way to write the terminating portion
---process [] = () 
+process [] = return () 
 
 -- repeat the processing for each argument
 main :: IO ()
 main = 
    do args <- getArgs
       if badUsage args 
-         then putStrLn "usage error: ./splc <input>.spl+"
+         then putStrLn "usage syntax: ./splc <input>.spl+"
          else process args
