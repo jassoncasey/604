@@ -1,7 +1,7 @@
 COMPILER=ghc
 FLAGS=--make
 TARGET=splc
-SRC=lexer.hs parser.hs driver.hs
+SRC=Lexer.hs Parser.hs Driver.hs
 
 $(TARGET): $(SRC)
 	$(COMPILER) $(FLAGS) -o $@ $(SRC)
