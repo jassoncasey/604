@@ -4,6 +4,7 @@ module Parser (
 
 import Lexer as Lexer
 
+-- Simple Programming Language (SPL) parse representation
 data Expression = Id Lexer.Token
                   | Nat Lexer.Token
                   | Let Lexer.Token Expression
@@ -11,8 +12,22 @@ data Expression = Id Lexer.Token
                   | Unary Lexer.Token Expression
                   | Binary Lexer.Token Expression Expression
                   | Comp [Expression]
-data Statement = Stmt Expression
-data Program   = Prog [Statement]
+                  deriving (Show)
+data Statement = Stmt Expression deriving (Show)
+data Program   = Prog [Statement] deriving (Show)
+
+
+parseStmts :: [Lexer.Token] -> ([Statement], String)
+parseStmts tks = ( (stmt:stmts), msg++msgs )
+   where ( remainder, stmt, msg ) = parseStmt tks
+         (stmts, msgs) = parseStmts remainder
+parseStmts [] = [] 
+
+-- simple program parser creator
+parseProgram :: [Lexer.Token] -> ( Program, String )
+parseProgram tks = ( Prog stmts, msgs )
+   where ( stmts, msgs ) = parseStatements tks
+parseProgram [] = ( Prog [], "" )
 
 -- main function of the parser
 parseImp :: [Lexer.Token] -> ( Program, String )
