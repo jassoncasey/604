@@ -24,7 +24,7 @@ parseStmt [] = ( None, "" )
 -- simple statement collector
 parseStmts :: [Lexer.Token] -> ([Statement], String)
 parseStmts tks = ( (stmt:stmts), msg++msgs )
-   where ( remainder, stmt, msg ) = parseStmts tks
+   where ( remainder, stmt, msg ) = parseStmt tks
          (stmts, msgs) = parseStmts remainder
 parseStmts [] = [] 
 
