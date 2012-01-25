@@ -1,7 +1,7 @@
 COMPILER=ghc
 FLAGS=--make
-TARGET=test
-SRC=test.hs
+TARGET=spl-parser
+SRC=main.hs
 
 $(TARGET): $(SRC)
 	$(COMPILER) $(FLAGS) -o $@ $(SRC)
