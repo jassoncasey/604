@@ -1,9 +1,12 @@
 module PrettyPrint
 ( printToken
 , printTokenInfo
+, printParse
+, sourceToStatements
 ) where
 
 import Tokenizer
+import ListAux
 
 printTokenInfo :: Token_info -> String
 printTokenInfo (Token_info fn sym line col _) =
@@ -35,5 +38,14 @@ printToken (Token_terminal info) =
 
 
 
---tokensToSource :: [Tokens] ->
---tokensToSource ts = 
+sourceToStatements :: String -> [String]
+sourceToStatements source = splitAfter (==';') source
+
+-- Prints all of the tokens in a token list
+printTokensVerbose :: [Token] -> String
+printTokensVerbose ts = map (\x -> "\n    " ++ x) (map printToken ts)
+
+k ::
+
+printParse :: String -> String -> String
+printParse fn source = "Parsing " ++ fn ++ (foldr (++) "" (map (\x -> ('\n':' ':' ':x)) $ sourceToStatements source))

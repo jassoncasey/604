@@ -1,4 +1,5 @@
 import System( getArgs)
+import Control.Monad
 import System.IO
 import Tokenizer
 import Data.Maybe as Maybe
@@ -19,8 +20,9 @@ main = do
   let (argsGood, errorMessage) = verifyArgs args
   if argsGood
     then do
-      --mapM putStrLn $ map (\x -> "Parsing " ++ x) args
-      fileContents <- mapM readFile args
+      fileContents <- forM args readFile
+      mapM putStr $ map (\(x,y) -> printParse x y) (zip args fileContents)
+      
       --print $ tokenStatements (head args) (head fileContents)
       --mapM putStrLn fileContents
       --mapM print $ tokenizeToStatements fileContents
