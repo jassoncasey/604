@@ -8,13 +8,13 @@ badPostFix name =
 
 -- take a list of filenames and verify they are not incorrect
 badPostFixes :: [String] -> Bool
-badPostFixes (h:tl) = badPostFix || badPostFixes tl
+badPostFixes (h:tl) = badPostFix h || badPostFixes tl
 badPostFixes [] = False
 
 -- Verify at least 1 input file is given and they are *.spl files
 badUsage :: [String] -> Bool
 badUsage args = 
-   show length args < 1 || badPostFixes args
+   length args < 1 || badPostFixes args
 
 --process :: [String] -> ()
 process ( file : files ) = 
@@ -29,5 +29,5 @@ main :: IO ()
 main = 
    do args <- getArgs
       if badUsage args 
-      then putStrLn "usage error: ./splc <input>.spl+"
-      else process args
+         then putStrLn "usage error: ./splc <input>.spl+"
+         else process args
