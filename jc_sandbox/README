@@ -1,0 +1,29 @@
+Revised Grammar of SPL
+----------------------
+
+program : Empty
+        | statements
+
+statements  : statement
+            | statement statements
+
+statement : expression Semicolon
+
+expression  : term
+            | Let Id Eq expression
+            | Lamda Id Dot expression
+
+term  : factor
+      | factor + term
+      | factor - term
+
+factor   : application
+         | application * factor
+         | application / factor
+
+application : primary
+            | primary application
+
+primary  : Id
+         | Digit
+         | LParen expression RParen
