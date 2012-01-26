@@ -1,14 +1,14 @@
-module Parse
+{-module Parse
 ( tokenStatements
 , indexedLines
 , tokenLines
 ) where
 
 import Tokenizer
-import ListAux
+import ListAux-}
 
 
-
+{-
 -- Indexes file contents, yields a list of tuples (line, String)
 indexedLines :: String -> [(Int, String)]
 indexedLines s = zip [1..(length s)] (lines s)
@@ -27,8 +27,5 @@ tokenStatements fn source =
   splitAfter (not.isTerminalToken) $ tokenizedSource fn source
 
 
-
-isTerminalToken :: Token -> Bool
-isTerminalToken (Token_terminal _) = True
-isTerminalToken _ = False
+-}
 
