@@ -26,4 +26,7 @@ application : primary
 
 primary  : Id
          | Digit
-         | LParen expression RParen
+         | LParen complex RParen
+
+complex : expression
+         | expression SemiColon complex
