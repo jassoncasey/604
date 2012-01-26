@@ -12,17 +12,21 @@ import Char as Char
 -- types: let, =, \, ., <natural number>, <identifier>, ;, (, )
 data TokId = LetTok | EqTok | LamdaTok | DotTok | NatTok | IdTok | SemiTok
            | LParenTok | RParenTok | PlusTok | MinusTok | MultTok | DivTok
-           | UnknownTok deriving (Show)
+           | UnknownTok deriving (Show,Eq)
 
 -- structure: string, line #, column #, filename
-data Lexeme = Lex String Int Int String deriving (Show)
+data Lexeme = Lex String Int Int String deriving (Show,Eq)
 
 -- structure: type, lexeme
-data Token = Tok TokId Lexeme deriving (Show)
+data Token = Tok TokId Lexeme deriving (Show,Eq)
 
 -- simple token length accessor
 tokenSize :: Token -> Int
 tokenSize (Tok _ ( Lex str _ _ _ ) ) = length str
+
+-- simple token id predicates
+isToken :: Token -> TokId -> Bool
+isToken (Tok token _ ) match = token == match
 
 fixTokId (Tok a ( Lex str b c d ) ) =
    case str of
