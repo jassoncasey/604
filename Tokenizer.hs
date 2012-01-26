@@ -113,6 +113,7 @@ tokenize_impl f l c s t
   | isPrefixKeyword s = pullLet f l c s t
   | Char.isAlpha h = pullIdentifier f l c s t
   | Char.isDigit h = pullNatural f l c s t
+  | otherwise = t
   where h = head s
 
 

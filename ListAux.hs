@@ -1,4 +1,4 @@
-module ListAux( splitAfter ) where
+module ListAux( splitAfter, breakAfter, splitAfterImpl ) where
 
 import Data.Maybe as Maybe
 import Data.List as List
@@ -8,7 +8,7 @@ import Data.List as List
 breakAfter :: (a -> Bool) -> [a] -> ([a],[a])
 breakAfter _ [] = ([],[])
 breakAfter p l
-  | Maybe.isJust n = let n' = fromJust n + 1 in (take n' l, drop n' l)
+  | Maybe.isJust n = let n' = fromJust n + 1 in (take n' l, drop (n'-1) l)
   | otherwise = (l,[])
   where n = findIndex p l
 
