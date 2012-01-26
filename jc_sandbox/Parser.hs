@@ -11,6 +11,7 @@ data Expression = Id Lexer.Token
                   | Lamda Lexer.Token Expression
                   | Unary Lexer.Token Expression
                   | Binary Lexer.Token Expression Expression
+                  | Application Expression Expression
                   | Complex [Expression]
                   | Error
                   deriving (Show)
@@ -32,8 +33,54 @@ parseId (h:tl) = (tl, Id h, "")
 parseNat :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseNat (h:tl) = (tl, Nat h, "")
 
+-- attempt to parse a (LParen:tl) into a Complex
+parseComplex :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseComplex tokens =
+   case headTok remainder of
+      SemiTok -> let (remainder', exprs, msg) = pasreComplex (drop 1 remainder)
+                  in ( remainder', Complex (expression:exprs), msg )
+      RParenTok -> ( remainder, [expression], msg )
+      _ -> ( tokens, Error, "Invalid Complex expression\n" )
+   where (remainder, expression, msg ) = parseExpression tokens
+
+parsePrimary tokens = 
+   let (Tok id _:tl) = tokens in
+   case id of
+      IdTok -> parseId tokens
+      DigitTok -> parseDigit tokens
+      LParenTok -> parseComplex tokens
+      _ -> ( tokens, Error, "Unknown primary\n" )
+
+-- parse an application
+parseApp :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseApp tokens =
+   let ( remainder', app, msg' ) = pasreApp remainder
+   in if length msg' == 0
+         then ( remainder', Application primary app, "" )
+         else ( remainder, primary, "")
+   where ( remainder, primary, msg ) = parsePrimary tokens
+
+-- parse a factor
+parseFactor :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseFactor tokens =
+   case headTok remainder of
+      MultTok -> let (remainder', factor, msg') = parseFactor (drop 1 remainder)
+                  in (remainder', (Binary (head remainder), app, factor), "")
+      DivTok -> let (remainder', factor, msg') = parseFactor (drop 1 remainder)
+                  in (remainder', (Binary (head remainder), app, factor), "")
+      _        -> ( remainder, app, msg )
+   where ( remainder, app, msg)  = parseApp tokens
+
+-- parse a term
 parseTerm :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parseTerm 
+parseTerm tokens = 
+   case headTok remainder of
+      PlusTok  -> let (remainder', term, msg') = parseTerm (drop 1 remainder)
+                  in (remainder', (Binary (head remainder), factor, term), "")
+      MinusTok -> let (remainder', term, msg') = parseTerm (drop 1 remainder)
+                  in (remainder', (Binary (head remainder), factor, term), "")
+      _        -> ( remainder, factor, msg )
+   where ( remainder, factor, msg)  = parseFactor tokens
 
 -- attempt to parse a (LetTok:tl) into a Let
 parseLet :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
@@ -45,20 +92,6 @@ parseLet (l:i:e:tl) =
 -- attempt to parse a (LamdaTok:IdTok:DotTok:tl) into a Lamda
 parseLamda :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseLamda (l:i:d:tl) =
-
--- attempt to parse a (LParen:tl) into a Complex
-parseComplex :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parseComplex (h:tl) =
-
--- parse the terms
-parseTerm :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parseTerm tokens = 
-   case headTok remainder of
-      PlusTok  -> ( remainder, )
-      MinusTok -> let (remainder', term, msg') = parseTerm (drop 1 remainder)
-                  in (remainder', (Binary (head remainder), factor, term), "")
-      _        -> ( remainder, factor, msg )
-   where ( remainder, factor, msg)  = parseFactor tokens
 
 -- break out the recognizable expression categories
 parseExpr :: [Lexer.Token] -> ([Lexer.Token], Expression, String)
