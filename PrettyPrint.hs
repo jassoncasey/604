@@ -4,7 +4,6 @@ module PrettyPrint
 
 import Tokenizer
 import ListAux
---import Parse -- This needs to merge into this file
 
 printTokenInfo :: Token -> String
 printTokenInfo (Token t fn sym line col) =
@@ -25,14 +24,38 @@ printTokenType s =
     TokParL -> "Left Parenthesis"
     TokParR -> "Right Parenthesis"
 
+symNeedsSpace :: Token -> Token -> Bool
+symNeedsSpace t1 t2 = case t1 of
+  Token TokLet _ _ _ _ -> True
+  Token TokDef _ _ _ _ -> True
+  Token TokLambda _ _ _ _ -> False
+  Token TokSemi _ _ _ _ -> False
+  Token TokDot _ _ _ _ -> True
+  Token TokBinOp _ _ _ _ -> True
+  Token TokParL _ _ _ _ -> False
+  _ -> case t2 of
+    Token TokBinOp _ _ _ _ -> True
+    Token TokDef _ _ _ _ -> True
+    Token TokId _ _ _ _ -> True
+    Token TokLit _ _ _ _ -> True
+    _ -> False
 
 
+
+symAddSpace :: Token -> Token
+symAddSpace (Token a b sym c d) = (Token a b (sym ++ " ") c d)
+
+spaceTknSym :: [Token] -> [Token]
+spaceTknSym [] = []
+spaceTknSym [t] = [t]
+spaceTknSym (t1:t2:ts)
+  | symNeedsSpace t1 t2 = (symAddSpace t1) : spaceTknSym (t2:ts)
+  | otherwise = t1 : spaceTknSym (t2:ts)
+      
+
+-- Appends padding string to each string in the list
 addPadMap :: String -> [String] -> [String]
 addPadMap padding ts = map (\x -> padding ++ x) ts
-
--- Takes a list of tokenized statements and makes it into a tuple
-a1 :: [Token] -> String
-a1 t = "\n  " ++ (printTokenListAsStmt t) ++ (printTokenList t)
 
 -- Prints all of the tokens in a token list
 printTokenList :: [Token] -> String
@@ -42,8 +65,8 @@ printTokenList ts =
 printTokenListAsStmt :: [Token] -> String
 printTokenListAsStmt ts =
   let
-    tkn_sym = map getTokenSymbol ts
-  in foldr (++) "" tkn_sym
+    tkn_sym = map getTokenSymbol $ spaceTknSym ts
+  in foldr (++) ""  tkn_sym
 
 printTokenization :: String -> String -> String
 printTokenization fn src =
@@ -51,25 +74,3 @@ printTokenization fn src =
     tk_src = tokenizeSource fn src
   in fn ++ (foldr (++) "" $
     map (\t -> "\n  " ++ (printTokenListAsStmt t) ++ (printTokenList t)) tk_src)
-
-
-{-
-
-statementsAndTokens :: String -> String -> ([String], [[Token]])
-statementsAndTokens fn source =
-  (sourceToStatements source, tokenStatements fn source)
-
-printTokenizedFile :: String -> String -> String
-printTokenizedFile fn source =
-  let
-    (st, tkn) = statementsAndTokens fn source
-    tkn_str = map printTokenList tkn
-    st' = addPadMap "\n  " st
-  in
-  "Parsing " ++ fn ++ (foldr (++) "" $ map (\(x,y) -> x ++ y) (zip tkn_str st'))
--}
-
-
-
---(foldr (++) "" (map (\x -> ('\n':' ':' ':x)) $ sourceToStatements source))
-
