@@ -24,22 +24,44 @@ isHeadTok (h:tl) id =
       Tok value _ -> value == id
       _           -> False
 
+-- parse an IdTok into a Id
+parseId :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseId (h:tl) = (tl, Id h, "")
+
+-- parse a NatTok into a Nat
+parseNat :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseNat (h:tl) = (tl, Nat h, "")
+
+-- attempt to parse a (LetTok:tl) into a Let
+parseLet :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseLet (l:i:e:tl) =
+
+-- attempt to parse a (LamdaTok:IdTok:DotTok:tl) into a Lamda
+parseLamda :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseLamda (l:i:d:tl) =
+
+-- attempt to parse a (LParen:tl) into a Complex
+parseComplex :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseComplex (h:tl) =
+
+-- break out the recognizable expression categories
 parseExpr :: [Lexer.Token] -> ([Lexer.Token], Expression, String)
 parseExpr tokens =
    let (Tok id _:tl) = tokens in
    case id of
+      IdTok       -> parseId tokens
       NatTok      -> parseNat tokens
       LetTok      -> parseLet tokens
       LamdaTok    -> parseLamda tokens
       LParenTok   -> parseComplex tokens
-      _           ->
+      _           -> ( tokens, Error, "Could not match expression\n" )
 
 -- parse a single statement
 parseStmt :: [Lexer.Token] -> ([Lexer.Token], Statement, String)
 parseStmt tokens = 
    if IsHeadTok remainder Lexer.SemiTok 
       then ( drop 1 remainder, Stmt expr, msg )
-      else ( remainder, Error, "Could not match expression\n" )
+      else ( remainder, Error, "Missing semicolon\n" )
    where ( remainder, expr, msg ) = parseExpr tokens
 
 -- simple statement collector
