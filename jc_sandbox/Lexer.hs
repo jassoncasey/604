@@ -12,7 +12,7 @@ import Char as Char
 -- types: let, =, \, ., <natural number>, <identifier>, ;, (, )
 data TokId = LetTok | EqTok | LamdaTok | DotTok | NatTok | IdTok | SemiTok
            | LParenTok | RParenTok | PlusTok | MinusTok | MultTok | DivTok
-            deriving (Show)
+           | UnknownTok deriving (Show)
 
 -- structure: string, line #, column #, filename
 data Lexeme = Lex String Int Int String deriving (Show)
@@ -95,11 +95,13 @@ tokenizeImp fname lineno colno (h:tl)
                             colno' = colno + tok_size
                         in tok : ( tokenizeImp fname lineno 
                                        colno' ( drop tok_size (h:tl) ) )
+   -- handle an identifier or let
    | isId h = let tok = tokenizeId (h:tl) lineno colno fname
                   tok_size = tokenSize tok
                   colno' = colno + tok_size
                in (fixTokId tok) : ( tokenizeImp fname lineno colno' 
                            ( drop tok_size (h:tl) ) )
+   -- unknown character in input stream
    | otherwise = tokenizeImp fname lineno (colno+1) tl
 tokenizeImp fname lineno colno [] = []
 
