@@ -1,5 +1,7 @@
 module Tokenizer
 ( tokenizeSource
+, tokenize
+, isTerminalToken
 , TokenType(..)
 , Token(..)
 , getTokenSymbol
@@ -119,7 +121,7 @@ tokenize_impl f l c s t
 -- token list represents a statement
 tokenizeSource :: String -> String -> [[Token]]
 tokenizeSource fn src =
-  splitAfter (not.isTerminalToken) $    -- break tokens appart into statements
+  splitAfter isTerminalToken $    -- break tokens appart into statements
     foldr (++) [] $                     -- Append all tokens together
     map (\(n,s) -> tokenize fn n s) $    -- Transforms each indexed src line to tokens
       zip [1..(length src)] (lines src) -- Returns an indexed list (line, str)

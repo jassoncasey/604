@@ -26,31 +26,13 @@ printTokenType s =
     TokParR -> "Right Parenthesis"
 
 
-{-printToken :: Token -> String
-printToken (Token info) =
-  "Identifier " ++ (printTokenInfo info) ++ ".\n"
-printToken (Token_natural _ info) = 
-  "Literal " ++ (printTokenInfo info) ++ ".\n"
-printToken (Token_operator info) = 
-  "Binary operator " ++ (printTokenInfo info) ++ ".\n"
-printToken (Token_left_parenth info) = 
-  "Left parenthesis " ++ (printTokenInfo info) ++ ".\n"
-printToken (Token_right_parenth info) = 
-  "Right parenthesis " ++ (printTokenInfo info) ++ ".\n"
-printToken (Token_lambda info) = 
-  "Operator " ++ (printTokenInfo info) ++ ".\n"
-printToken (Token_let info) = 
-  "Keyword " ++ (printTokenInfo info) ++ ".\n"
-printToken (Token_dot info) = 
-  "Operator " ++ (printTokenInfo info) ++ ".\n"
-printToken (Token_define info) = 
-  "Binary operator " ++ (printTokenInfo info) ++ ".\n"
-printToken (Token_terminal info) = 
-  "Terminal " ++ (printTokenInfo info) ++ ".\n"-}
-
 
 addPadMap :: String -> [String] -> [String]
 addPadMap padding ts = map (\x -> padding ++ x) ts
+
+-- Takes a list of tokenized statements and makes it into a tuple
+a1 :: [Token] -> String
+a1 t = "\n  " ++ (printTokenListAsStmt t) ++ (printTokenList t)
 
 -- Prints all of the tokens in a token list
 printTokenList :: [Token] -> String
@@ -66,11 +48,9 @@ printTokenListAsStmt ts =
 printTokenization :: String -> String -> String
 printTokenization fn src =
   let
-    tk_src = tokenizeSource fn src -- type = [[Token]]
+    tk_src = tokenizeSource fn src
   in fn ++ (foldr (++) "" $
-    addPadMap "\n" (map show tk_src))
-    --map printTokenList tk_src)
-    --map printTokenListAsStmt tk_src)
+    map (\t -> "\n  " ++ (printTokenListAsStmt t) ++ (printTokenList t)) tk_src)
 
 
 {-
