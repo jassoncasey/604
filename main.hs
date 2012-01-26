@@ -3,16 +3,12 @@ import Control.Monad
 import System.IO
 import Tokenizer
 import PrettyPrint
-import CmdOpts  -- for command-line work
-
-
-
--- TokenizedStatements
+import CmdOpts
 
 main = do
   args <- getArgs
-  let (argsGood, errorMessage) = verifyArgs args
-  if argsGood
+  let (argsAreGood, errorMessage) = verifyArgs args
+  if argsAreGood
     then do
       sources <- forM args readFile
       mapM putStrLn $ map (\(x,y) -> printTokenization x y) $ zip args sources

@@ -1,42 +1,30 @@
 module Tokenizer
 ( tokenizeSource
 , tokenize
-, isTerminalToken
 , TokenType(..)
 , Token(..)
 , getTokenSymbol
-, prefixPredLength
+, getTokenType
 ) where
 
 import Data.Char as Char
 import ListAux
 
--- Token_location defines where a token appears in source
---   String : filename
---   String : symbol
---   Int    : line
---   Int    : column
---   Int    : length of symbol (number chars)
---data Token_info = Token_info String String Int Int Int deriving (Show)
 
-{-data Token = Token_natural Int Token_info
-           | Token_identifier Token_info
-           | Token_operator Token_info
-           | Token_left_parenth Token_info
-           | Token_right_parenth Token_info
-           | Token_lambda Token_info
-           | Token_let Token_info
-           | Token_dot Token_info
-           | Token_define Token_info
-           | Token_terminal Token_info deriving (Show) -}
 
+-- Types of tokens
 data TokenType = TokLit | TokId | TokBinOp | TokLambda | TokDot
   | TokLet | TokDef | TokSemi | TokParL | TokParR deriving (Show)
+
+-- Data type represents a token as: type filename symbol line column
 data Token = Token TokenType String String Int Int deriving (Show)
 
 getTokenSymbol :: Token -> String
 getTokenSymbol (Token _ _ s _ _) = s
 
+-- Shorthand to identify a Token by TokenType
+getTokenType :: Token -> TokenType
+getTokenType (Token t _ _ _ _) = t
 
 {- Checks for keywords and pulls keywords.
    May be more useful as the set of keywords increases.
