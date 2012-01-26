@@ -32,9 +32,15 @@ parseId (h:tl) = (tl, Id h, "")
 parseNat :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseNat (h:tl) = (tl, Nat h, "")
 
+parseTerm :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseTerm 
+
 -- attempt to parse a (LetTok:tl) into a Let
 parseLet :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseLet (l:i:e:tl) =
+   if ( Lexer.isToken i IdTok ) && ( Lexer.isToken e EqTok )
+      then ( , Let l i e )
+      else ( , Error, "Bad let\n" )
 
 -- attempt to parse a (LamdaTok:IdTok:DotTok:tl) into a Lamda
 parseLamda :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
@@ -44,24 +50,31 @@ parseLamda (l:i:d:tl) =
 parseComplex :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseComplex (h:tl) =
 
+-- parse the terms
+parseTerm :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseTerm tokens = 
+   case headTok remainder of
+      PlusTok  -> ( remainder, )
+      MinusTok -> let (remainder', term, msg') = parseTerm (drop 1 remainder)
+                  in (remainder', (Binary (head remainder), factor, term), "")
+      _        -> ( remainder, factor, msg )
+   where ( remainder, factor, msg)  = parseFactor tokens
+
 -- break out the recognizable expression categories
 parseExpr :: [Lexer.Token] -> ([Lexer.Token], Expression, String)
 parseExpr tokens =
    let (Tok id _:tl) = tokens in
    case id of
-      IdTok       -> parseId tokens
-      NatTok      -> parseNat tokens
       LetTok      -> parseLet tokens
       LamdaTok    -> parseLamda tokens
-      LParenTok   -> parseComplex tokens
-      _           -> ( tokens, Error, "Could not match expression\n" )
+      _           -> parseTerm tokens
 
 -- parse a single statement
 parseStmt :: [Lexer.Token] -> ([Lexer.Token], Statement, String)
 parseStmt tokens = 
    if IsHeadTok remainder Lexer.SemiTok 
       then ( drop 1 remainder, Stmt expr, msg )
-      else ( remainder, Error, "Missing semicolon\n" )
+      else ( tokens, Error, "Missing semicolon\n" )
    where ( remainder, expr, msg ) = parseExpr tokens
 
 -- simple statement collector
