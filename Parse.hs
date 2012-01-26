@@ -30,9 +30,28 @@ initParse [Token] -> Expr'
 initParse [] = ExprNull
 initParse [Token TokSemi] = ExprNull
 initParse [Token _ _ _ l _] = ExprError "Non-terminating line " ++ (show l) ++ "."
-initParse (t:t':tkns) = []
+initParse (t:t':ts) = ExprError ""
 
-parseRule :: Token -> Token -> 
+-- A Parse rule takes a single token
+parseRule :: Token -> Token -> Expr
 
+-- Id, BinOp
+parseRule (Token TokId fn sym l c) (Token TokBinOp fn' sym' l' c') (t'':ts) =
+  let
+    t = (Token TokId fn sym l c)
+    t' = (Token TokBinOp fn' sym' l' c')
+  in BinOpExpr t' (LitExpr t) (parseRule t' t'' ts)
+
+-- BinOp, Id
+parseRule (Token TokBinOp fn sym l c) (Token TokId fn' sym' l' c') (t'':ts) =
+  let
+    t = (Token TokBinOp fn sym l c)
+    t' = (Token TokId fn' sym' l' c')
+  in 
+
+-- Rule that catches missing semi-colons
+parseRule _ (Token _ fn sym l c) [] =
+  error "Parse error in file " ++ fn ++ ": Missing semicolon after '" ++ sym
+    ++ "' on line " ++ l ++ " column " ++ c ++ "."
 
 parseExpr :: [Token] -> Expr
