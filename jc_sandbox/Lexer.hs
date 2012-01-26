@@ -1,9 +1,10 @@
 module Lexer (
    tokenizeLine,  -- String:filename -> Int:lineno -> String:line -> [Token]
    tokenizeBuff,  -- String:filename -> String:buffer -> [Token]
+   isToken,       -- Token:lexed token -> TokId:matched id -> Bool
    TokId(..),
    Lexeme,
-   Token
+   Token(..)
 ) where
 
 import Char as Char
