@@ -1,5 +1,8 @@
 module Parser (
-   parse
+   parse,
+   Expression(..),
+   Statement(..),
+   Program(..)
 ) where
 
 import Lexer as Lexer
@@ -12,17 +15,21 @@ data Expression = Id Lexer.Token
                   | Unary Lexer.Token Expression
                   | Binary Lexer.Token Expression Expression
                   | Application Expression Expression
-                  | Complex [Expression]
-                  | Error
+                  | Complex Expression Maybe Expression
+                  | ErrExpr
                   deriving (Show)
-data Statement = Stmt Expression deriving (Show)
-data Program   = Prog [Statement] deriving (Show)
+data Statement = Stmt Expression 
+               | ErrStmt 
+               deriving (Show)
+data Program   = Prog Maybe [Statement] 
+               | ErrPrg
+               deriving (Show)
 
 -- peak at the head and validate its token id
 isHeadTok :: [Lexer.Token] -> Lexer.TokId -> Bool
 isHeadTok (h:tl) id =
    case h of 
-      Lexer.SemiTok value _ -> value == id
+      Lexer.Tok value _ -> value == id
       _           -> False
 
 -- parse an IdTok into a Id
@@ -37,10 +44,11 @@ parseNat (h:tl) = (tl, Nat h, "")
 parseComplex :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseComplex tokens =
    case head remainder of
-      Lexer.SemiTok -> let (remainder', exprs, msg) = parseComplex (drop 1 remainder)
-                  in ( remainder', Complex (expression:exprs), msg )
-      Lexer.RParenTok -> ( remainder, [expression], msg )
-      _ -> ( tokens, Error, "Invalid Complex expression\n" )
+      Lexer.Tok Lexer.SemiTok _ -> 
+         let (remainder', exprs, msg) = parseComplex (drop 1 remainder)
+         in ( remainder', Complex expression exprs, msg )
+      Lexer.Tok Lexer.RParenTok _ -> ( remainder, expression, Nothing, msg )
+      _ -> ( tokens, ErrExpr, "Invalid Complex expression\n" )
    where (remainder, expression, msg ) = parseExpr tokens
 
 parsePrimary tokens = 
@@ -49,7 +57,7 @@ parsePrimary tokens =
       Lexer.IdTok -> parseId tokens
       Lexer.NatTok -> parseNat tokens
       Lexer.LParenTok -> parseComplex tokens
-      _ -> ( tokens, Error, "Unknown primary\n" )
+      _ -> ( tokens, ErrExpr, "Unknown primary\n" )
 
 -- parse an application
 parseApp :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
@@ -89,7 +97,7 @@ parseLet tokens =
    in if ( Lexer.isToken id IdTok ) && ( Lexer.isToken eq EqTok )
       then let ( remainder, expr, msg ) = parseExpr (drop 3 tokens)
             in ( remainder, Let lt id eq expr, msg )
-      else ( tokens, Error, "Bad let\n" )
+      else ( tokens, ErrExpr, "Bad let\n" )
 
 -- attempt to parse a (LamdaTok:IdTok:DotTok:tl) into a Lamda
 parseLamda :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
@@ -98,7 +106,7 @@ parseLamda tokens =
    in if ( Lexer.isToken id IdTok ) && ( Lexer.isToken dt DotTok )
       then let ( remainder, expr, msg ) = parseExpr (drop 3 tokens)
             in ( remainder, Lamda lm id dt expr, msg )
-      else ( tokens, Error, "Bad lamda\n" )
+      else ( tokens, ErrExpr, "Bad lamda\n" )
 
 -- break out the recognizable expression categories
 parseExpr :: [Lexer.Token] -> ([Lexer.Token], Expression, String)
@@ -114,7 +122,7 @@ parseStmt :: [Lexer.Token] -> ([Lexer.Token], Statement, String)
 parseStmt tokens = 
    if isHeadTok remainder Lexer.SemiTok 
       then ( drop 1 remainder, Stmt expr, msg )
-      else ( tokens, Error, "Missing semicolon\n" )
+      else ( tokens, ErrStmt, "Missing semicolon\n" )
    where ( remainder, expr, msg ) = parseExpr tokens
 
 -- simple statement collector
@@ -122,7 +130,7 @@ parseStmts :: [Lexer.Token] -> ([Statement], String)
 parseStmts tokens = ( (stmt:stmts), msg++msgs )
    where ( remainder, stmt, msg ) = parseStmt tokens
          (stmts, msgs) = parseStmts remainder
-parseStmts [] = [] 
+parseStmts [] = ([],"") 
 
 -- simple program parser creator
 parseProgram :: [Lexer.Token] -> ( Program, String )
