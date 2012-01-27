@@ -1,9 +1,10 @@
 import System( getArgs)
 import Control.Monad
 import System.IO
-import Tokenizer
-import PrettyPrint
+import Tokenizer2
+import PrettyPrint2
 import CmdOpts
+--import Lexer
 
 main = do
   args <- getArgs

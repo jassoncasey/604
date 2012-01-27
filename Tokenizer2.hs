@@ -1,63 +1,66 @@
-module Tokenizer
-( tokenizeSource
+module Tokenizer2
+( tokenizeBuff
 , tokenize
-, TokenType(..)
+, TokId(..)
+, Lexeme(..)
 , Token(..)
 , getTokenSymbol
 , getTokenType
+, prefixPredLength
 ) where
 
 import Data.Char as Char
+import Data.List as List
 import ListAux
 
 
 
 -- Types of tokens
-data TokenType = TokLit | TokId | TokBinOp | TokLambda | TokDot
-  | TokLet | TokDef | TokSemi | TokParL | TokParR deriving (Show)
+data TokId = LetTok | EqTok | LambdaTok | DotTok | NatTok | IdTok | SemiTok
+           | LParenTok | RParenTok | PlusTok | MinusTok | MultTok | DivTok
+           | UnknownTok deriving (Show,Eq)
 
--- Data type represents a token as: type filename symbol line column
-data Token = Token TokenType String String Int Int deriving (Show)
+-- structure: string, line #, column #, filename
+data Lexeme = Lex String Int Int String deriving (Show,Eq)
+
+-- structure: type, lexeme
+data Token = Tok TokId Lexeme deriving (Show,Eq)
 
 getTokenSymbol :: Token -> String
-getTokenSymbol (Token _ _ s _ _) = s
+getTokenSymbol (Tok _(Lex s _ _ _)) = s
 
 -- Shorthand to identify a Token by TokenType
-getTokenType :: Token -> TokenType
-getTokenType (Token t _ _ _ _) = t
+getTokenType :: Token -> TokId
+getTokenType (Tok t _) = t
 
 {- Checks for keywords and pulls keywords.
    May be more useful as the set of keywords increases.
    Only checks for let right now -}
 isPrefixKeyword :: String -> Bool
 isPrefixKeyword s
-  | (take 3 s) == "let" = True
+  | List.isPrefixOf "let" s = True
   | otherwise = False
 
 -- Tokenizes a line
--- FIXME Does multipasss compilation! put these anywhere!
 tokenize :: String -> Int -> String -> [Token]
 tokenize filename line s = tokenize_impl filename line 1 s []
-
-
 
 -- the pull functions lift the syntax
 -- Move some of these off to detail
 prefixPredLength :: (Char -> Bool) -> String -> Int
-prefixPredLength _ [] = 0
-prefixPredLength  pred (x:xs)
-  | pred x = 1 + (prefixPredLength pred xs)
-  | otherwise = 0
+prefixPredLength p s = length (takeWhile p s)
 
 pullIdentifier :: String -> Int -> Int -> String -> [Token] -> [Token]
-pullIdentifier f l c s t =
+pullIdentifier f l c s t = let
+  p = (\x -> Char.isAlphaNum x || x == '_')
+  n = prefixPredLength p s
+  in
   tokenize_impl
     f
     l
     (c + n)
     (drop n s)
-    (t ++ [Token TokId f (take n s) l c])
-  where n = prefixPredLength Char.isAlphaNum s
+    (t ++ [Tok IdTok (Lex (take n s) l c f)])
 
 pullNatural :: String ->Int -> Int -> String -> [Token] -> [Token]
 pullNatural f l c s t =
@@ -66,7 +69,7 @@ pullNatural f l c s t =
     l
     (c + n)
     (drop n s)
-    (t ++ [Token TokLit f (take n s) l c])
+    (t ++ [Tok NatTok (Lex (take n s) l c f)])
   where n = prefixPredLength Char.isDigit s
 
 pullLet :: String -> Int -> Int -> String -> [Token] -> [Token]
@@ -76,7 +79,24 @@ pullLet f l c s t =
     l
     (c + 3)
     (drop 3 s)
-    (t ++ [Token TokLet f "let" l c])
+    (t ++ [Tok EqTok (Lex "let" l c f)])
+
+isCharOp :: Char -> Bool
+isCharOp c = elem c "\\.+*-/();="
+getCharOp :: Char -> TokId
+getCharOp c =
+  case c of
+    '\\' -> LambdaTok
+    '.' -> DotTok
+    '+' -> PlusTok
+    '*' -> MultTok
+    '-' -> MinusTok
+    '/' -> DivTok
+    '(' -> LParenTok
+    ')' -> RParenTok
+    ';' -> SemiTok
+    '=' -> EqTok
+
 
 -- tokenize_lin_impl - tokenizes the string passed to it
 --   f : filename
@@ -88,37 +108,26 @@ tokenize_impl :: String -> Int -> Int -> String -> [Token] -> [Token]
 tokenize_impl f l c s t
   | s == [] = t
   | h == ' ' || h == '\n' || h == '\t' = tokenize_impl f l (c + 1) (tail s) t
-  | h == '\\' = tokenize_impl f l (c + 1) (tail s) (t ++ [Token TokLambda f "\\" l c])
-  | h == '.' = tokenize_impl f l (c + 1) (tail s) (t ++ [Token TokDot f "." l c])
-  | h == '+' = tokenize_impl f l (c + 1) (tail s) (t ++ [Token TokBinOp f "+" l c])
-  | h == '*' = tokenize_impl f l (c + 1) (tail s) (t ++ [Token TokBinOp f "*" l c])
-  | h == '-' = tokenize_impl f l (c + 1) (tail s) (t ++ [Token TokBinOp f "-" l c])
-  | h == '/' = tokenize_impl f l (c + 1) (tail s) (t ++ [Token TokBinOp f "/" l c])
-  | h == '(' = tokenize_impl f l (c + 1) (tail s) (t ++ [Token TokParL f "(" l c])
-  | h == ')' = tokenize_impl f l (c + 1) (tail s) (t ++ [Token TokParR f ")" l c])
-  | h == ';' = tokenize_impl f l (c + 1) (tail s) (t ++ [Token TokSemi f ";" l c])
-  | h == '=' = tokenize_impl f l (c + 1) (tail s) (t ++ [Token TokDef f "=" l c])
+  | isCharOp h = tokenize_impl f l (c+1) (tail s) (t ++ [Tok (getCharOp h) (Lex [h] l c f)])
   | isPrefixKeyword s = pullLet f l c s t
-  | Char.isAlpha h = pullIdentifier f l c s t
+  | (Char.isAlpha) h || (h ==) '_' = pullIdentifier f l c s t
   | Char.isDigit h = pullNatural f l c s t
-  | otherwise = t
+  | otherwise = tokenize_impl f l (c+1) (tail s) (t ++ [Tok UnknownTok (Lex [h] l c f)])
   where h = head s
 
 
 
 -- tokenizeSource takes a sourcefile and yields a list of token lists. Each
 -- token list represents a statement
-tokenizeSource :: String -> String -> [[Token]]
-tokenizeSource fn src =
+tokenizeBuff :: String -> String -> [[Token]]
+tokenizeBuff fn src =
   splitAfter isTerminalToken $    -- break tokens appart into statements
     foldr (++) [] $                     -- Append all tokens together
     map (\(n,s) -> tokenize fn n s) $    -- Transforms each indexed src line to tokens
-      zip [1..(length src)] (lines src) -- Returns an indexed list (line, str)
-
-
+      zip [1..] (lines src) -- Returns an indexed list (line, str)
 
 isTerminalToken :: Token -> Bool
-isTerminalToken (Token TokSemi _ _ _ _) = True
+isTerminalToken (Tok SemiTok _) = True
 isTerminalToken _ = False
 
 
