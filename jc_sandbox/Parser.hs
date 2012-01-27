@@ -15,7 +15,7 @@ data Expression = Id Lexer.Token
                   | Unary Lexer.Token Expression
                   | Binary Lexer.Token Expression Expression
                   | Application Expression Expression
-                  | Complex Expression Maybe Expression
+                  | Complex Expression (Maybe Expression)
                   | ErrExpr
                   deriving (Show)
 data Statement = Stmt Expression 
@@ -46,7 +46,7 @@ parseComplex tokens =
    case head remainder of
       Lexer.Tok Lexer.SemiTok _ -> 
          let (remainder', exprs, msg) = parseComplex (drop 1 remainder)
-         in ( remainder', Complex expression exprs, msg )
+         in ( remainder', Complex expression (Just exprs), msg )
       Lexer.Tok Lexer.RParenTok _ -> ( remainder, expression, Nothing, msg )
       _ -> ( tokens, ErrExpr, "Invalid Complex expression\n" )
    where (remainder, expression, msg ) = parseExpr tokens
