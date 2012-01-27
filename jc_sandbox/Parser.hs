@@ -40,10 +40,8 @@ getErrExpr (Application expr _) = getErrExpr expr
 --getErrExpr (Complex token _ _ _) = Lexer.getErrHdr token
 
 -- trivial code printing functions
-getStrExpr (Id token) = 
-   Lexer.getLexeme token
-getStrExpr (Nat token) = 
-   Lexer.getLexeme token
+getStrExpr (Id token) = Lexer.getLexeme token
+getStrExpr (Nat token) = Lexer.getLexeme token
 getStrExpr (Let _ dst _ src) = 
    "Let " ++ (getStrExpr dst) ++ " = " ++(getStrExpr src)
 getStrExpr (Lamda _ param _ body) =
@@ -188,8 +186,8 @@ parseStmt tokens =
    if isHeadTok remainder Lexer.SemiTok 
       then ( drop 1 remainder, Stmt expr, msg )
       else ( remainder, ErrStmt, "Syntax error: missing semicolon\n"
-               ++ (getErrExpr expr)
-               ++ (getStrExpr expr) ++ "\n")
+               ++ (getErrExpr expr) 
+               ++ "\t" ++ (getStrExpr expr) ++ "\n")
    where ( remainder, expr, msg ) = parseExpr1 tokens
 
 -- simple statement collector
