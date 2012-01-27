@@ -26,6 +26,18 @@ data Lexeme = Lex String Int Int String deriving (Show,Eq)
 -- structure: type, lexeme
 data Token = Tok TokId Lexeme deriving (Show,Eq)
 
+-- extract the lexeme of a token
+getLexeme :: Token -> String
+getLexeme token = lexeme
+   where (Lexer.Tok _ (Lex lexeme _ _ _)) = token
+
+-- provide a string containing the relavent info of this token
+getErrHdr :: Token -> String
+getErrHdr token = 
+   "Filename: " ++ fname ++ "\nLo:" ++ (show lineno) ++ 
+   " Col:" ++  (show colno) ++ " : "
+   where (Lexer.Tok _ (Lex lexeme lineno colno fname)) = token
+
 getTokenSymbol :: Token -> String
 getTokenSymbol (Tok _(Lex s _ _ _)) = s
 
