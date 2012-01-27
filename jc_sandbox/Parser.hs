@@ -14,12 +14,12 @@ data MExpr = JExpr Expression
 -- Simple Programming Language (SPL) parse representation
 data Expression = Id Lexer.Token
                   | Nat Lexer.Token
-                  | Let Lexer.Token Expression
-                  | Lamda Lexer.Token Expression
+                  | Let Lexer.Token Expression Lexer.Token Expression
+                  | Lamda Lexer.Token Expression Lexer.Token Expression
                   | Unary Lexer.Token Expression
                   | Binary Lexer.Token Expression Expression
                   | Application Expression Expression
-                  | Complex Expression MExpr
+                  | Complex Lexer.Token [Expression] Lexer.Token
                   | ErrExpr
                   deriving (Show)
 data Statement = Stmt Expression 
@@ -30,34 +30,35 @@ data Program   = Prog [Statement]
                deriving (Show)
 
 -- trivial error formatting functions
-getErrExpr (Id _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
-getErrExpr (Nat _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
-getErrExpr (Let token _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
-getErrExpr (Lamda token _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
-getErrExpr (Unary token _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
-getErrExpr (Binary token _ _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
-getErrExpr (Application _ _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
-getErrExpr (Complex _ _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
+getErrExpr (Id token) = Lexer.getErrHdr token
+getErrExpr (Nat token) = Lexer.getErrHdr token
+getErrExpr (Let token _ _ _) = Lexer.getErrHdr token
+getErrExpr (Lamda token _ _ _) = Lexer.getErrHdr token
+getErrExpr (Unary token _) = Lexer.getErrHdr token
+getErrExpr (Binary _ exprl _) = getErrExpr exprl
+getErrExpr (Application expr _) = getErrExpr expr
+--getErrExpr (Complex token _ _ _) = Lexer.getErrHdr token
 
 -- trivial code printing functions
 getStrExpr (Id token) = 
    Lexer.getLexeme token
 getStrExpr (Nat token) = 
    Lexer.getLexeme token
-getStrExpr (Let token expr) = 
-   "Let " ++ (Lexer.getLexeme token) ++ (getStrExpr expr)
-getStrExpr (Lamda token expr) =
-   "\\" ++ (Lexer.getLexeme token) ++ "." ++ (getStrExpr expr)
-getStrExpr (Unary token expr) =
-   Lexer.getLexeme token ++ (getStrExpr expr)
-getStrExpr (Binary token exprl exprr) =
-   (getStrExpr exprl) ++ (Lexer.getLexeme token) ++ (getStrExpr exprr)
+getStrExpr (Let _ dst _ src) = 
+   "Let " ++ (getStrExpr dst) ++ " = " ++(getStrExpr src)
+getStrExpr (Lamda _ param _ body) =
+   "\\" ++ (getStrExpr param) ++ "." ++ (getStrExpr body)
+getStrExpr (Unary op expr) =
+   Lexer.getLexeme op ++ (getStrExpr expr)
+getStrExpr (Binary op exprl exprr) =
+   (getStrExpr exprl) ++ " " ++ (Lexer.getLexeme op) ++ " " ++ (getStrExpr exprr)
 getStrExpr (Application exprl exprr) =
    (getStrExpr exprl) ++ (getStrExpr exprr)
-getStrExpr (Complex exprl exprr) =
-   case exprr of
-      JExpr expr -> "(" ++ (getStrExpr exprl) ++ getStrExpr expr ++ ")"
-      JNothing -> "( " ++ (getStrExpr exprl) ++ ")"
+--getStrExpr (Complex _ exprl exprr _ ) =
+--   case exprr of
+--     JExpr expr -> "( " ++ (getStrExpr exprl) ++ "; " 
+--         ++ getStrExpr expr ++ " )"
+--      JNothing -> "( " ++ (getStrExpr exprl) ++ " )"
 
 -- peak at the head and validate its token id
 isHeadTok :: [Lexer.Token] -> Lexer.TokId -> Bool
@@ -77,22 +78,40 @@ parseNat :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseNat (h:tl) = (tl, Nat h, "")
 
 -- attempt to parse a (LParen:tl) into a Complex
-parseComplex :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parseComplex tokens =
-   case head remainder of
-      Lexer.Tok Lexer.SemiTok _ -> 
-         let (remainder', exprs, msg) = parseComplex (drop 1 remainder)
-         in ( remainder', (Complex expression (JExpr exprs)), msg )
-      Lexer.Tok Lexer.RParenTok _ -> ( remainder, (Complex expression JNothing), msg )
-      _ -> ( tokens, ErrExpr, "Invalid Complex expression\n" )
-   where (remainder, expression, msg ) = parseExpr tokens
+--parseComplex :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+--parseComplex (h:tl) =
+--   let ( remainder, expression, msg ) = parseExpr tl
+--   in case (head remainder) of 
+--      Lexer.Tok Lexer.SemiTok _ -> 
+--         let (remainder', exprs, msg) = parseComplex (drop 1 remainder)
+--         in ( remainder', (Complex expression (JExpr exprs)), msg )
+--      Lexer.Tok Lexer.RParenTok _ -> ( remainder, (Complex expression JNothing), msg )
+--      _ -> ( remainder, ErrExpr, "Invalid Complex expression\n" )
 
+--parseCompound :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+--parseCompound tokens =
+--   if (Lexer.isToken h Lexer.LParen) || (Lexer.isToken h Lexer.SemiTok)
+--      then let ( remainder, expr, msg ) = parseExpr tl
+--              ( Lexer.Tok id _ ) = head remainder
+--            in case id of
+--               Lexer.RParenTok -> ( drop 1 remainder, Compound 
+--               Lexer.SemiTok -> 
+--               _ -> ( remainder, ErrExpr, "" )
+--      else ( remainder, ErrExpr, "" )
+--   where (h:tl) = tokens
+
+-- attempt to parse the primary terms and non-term
+parsePrimary :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parsePrimary tokens = 
    let (Lexer.Tok id _:tl) = tokens in
    case id of
       Lexer.IdTok -> parseId tokens
       Lexer.NatTok -> parseNat tokens
-      Lexer.LParenTok -> parseComplex tokens
+--      Lexer.LParenTok -> parseCompound tokens
+--         let (remainder, exprs, msg) = parseComplex (drop 1 tokens)
+--            in if Lexer.isToken (head remainder) Lexer.RParen
+--                  then ( drop 1 remainder, Complex id exprs (head remainder))
+--                  else ( remainder, ErrExpr, "" )
       _ -> ( tokens, ErrExpr, "Unknown primary\n" )
 
 -- parse an application
@@ -136,7 +155,7 @@ parseLet tokens =
    let (lt:id:eq:tl) = tokens
    in if ( Lexer.isToken id IdTok ) && ( Lexer.isToken eq EqTok )
       then let ( remainder, expr, msg ) = parseExpr (drop 3 tokens)
-            in ( remainder, Let id expr, msg )
+            in ( remainder, Let lt (Id id) eq expr, msg )
       else ( tokens, ErrExpr, "Bad let\n" )
 
 -- attempt to parse a (LamdaTok:IdTok:DotTok:tl) into a Lamda
@@ -145,7 +164,7 @@ parseLamda tokens =
    let (lm:id:dt:tl) = tokens
    in if ( Lexer.isToken id IdTok ) && ( Lexer.isToken dt DotTok )
       then let ( remainder, expr, msg ) = parseExpr (drop 3 tokens)
-            in ( remainder, Lamda id expr, msg )
+            in ( remainder, Lamda lm (Id id) dt expr, msg )
       else ( tokens, ErrExpr, "Bad lamda\n" )
 
 -- break out the recognizable expression categories
@@ -168,7 +187,9 @@ parseStmt :: [Lexer.Token] -> ([Lexer.Token], Statement, String)
 parseStmt tokens = 
    if isHeadTok remainder Lexer.SemiTok 
       then ( drop 1 remainder, Stmt expr, msg )
-      else ( remainder, ErrStmt, "Syntax error: missing semicolon\n" ++ (getStrExpr expr) ++ "\n")
+      else ( remainder, ErrStmt, "Syntax error: missing semicolon\n"
+               ++ (getErrExpr expr)
+               ++ (getStrExpr expr) ++ "\n")
    where ( remainder, expr, msg ) = parseExpr1 tokens
 
 -- simple statement collector

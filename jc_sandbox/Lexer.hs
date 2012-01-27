@@ -29,10 +29,11 @@ getLexeme token = lexeme
    where (Lexer.Tok _ (Lex lexeme _ _ _)) = token
 
 -- provide a string containing the relavent info of this token
-getErrhdr :: Token -> String
+getErrHdr :: Token -> String
 getErrHdr token = 
-   "Filename: " ++ fname ++ "/ Line # " ++ lineno ++ " Col # " ++ colno ++ ": "
-   where (Lexer.Tok _ (Lex lexeme lineno colno fname))
+   "Filename: " ++ fname ++ "/ Line # " ++ (show lineno) ++ 
+   "/ Col # " ++  (show colno) ++ " : "
+   where (Lexer.Tok _ (Lex lexeme lineno colno fname)) = token
 
 -- simple token length accessor
 tokenSize :: Token -> Int
