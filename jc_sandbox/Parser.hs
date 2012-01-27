@@ -32,19 +32,39 @@ data Program   = Prog [Statement]
 
 data Status = Success | Failure deriving (Show,Eq)
 
+getPositionInfo :: Expression -> String
+getPositionInfo (Id token) = 
+   "Filename: " ++ (Lexer.getFile token) ++ "\n" ++
+   "Line: " ++ (Lexer.getLineNo token) ++ 
+   " Colomn: " ++ (Lexer.getColStart token) ++
+   " - Column: " ++ (show (Lexer.getColEnd token)) ++ "\n"
+getPositionInfo (Nat token) =
+   "Filename: " ++ (Lexer.getFile token) ++ "\n" ++
+   "Line: " ++ (Lexer.getLineNo token) ++ 
+   " Colomn: " ++ (Lexer.getColStart token) ++
+   " - Column: " ++ (show (Lexer.getColEnd token)) ++ "\n"
+
 -- retreive file/lineno/colno information as a 
 -- nicely formatted string of a token
+getErrInfo :: Expression -> String
 getErrInfo (Id token) = Lexer.getErrHdr token
 getErrInfo (Nat token) = Lexer.getErrHdr token
-getErrInfo (Let token _ _ _) = Lexer.getErrHdr token
-getErrInfo (Lamda token _ _ _) = Lexer.getErrHdr token
-getErrInfo (Unary token _) = Lexer.getErrHdr token
-getErrInfo (Binary _ exprl _) = getErrInfo exprl
-getErrInfo (Application expr _) = getErrInfo expr
-getErrInfo (Complex token _ _) = Lexer.getErrHdr token
+getErrInfo (Let token _ _ last) = 
+   (Lexer.getErrHdr token) ++ " - " ++ (getErrInfo last)
+getErrInfo (Lamda token _ _ last) = 
+   (Lexer.getErrHdr token)  ++ " - " ++ (getErrInfo last)
+getErrInfo (Unary token last) = 
+   (Lexer.getErrHdr token) ++ " - " ++ (getErrInfo last)
+getErrInfo (Binary _ exprl last) = 
+   (getErrInfo exprl) ++ " - " ++ (getErrInfo last)
+getErrInfo (Application expr last) = 
+   (getErrInfo expr) ++ " - " ++ (getErrInfo last)
+getErrInfo (Complex token _ last) = 
+   (Lexer.getErrHdr token) ++ " - " ++ (Lexer.getErrHdr last)
 getErrInfo _ = "Unknown location"
 
 -- trivial code printing functions
+getStrExpr :: Expression -> String
 getStrExpr (Id token) = Lexer.getLexeme token
 getStrExpr (Nat token) = Lexer.getLexeme token
 getStrExpr (Let _ dst _ src) = 
@@ -57,15 +77,16 @@ getStrExpr (Binary op exprl exprr) =
    (getStrExpr exprl) ++ " " ++ (Lexer.getLexeme op) ++ 
    " " ++ (getStrExpr exprr)
 getStrExpr (Application exprl exprr) =
-   (getStrExpr exprl) ++ " " ++ (getStrExpr exprr) ++ "app"
+   (getStrExpr exprl) ++ " " ++ (getStrExpr exprr) 
 getStrExpr (Complex _ exprl _ ) = ""
 getStrExpr _ = ""
 
 -- simple string generation for error handling
 mkErrStr :: String -> Expression -> String
-mkErrStr str expr = "----------------------\n"++
+mkErrStr str expr = 
+   "----------------------\n" ++
    "Syntax Error: " ++ str ++ "\n" ++
-   (getErrInfo expr) ++
+   (getErrInfo expr) ++ "\n" ++
    "\t" ++ (getStrExpr expr) ++ "\n" ++
    "----------------------\n"
 
