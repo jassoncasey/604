@@ -3,6 +3,7 @@ module Lexer (
    tokenizeBuff,  -- String:filename -> String:buffer -> [Token]
    isToken,       -- Token:lexed token -> TokId:matched id -> Bool
    getLexeme,     -- Token -> String:lexeme
+   getErrHdr,     -- Token -> String:formatted lineno/colno
    TokId(..),
    Lexeme,
    Token(..)
@@ -24,6 +25,9 @@ data Token = Tok TokId Lexeme deriving (Show,Eq)
 
 getLexeme token = lexeme
    where (Lexer.Tok _ (Lex lexeme _ _ _)) = token
+getErrHdr token = 
+   "Filename: " ++ fname ++ "/ Line # " ++ lineno ++ " Col # " ++ colno ++ ": "
+   where (Lexer.Tok _ (Lex lexeme lineno colno fname))
 
 -- simple token length accessor
 tokenSize :: Token -> Int

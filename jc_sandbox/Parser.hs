@@ -29,21 +29,30 @@ data Program   = Prog [Statement]
                | ErrPrg
                deriving (Show)
 
-getStrExpr Id token = 
+getErrExpr (Id _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
+getErrExpr (Nat _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
+getErrExpr (Let token _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
+getErrExpr (Lamda token _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
+getErrExpr (Unary token _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
+getErrExpr (Binary token _ _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
+getErrExpr (Application _ _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
+getErrExpr (Complex _ _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
+
+getStrExpr (Id token) = 
    Lexer.getLexeme token
-getStrExpr Nat token = 
+getStrExpr (Nat token) = 
    Lexer.getLexeme token
-getStrExpr Let token expr = 
+getStrExpr (Let token expr) = 
    "Let " ++ (Lexer.getLexeme token) ++ (getStrExpr expr)
-getStrExpr Lamda token expr =
+getStrExpr (Lamda token expr) =
    "\\" ++ (Lexer.getLexeme token) ++ "." ++ (getStrExpr expr)
-getStrExpr Unary token expr =
+getStrExpr (Unary token expr) =
    Lexer.getLexeme token ++ (getStrExpr expr)
-getStrExpr Binary token exprl exprr =
+getStrExpr (Binary token exprl exprr) =
    (getStrExpr exprl) ++ (Lexer.getLexeme token) ++ (getStrExpr exprr)
-getStrExpr Application exprl exprr =
+getStrExpr (Application exprl exprr) =
    (getStrExpr exprl) ++ (getStrExpr exprr)
-getStrExpr Complex exprl exprr =
+getStrExpr (Complex exprl exprr) =
    case exprr of
       JExpr expr -> "(" ++ (getStrExpr exprl) ++ getStrExpr expr ++ ")"
       JNothing -> "( " ++ (getStrExpr exprl) ++ ")"
@@ -157,7 +166,7 @@ parseStmt :: [Lexer.Token] -> ([Lexer.Token], Statement, String)
 parseStmt tokens = 
    if isHeadTok remainder Lexer.SemiTok 
       then ( drop 1 remainder, Stmt expr, msg )
-      else ( tokens, ErrStmt, "Missing semicolon\n" )
+      else ( remainder, ErrStmt, "Syntax error: missing semicolon\n" ++ (getStrExpr expr) ++ "\n")
    where ( remainder, expr, msg ) = parseExpr1 tokens
 
 -- simple statement collector
