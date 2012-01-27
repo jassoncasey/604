@@ -7,6 +7,10 @@ module Parser (
 
 import Lexer as Lexer
 
+data MExpr = JExpr Expression
+           | JNothing
+           deriving (Show)
+
 -- Simple Programming Language (SPL) parse representation
 data Expression = Id Lexer.Token
                   | Nat Lexer.Token
@@ -14,14 +18,14 @@ data Expression = Id Lexer.Token
                   | Lamda Lexer.Token Expression
                   | Unary Lexer.Token Expression
                   | Binary Lexer.Token Expression Expression
-                  | Application Expression Expression
-                  | Complex Expression (Maybe Expression)
+                  | Application Expression 
+                  | Complex Expression MExpr
                   | ErrExpr
                   deriving (Show)
 data Statement = Stmt Expression 
                | ErrStmt 
                deriving (Show)
-data Program   = Prog Maybe [Statement] 
+data Program   = Prog [Statement]
                | ErrPrg
                deriving (Show)
 
@@ -46,8 +50,8 @@ parseComplex tokens =
    case head remainder of
       Lexer.Tok Lexer.SemiTok _ -> 
          let (remainder', exprs, msg) = parseComplex (drop 1 remainder)
-         in ( remainder', Complex expression (Just exprs), msg )
-      Lexer.Tok Lexer.RParenTok _ -> ( remainder, expression, Nothing, msg )
+         in ( remainder', (Complex expression (JExpr exprs)), msg )
+      Lexer.Tok Lexer.RParenTok _ -> ( remainder, expression, JNothing, msg )
       _ -> ( tokens, ErrExpr, "Invalid Complex expression\n" )
    where (remainder, expression, msg ) = parseExpr tokens
 
@@ -140,7 +144,7 @@ parseProgram tokens = ( Prog stmts, msgs )
 -- main function of the parser
 parseImp :: [Lexer.Token] -> ( Program, String )
 parseImp tokens = parseProgram tokens
-parseImp [] = ([], "")
+parseImp [] = (Prog [], "")
 
 -- parse a filename and string buffer to a representation and output msgs
 parse :: String -> String -> ( Program, String )
