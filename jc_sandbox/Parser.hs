@@ -36,6 +36,10 @@ isHeadTok (h:tl) id =
       Lexer.Tok value _ -> value == id
       _           -> False
 
+-- simple token id extraction
+getTokId :: Lexer.Token -> Lexer.TokId
+getTokId (Lexer.Tok id _) = id
+
 -- parse an IdTok into a Id
 parseId :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseId (h:tl) = (tl, Id h, "")
@@ -51,7 +55,7 @@ parseComplex tokens =
       Lexer.Tok Lexer.SemiTok _ -> 
          let (remainder', exprs, msg) = parseComplex (drop 1 remainder)
          in ( remainder', (Complex expression (JExpr exprs)), msg )
-      Lexer.Tok Lexer.RParenTok _ -> ( remainder, expression, JNothing, msg )
+      Lexer.Tok Lexer.RParenTok _ -> ( remainder, (Complex expression JNothing), msg )
       _ -> ( tokens, ErrExpr, "Invalid Complex expression\n" )
    where (remainder, expression, msg ) = parseExpr tokens
 
@@ -76,20 +80,24 @@ parseApp tokens =
 parseFactor :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseFactor tokens =
    case head remainder of
-      Lexer.MultTok -> let (remainder', factor, msg') = parseFactor (drop 1 remainder)
+      Lexer.MultTok  -> 
+                  let (remainder', factor, msg') = parseFactor (drop 1 remainder)
                   in (remainder', (Binary (head remainder), app, factor), "")
-      Lexer.DivTok -> let (remainder', factor, msg') = parseFactor (drop 1 remainder)
+      Lexer.DivTok   -> 
+                  let (remainder', factor, msg') = parseFactor (drop 1 remainder)
                   in (remainder', (Binary (head remainder), app, factor), "")
-      _        -> ( remainder, app, msg )
+      _              -> ( remainder, app, msg )
    where ( remainder, app, msg)  = parseApp tokens
 
 -- parse a term
 parseTerm :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseTerm tokens = 
    case head remainder of
-      Lexer.PlusTok  -> let (remainder', term, msg') = parseTerm (drop 1 remainder)
+      Lexer.Tok Lexer.PlusTok  _ -> 
+                  let (remainder', term, msg') = parseTerm (drop 1 remainder)
                   in (remainder', (Binary (head remainder), factor, term), "")
-      Lexer.MinusTok -> let (remainder', term, msg') = parseTerm (drop 1 remainder)
+      Lexer.Tok Lexer.MinusTok _ -> 
+                  let (remainder', term, msg') = parseTerm (drop 1 remainder)
                   in (remainder', (Binary (head remainder), factor, term), "")
       _        -> ( remainder, factor, msg )
    where ( remainder, factor, msg)  = parseFactor tokens
