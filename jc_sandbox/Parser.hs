@@ -158,7 +158,7 @@ parseFactor (h:tl) =
                                  Binary (head remainder) app factor, "")
                      -- justpropagate the error
                      Failure -> ( Failure, [], factor, msg' )
-            else ( Failure, [], ErrExpr, "Bad factor operator\n" )
+            else ( Success, remainder, app, "" )
       -- just propagate the failure message
       Failure -> ( Failure, [], app, msg )
    where ( status, remainder, app, msg)  = parseApp (h:tl)
@@ -184,7 +184,7 @@ parseTerm (h:tl) =
                      -- just propagate the error
                      Failure -> ( Failure, [], term, msg' )
                -- failure on operator token
-               else ( Failure, [], ErrExpr, "Bad term operator\n" )
+               else ( Success, remainder, factor, "" )
       -- just propagate the failure message
       Failure -> ( Failure, [], factor, msg )
    where ( status, remainder, factor, msg)  = parseFactor (h:tl)
