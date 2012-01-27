@@ -186,10 +186,23 @@ parseStmt tokens =
                ++ "\t" ++ (getStrExpr expr) ++ "\n")
    where ( remainder, expr, msg ) = parseExpr tokens
 
+-- generic parser
+parser :: [Lexer.Token] ([Lexer.Token]-> 
+                        ( Bool, [Lexer.Token], Expression, String )) ->
+                           ( Bool, [Lexer.Token], Expression, String ))
+parser (h:tl) parse_func =
+   case status of
+      Success -> ( Success, ... build the statement.
+      Failure -> ( Failure, remainder, stmt, msg )
+   where ( status, remainder, stmt, msg ) = parse_func (h:tl)
+
 -- simple statement collector
 parseStmts :: [Lexer.Token] -> ([Statement], String)
-parseStmts (h:tl) = ( (stmt:stmts), msg++msgs )
-   where ( remainder, stmt, msg ) = parseStmt (h:tl)
+parseStmts (h:tl) = 
+   case status of 
+      Success -> ( (stmt:stmts), msg++msgs )
+      Failure -> 
+   where ( status, remainder, stmt, msg ) = parseStmt (h:tl)
          (stmts, msgs) = parseStmts remainder
 parseStmts [] = ([],"") 
 
