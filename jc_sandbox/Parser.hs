@@ -20,6 +20,7 @@ data Expression = Id Lexer.Token
                   | Binary Lexer.Token Expression Expression
                   | Application Expression Expression
                   | Complex Lexer.Token [Expression] Lexer.Token
+                  | ENothing 
                   | ErrExpr
                   deriving (Show)
 data Statement = Stmt Expression 
@@ -72,12 +73,16 @@ getTokId :: Lexer.Token -> Lexer.TokId
 getTokId (Lexer.Tok id _) = id
 
 -- parse an IdTok into a Id
-parseId :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parseId (h:tl) = (tl, Id h, "")
+parseId :: [Lexer.Token] -> (Status, [Lexer.Token], Expression, String )
+parseId (h:tl) = (Success, tl, Id h, "")
+-- handle the case where not enough tokens are present
+parseId [] = (Failure, [], ErrExpr, "Bad id parse\n")
 
 -- parse a NatTok into a Nat
-parseNat :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parseNat (h:tl) = (tl, Nat h, "")
+parseNat :: [Lexer.Token] -> (Status, [Lexer.Token], Expression, String )
+parseNat (h:tl) = (Success, tl, Nat h, "")
+-- handle the case where not enough tokens are present
+parseNat [] = (Failure, [], ErrExpr, "Bad nat parse\n")
 
 -- attempt to parse a (LParen:tl) into a Complex
 --parseComplex :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
@@ -103,10 +108,10 @@ parseNat (h:tl) = (tl, Nat h, "")
 --   where (h:tl) = tokens
 
 -- attempt to parse the primary terms and non-term
-parsePrimary :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parsePrimary tokens = 
-   let (Lexer.Tok id _:tl) = tokens in
-   case id of
+parsePrimary :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
+parsePrimary (Lexer.Tok id x:tl) = 
+   let tokens = (Lexer.Tok id x:tl)
+   in  case id of
       Lexer.IdTok -> parseId tokens
       Lexer.NatTok -> parseNat tokens
 --      Lexer.LParenTok -> parseCompound tokens
@@ -114,42 +119,77 @@ parsePrimary tokens =
 --            in if Lexer.isToken (head remainder) Lexer.RParen
 --                  then ( drop 1 remainder, Complex id exprs (head remainder))
 --                  else ( remainder, ErrExpr, "" )
-      _ -> ( tokens, ErrExpr, "Unknown primary\n" )
+      _ -> ( Failure, [], ErrExpr, "Unknown primary\n" )
+-- handle the case where not enough tokens are present
+parsePrimary [] = ( Failure, [], ErrExpr, "Bad primary\n" )
 
 -- parse an application
-parseApp :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parseApp tokens =
-   if length msg' == 0
-         then ( remainder', Application primary app, "" )
-         else ( remainder, primary, "")
-   where ( remainder, primary, msg ) = parsePrimary tokens
-         ( remainder', app, msg' ) = parseApp remainder
+parseApp :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
+parseApp (h:tl) =
+   if status == Success
+      then if status' == Success
+            -- success for proper application
+            then ( Success, remainder', Application primary app, "" )
+            -- success for just a primary
+            else ( Success, remainder, Application primary ENothing, "" )
+      -- failure to parse
+      else ( Failure, [], primary, msg )
+   -- by greedy and assume its a proper application
+   where ( status, remainder, primary, msg ) = parsePrimary (h:tl)
+         ( status', remainder', app, _ ) = parseApp remainder
+-- handle the case where not enough tokens are present
+parseApp [] = ( Failure, [], ErrExpr, "Bad app\n" )
 
 -- parse a factor
-parseFactor :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parseFactor tokens =
-   case head remainder of
-      Lexer.Tok Lexer.MultTok _ -> 
-                  let (remainder', factor, msg') = parseFactor (drop 1 remainder)
-                  in (remainder', (Binary (head remainder) app factor), "")
-      Lexer.Tok Lexer.DivTok _  -> 
-                  let (remainder', factor, msg') = parseFactor (drop 1 remainder)
-                  in (remainder', (Binary (head remainder) app factor), "")
-      _              -> ( remainder, app, msg )
-   where ( remainder, app, msg)  = parseApp tokens
+parseFactor :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
+parseFactor (h:tl) =
+   case status of
+      -- partial success
+      Success -> 
+         -- validat the next token is a factor operator
+         if ( isHeadTok remainder Lexer.MultTok ) ||
+               ( isHeadTok remainder Lexer.DivTok )
+            -- partial success  
+            then let (status', remainder', factor, msg') = 
+                        parseFactor (drop 1 remainder)
+                  in case status' of
+                     -- successful parse
+                     Success -> ( Success, remainder', 
+                                 Binary (head remainder) app factor, "")
+                     -- justpropagate the error
+                     Failure -> ( Failure, [], factor, msg' )
+            else ( Failure, [], ErrExpr, "Bad factor operator\n" )
+      -- just propagate the failure message
+      Failure -> ( Failure, [], app, msg )
+   where ( status, remainder, app, msg)  = parseApp (h:tl)
+-- handle the case where not enough tokens are present
+parseFactor [] = ( Failure, [], ErrExpr, "Bad factor\n" )
 
 -- parse a term
 parseTerm :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
-parseTerm tokens = 
-   case head remainder of
-      Lexer.Tok Lexer.PlusTok  _ -> 
-                  let (remainder', term, msg') = parseTerm (drop 1 remainder)
-                  in (remainder', (Binary (head remainder) factor term), "")
-      Lexer.Tok Lexer.MinusTok _ -> 
-                  let (remainder', term, msg') = parseTerm (drop 1 remainder)
-                  in (remainder', (Binary (head remainder) factor term), "")
-      _        -> ( remainder, factor, msg )
-   where ( remainder, factor, msg)  = parseFactor tokens
+parseTerm (h:tl) = 
+   case status of
+      -- partial success
+      Success -> 
+         -- validat the next token is a term operator
+         if ( isHeadTok remainder Lexer.PlusTok ) ||
+               ( isHeadTok remainder Lexer.MinusTok )
+               -- partial success
+               then let (status', remainder', term, msg') = 
+                           parseTerm (drop 1 remainder)
+                  in case status' of
+                     -- successful parse
+                     Success -> ( Success, remainder', 
+                                 ( Binary (head remainder) factor term), "")
+                     -- just propagate the error
+                     Failure -> ( Failure, [], term, msg' )
+               -- failure on operator token
+               else ( Failure, [], ErrExpr, "Bad term operator\n" )
+      -- just propagate the failure message
+      Failure -> ( Failure, [], factor, msg )
+   where ( status, remainder, factor, msg)  = parseFactor (h:tl)
+-- handle the case where not enough tokens are present
+parseTerm [] = ( Failure, [], ErrExpr, "Bad term\n" )
 
 -- attempt to parse a (LetTok:tl) into a Let
 parseLet :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
