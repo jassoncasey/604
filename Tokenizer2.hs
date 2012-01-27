@@ -6,9 +6,11 @@ module Tokenizer2
 , Token(..)
 , getTokenSymbol
 , getTokenType
+, prefixPredLength
 ) where
 
 import Data.Char as Char
+import Data.List as List
 import ListAux
 
 
@@ -36,15 +38,12 @@ getTokenType (Tok t _) = t
    Only checks for let right now -}
 isPrefixKeyword :: String -> Bool
 isPrefixKeyword s
-  | (take 3 s) == "let" = True
+  | List.isPrefixOf "let" s = True
   | otherwise = False
 
 -- Tokenizes a line
--- FIXME Does multipasss compilation! put these anywhere!
 tokenize :: String -> Int -> String -> [Token]
 tokenize filename line s = tokenize_impl filename line 1 s []
-
-
 
 -- the pull functions lift the syntax
 -- Move some of these off to detail
@@ -83,6 +82,23 @@ pullLet f l c s t =
     (drop 3 s)
     (t ++ [Tok EqTok (Lex "let" l c f)])
 
+isCharOp :: Char -> Bool
+isCharOp c = elem c "\\.+*-/();="
+getCharOp :: Char -> TokId
+getCharOp c =
+  case c of
+    '\\' -> LambdaTok
+    '.' -> DotTok
+    '+' -> PlusTok
+    '*' -> MultTok
+    '-' -> MinusTok
+    '/' -> DivTok
+    '(' -> LParenTok
+    ')' -> RParenTok
+    ';' -> SemiTok
+    '=' -> EqTok
+
+
 -- tokenize_lin_impl - tokenizes the string passed to it
 --   f : filename
 --   l : line number
@@ -93,20 +109,11 @@ tokenize_impl :: String -> Int -> Int -> String -> [Token] -> [Token]
 tokenize_impl f l c s t
   | s == [] = t
   | h == ' ' || h == '\n' || h == '\t' = tokenize_impl f l (c + 1) (tail s) t
-  | h == '\\' = tokenize_impl f l (c + 1) (tail s) (t ++ [Tok LambdaTok (Lex "\\" l c f)])
-  | h == '.' = tokenize_impl f l (c + 1) (tail s) (t ++ [Tok DotTok (Lex "." l c f)])
-  | h == '+' = tokenize_impl f l (c + 1) (tail s) (t ++ [Tok PlusTok (Lex "+" l c f)])
-  | h == '*' = tokenize_impl f l (c + 1) (tail s) (t ++ [Tok MultTok (Lex "*" l c f)])
-  | h == '-' = tokenize_impl f l (c + 1) (tail s) (t ++ [Tok MinusTok (Lex "-" l c f)])
-  | h == '/' = tokenize_impl f l (c + 1) (tail s) (t ++ [Tok DivTok (Lex "/" l c f)])
-  | h == '(' = tokenize_impl f l (c + 1) (tail s) (t ++ [Tok LParenTok (Lex "(" l c f)])
-  | h == ')' = tokenize_impl f l (c + 1) (tail s) (t ++ [Tok RParenTok (Lex ")" l c f)])
-  | h == ';' = tokenize_impl f l (c + 1) (tail s) (t ++ [Tok SemiTok (Lex ";" l c f)])
-  | h == '=' = tokenize_impl f l (c + 1) (tail s) (t ++ [Tok EqTok (Lex "=" l c f)])
+  | isCharOp h = tokenize_impl f l (c+1) (tail s) (t ++ [Tok (getCharOp h) (Lex [h] l c f)])
   | isPrefixKeyword s = pullLet f l c s t
   | Char.isAlpha h = pullIdentifier f l c s t
   | Char.isDigit h = pullNatural f l c s t
-  | otherwise = t
+  | otherwise = tokenize_impl f l (c+1) (tail s) (t ++ [Tok UnknownTok (Lex [h] l c f)])
   where h = head s
 
 

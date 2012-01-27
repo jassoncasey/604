@@ -2,14 +2,8 @@ module PrettyPrint2
 ( printTokenization
 ) where
 
---import Tokenizer
 import Tokenizer2
 import ListAux
-
-{-printTokenInfo :: Token -> String
-printTokenInfo (Token t fn sym line col) =
-  (printTokenType t) ++ " '" ++ sym ++ "'" ++ " in file "
-  ++ fn ++ " line " ++ (show line) ++ " column " ++ (show col)-}
 
 -- token symbol accessor
 tokenSymbol :: Token -> String
@@ -37,7 +31,7 @@ printTokenType s =
     MinusTok -> "Operator"
     MultTok -> "Operator"
     DivTok -> "Operator "
-    UnknownTok -> "Binary operator"
+    UnknownTok -> "Unknown token"
 
 -- Formatting detail, adds a space to the symbel held by token
 symNeedsSpace :: Token -> Token -> Bool
