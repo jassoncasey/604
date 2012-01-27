@@ -29,6 +29,7 @@ data Program   = Prog [Statement]
                | ErrPrg
                deriving (Show)
 
+-- trivial error formatting functions
 getErrExpr (Id _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
 getErrExpr (Nat _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
 getErrExpr (Let token _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
@@ -38,6 +39,7 @@ getErrExpr (Binary token _ _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
 getErrExpr (Application _ _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
 getErrExpr (Complex _ _) = "Syntax Error - " ++ (Lexer.GetErrHdr token)
 
+-- trivial code printing functions
 getStrExpr (Id token) = 
    Lexer.getLexeme token
 getStrExpr (Nat token) = 
