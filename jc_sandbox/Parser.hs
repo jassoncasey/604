@@ -29,6 +29,8 @@ data Program   = Prog [Statement]
                | ErrPrg
                deriving (Show)
 
+data Status = Success | Failure deriving (Show,Eq)
+
 -- trivial error formatting functions
 getErrExpr (Id token) = Lexer.getErrHdr token
 getErrExpr (Nat token) = Lexer.getErrHdr token
@@ -137,7 +139,7 @@ parseFactor tokens =
    where ( remainder, app, msg)  = parseApp tokens
 
 -- parse a term
-parseTerm :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
+parseTerm :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
 parseTerm tokens = 
    case head remainder of
       Lexer.Tok Lexer.PlusTok  _ -> 
@@ -150,60 +152,78 @@ parseTerm tokens =
    where ( remainder, factor, msg)  = parseFactor tokens
 
 -- attempt to parse a (LetTok:tl) into a Let
-parseLet :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parseLet tokens =
-   let (lt:id:eq:tl) = tokens
+parseLet :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
+parseLet (lt:id:eq:tl) =
+   let tokens = (lt:id:eq:tl) 
    in if ( Lexer.isToken id IdTok ) && ( Lexer.isToken eq EqTok )
-      then let ( remainder, expr, msg ) = parseExpr (drop 3 tokens)
-            in ( remainder, Let lt (Id id) eq expr, msg )
-      else ( tokens, ErrExpr, "Bad let\n" )
+      -- partial success
+      then let ( status, remainder, expr, msg ) = parseExpr (drop 3 tokens)
+            in case status of
+               Success -> ( Success, remainder, Let lt (Id id) eq expr, msg )
+               -- just propagate the failure message
+               Failure -> ( Failure, [], expr, msg )
+      -- failure on id and/or assignment token
+      else ( Failure, [], ErrExpr, "Bad let\n" )
+-- handle the case where not enough tokens are present
+parseLet x = ( Failure, [], ErrExpr, "Bad let\n" )
 
 -- attempt to parse a (LamdaTok:IdTok:DotTok:tl) into a Lamda
-parseLamda :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
-parseLamda tokens =
-   let (lm:id:dt:tl) = tokens
+parseLamda :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
+parseLamda (lm:id:dt:tl) =
+   let tokens = (lm:id:dt:tl)
    in if ( Lexer.isToken id IdTok ) && ( Lexer.isToken dt DotTok )
-      then let ( remainder, expr, msg ) = parseExpr (drop 3 tokens)
-            in ( remainder, Lamda lm (Id id) dt expr, msg )
-      else ( tokens, ErrExpr, "Bad lamda\n" )
+      -- partial success
+      then let ( status, remainder, expr, msg ) = parseExpr (drop 3 tokens)
+            in case status of
+               -- complete success
+               Success -> ( Success, remainder, Lamda lm (Id id) dt expr, msg )
+               -- just propagate the failure message
+               Failure -> ( Failure, [], expr, msg )
+      -- failure on id and/or dot token
+      else ( Failure, [], ErrExpr, "Bad lamda\n" )
+-- handle the case where not enough tokens are present
+parseLamda x = ( Failure, [], ErrExpr, "Bad lamda\n" )
 
 -- break out the recognizable expression categories
-parseExpr :: [Lexer.Token] -> ([Lexer.Token], Expression, String)
-parseExpr tokens =
-   let (Lexer.Tok id _:tl) = tokens in
-   case id of
+parseExpr :: [Lexer.Token] -> (Status, [Lexer.Token], Expression, String)
+parseExpr (Lexer.Tok id x:tl) =
+   let tokens = (Lexer.Tok id x:tl)
+   -- extract the type and pass the parse along
+   in case id of
       LetTok      -> parseLet tokens
       LamdaTok    -> parseLamda tokens
       _           -> parseTerm tokens
+-- return an error if someone tries to parse on a empty list
+parseExpr [] = ( Failure, [], ErrExpr, "No more tokens" )
 
 -- parse a single statement
-parseStmt :: [Lexer.Token] -> ([Lexer.Token], Statement, String)
-parseStmt tokens = 
-   if isHeadTok remainder Lexer.SemiTok 
-      then ( drop 1 remainder, Stmt expr, msg )
-      else ( remainder, ErrStmt, "Syntax error: missing semicolon\n"
-               ++ (getErrExpr expr) 
-               ++ "\t" ++ (getStrExpr expr) ++ "\n")
-   where ( remainder, expr, msg ) = parseExpr tokens
-
--- generic parser
-parser :: [Lexer.Token] ([Lexer.Token]-> 
-                        ( Bool, [Lexer.Token], Expression, String )) ->
-                           ( Bool, [Lexer.Token], Expression, String ))
-parser (h:tl) parse_func =
+parseStmt :: [Lexer.Token] -> ( Status, [Lexer.Token], Statement, String )
+parseStmt (h:tl) =
    case status of
-      Success -> ( Success, ... build the statement.
-      Failure -> ( Failure, remainder, stmt, msg )
-   where ( status, remainder, stmt, msg ) = parse_func (h:tl)
+      -- if success from below then finish this parse
+      Success -> if isHeadTok remainder Lexer.SemiTok
+                  -- successful statement parse
+                  then ( Success, drop 1 remainder, Stmt expr, "")
+                  -- failed statment parse
+                  else ( Failure, [], ErrStmt, 
+                     "Syntax error: missing semicolon\n"
+                     ++ (getErrExpr expr)
+                     ++ "\t" ++ (getStrExpr expr) ++ "\n")
+      -- just propagate if the error is from below
+      Failure -> ( Failure, [], ErrStmt, msg )
+   where ( status, remainder, expr, msg ) = parseExpr (h:tl)
 
 -- simple statement collector
 parseStmts :: [Lexer.Token] -> ([Statement], String)
 parseStmts (h:tl) = 
    case status of 
-      Success -> ( (stmt:stmts), msg++msgs )
-      Failure -> 
+      -- if we parsed one statement successfully proceed
+      Success -> let (stmts, msgs) = parseStmts remainder
+                  in ( (stmt:stmts), msg++msgs )
+      -- otherwise terminate now
+      Failure -> ( [], msg )
+   -- attempt a statement parse
    where ( status, remainder, stmt, msg ) = parseStmt (h:tl)
-         (stmts, msgs) = parseStmts remainder
 parseStmts [] = ([],"") 
 
 -- simple program parser creator
