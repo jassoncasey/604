@@ -29,6 +29,25 @@ data Program   = Prog [Statement]
                | ErrPrg
                deriving (Show)
 
+getStrExpr Id token = 
+   Lexer.getLexeme token
+getStrExpr Nat token = 
+   Lexer.getLexeme token
+getStrExpr Let token expr = 
+   "Let " ++ (Lexer.getLexeme token) ++ (getStrExpr expr)
+getStrExpr Lamda token expr =
+   "\\" ++ (Lexer.getLexeme token) ++ "." ++ (getStrExpr expr)
+getStrExpr Unary token expr =
+   Lexer.getLexeme token ++ (getStrExpr expr)
+getStrExpr Binary token exprl exprr =
+   (getStrExpr exprl) ++ (Lexer.getLexeme token) ++ (getStrExpr exprr)
+getStrExpr Application exprl exprr =
+   (getStrExpr exprl) ++ (getStrExpr exprr)
+getStrExpr Complex exprl exprr =
+   case exprr of
+      JExpr expr -> "(" ++ (getStrExpr exprl) ++ getStrExpr expr ++ ")"
+      JNothing -> "( " ++ (getStrExpr exprl) ++ ")"
+
 -- peak at the head and validate its token id
 isHeadTok :: [Lexer.Token] -> Lexer.TokId -> Bool
 isHeadTok (Lexer.Tok value _:tl) id = value == id
@@ -127,13 +146,19 @@ parseExpr tokens =
       LamdaTok    -> parseLamda tokens
       _           -> parseTerm tokens
 
+parseExpr1 tokens = 
+   let (Lexer.Tok id _:tl) = tokens in
+   case id of
+      IdTok -> parseId tokens
+      NatTok -> parseNat tokens
+
 -- parse a single statement
 parseStmt :: [Lexer.Token] -> ([Lexer.Token], Statement, String)
 parseStmt tokens = 
    if isHeadTok remainder Lexer.SemiTok 
       then ( drop 1 remainder, Stmt expr, msg )
       else ( tokens, ErrStmt, "Missing semicolon\n" )
-   where ( remainder, expr, msg ) = parseExpr tokens
+   where ( remainder, expr, msg ) = parseExpr1 tokens
 
 -- simple statement collector
 parseStmts :: [Lexer.Token] -> ([Statement], String)

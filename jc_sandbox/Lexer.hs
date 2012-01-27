@@ -2,6 +2,7 @@ module Lexer (
    tokenizeLine,  -- String:filename -> Int:lineno -> String:line -> [Token]
    tokenizeBuff,  -- String:filename -> String:buffer -> [Token]
    isToken,       -- Token:lexed token -> TokId:matched id -> Bool
+   getLexeme,     -- Token -> String:lexeme
    TokId(..),
    Lexeme,
    Token(..)
@@ -20,6 +21,9 @@ data Lexeme = Lex String Int Int String deriving (Show,Eq)
 
 -- structure: type, lexeme
 data Token = Tok TokId Lexeme deriving (Show,Eq)
+
+getLexeme token = lexeme
+   where (Lexer.Tok _ (Lex lexeme _ _ _)) = token
 
 -- simple token length accessor
 tokenSize :: Token -> Int
