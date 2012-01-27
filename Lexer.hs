@@ -7,6 +7,7 @@ module Lexer
 , getTokenSymbol
 , getTokenType
 , prefixPredLength
+, isSemiTok
 ) where
 
 import Data.Char as Char
@@ -133,13 +134,13 @@ tokenize_impl f l c s t
 -- token list represents a statement
 tokenizeBuff :: String -> String -> [[Token]]
 tokenizeBuff fn src =
-  splitAfter isTerminalToken $    -- break tokens appart into statements
+  splitAfter isSemiTok $    -- break tokens appart into statements
     foldr (++) [] $                     -- Append all tokens together
     map (\(n,s) -> tokenize fn n s) $    -- Transforms each indexed src line to tokens
       zip [1..] (lines src) -- Returns an indexed list (line, str)
 
-isTerminalToken :: Token -> Bool
-isTerminalToken (Tok SemiTok _) = True
-isTerminalToken _ = False
+isSemiTok :: Token -> Bool
+isSemiTok (Tok SemiTok _) = True
+isSemiTok _ = False
 
 
