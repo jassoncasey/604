@@ -37,7 +37,8 @@ getErrExpr (Lamda token _ _ _) = Lexer.getErrHdr token
 getErrExpr (Unary token _) = Lexer.getErrHdr token
 getErrExpr (Binary _ exprl _) = getErrExpr exprl
 getErrExpr (Application expr _) = getErrExpr expr
---getErrExpr (Complex token _ _ _) = Lexer.getErrHdr token
+getErrExpr (Complex token _ _) = Lexer.getErrHdr token
+getErrExpr _ = "Unknown location"
 
 -- trivial code printing functions
 getStrExpr (Id token) = Lexer.getLexeme token
@@ -52,7 +53,8 @@ getStrExpr (Binary op exprl exprr) =
    (getStrExpr exprl) ++ " " ++ (Lexer.getLexeme op) ++ " " ++ (getStrExpr exprr)
 getStrExpr (Application exprl exprr) =
    (getStrExpr exprl) ++ (getStrExpr exprr)
---getStrExpr (Complex _ exprl exprr _ ) =
+getStrExpr (Complex _ exprl _ ) = ""
+getStrExpr _ = ""
 --   case exprr of
 --     JExpr expr -> "( " ++ (getStrExpr exprl) ++ "; " 
 --         ++ getStrExpr expr ++ " )"
@@ -174,12 +176,6 @@ parseExpr tokens =
       LamdaTok    -> parseLamda tokens
       _           -> parseTerm tokens
 
-parseExpr1 tokens = 
-   let (Lexer.Tok id _:tl) = tokens in
-   case id of
-      IdTok -> parseId tokens
-      NatTok -> parseNat tokens
-
 -- parse a single statement
 parseStmt :: [Lexer.Token] -> ([Lexer.Token], Statement, String)
 parseStmt tokens = 
@@ -188,7 +184,7 @@ parseStmt tokens =
       else ( remainder, ErrStmt, "Syntax error: missing semicolon\n"
                ++ (getErrExpr expr) 
                ++ "\t" ++ (getStrExpr expr) ++ "\n")
-   where ( remainder, expr, msg ) = parseExpr1 tokens
+   where ( remainder, expr, msg ) = parseExpr tokens
 
 -- simple statement collector
 parseStmts :: [Lexer.Token] -> ([Statement], String)
