@@ -20,7 +20,7 @@ badUsage args =
 process ( file : files ) = 
    do buf <- readFile file 
       putStrLn ("Compiling: " ++ file)
-      putStrLn snd (parse file buf)
+      putStrLn (snd (parse file buf))
       process files
 process [] = return () 
 

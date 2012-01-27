@@ -18,7 +18,7 @@ data Expression = Id Lexer.Token
                   | Lamda Lexer.Token Expression
                   | Unary Lexer.Token Expression
                   | Binary Lexer.Token Expression Expression
-                  | Application Expression 
+                  | Application Expression Expression
                   | Complex Expression MExpr
                   | ErrExpr
                   deriving (Show)
@@ -31,10 +31,8 @@ data Program   = Prog [Statement]
 
 -- peak at the head and validate its token id
 isHeadTok :: [Lexer.Token] -> Lexer.TokId -> Bool
-isHeadTok (h:tl) id =
-   case h of 
-      Lexer.Tok value _ -> value == id
-      _           -> False
+isHeadTok (Lexer.Tok value _:tl) id = value == id
+isHeadTok tokens id = False
 
 -- simple token id extraction
 getTokId :: Lexer.Token -> Lexer.TokId
@@ -70,22 +68,22 @@ parsePrimary tokens =
 -- parse an application
 parseApp :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseApp tokens =
-   let ( remainder', app, msg' ) = parseApp remainder
-   in if length msg' == 0
+   if length msg' == 0
          then ( remainder', Application primary app, "" )
          else ( remainder, primary, "")
    where ( remainder, primary, msg ) = parsePrimary tokens
+         ( remainder', app, msg' ) = parseApp remainder
 
 -- parse a factor
 parseFactor :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
 parseFactor tokens =
    case head remainder of
-      Lexer.MultTok  -> 
+      Lexer.Tok Lexer.MultTok _ -> 
                   let (remainder', factor, msg') = parseFactor (drop 1 remainder)
-                  in (remainder', (Binary (head remainder), app, factor), "")
-      Lexer.DivTok   -> 
+                  in (remainder', (Binary (head remainder) app factor), "")
+      Lexer.Tok Lexer.DivTok _  -> 
                   let (remainder', factor, msg') = parseFactor (drop 1 remainder)
-                  in (remainder', (Binary (head remainder), app, factor), "")
+                  in (remainder', (Binary (head remainder) app factor), "")
       _              -> ( remainder, app, msg )
    where ( remainder, app, msg)  = parseApp tokens
 
@@ -95,10 +93,10 @@ parseTerm tokens =
    case head remainder of
       Lexer.Tok Lexer.PlusTok  _ -> 
                   let (remainder', term, msg') = parseTerm (drop 1 remainder)
-                  in (remainder', (Binary (head remainder), factor, term), "")
+                  in (remainder', (Binary (head remainder) factor term), "")
       Lexer.Tok Lexer.MinusTok _ -> 
                   let (remainder', term, msg') = parseTerm (drop 1 remainder)
-                  in (remainder', (Binary (head remainder), factor, term), "")
+                  in (remainder', (Binary (head remainder) factor term), "")
       _        -> ( remainder, factor, msg )
    where ( remainder, factor, msg)  = parseFactor tokens
 
@@ -108,7 +106,7 @@ parseLet tokens =
    let (lt:id:eq:tl) = tokens
    in if ( Lexer.isToken id IdTok ) && ( Lexer.isToken eq EqTok )
       then let ( remainder, expr, msg ) = parseExpr (drop 3 tokens)
-            in ( remainder, Let lt id eq expr, msg )
+            in ( remainder, Let id expr, msg )
       else ( tokens, ErrExpr, "Bad let\n" )
 
 -- attempt to parse a (LamdaTok:IdTok:DotTok:tl) into a Lamda
@@ -117,7 +115,7 @@ parseLamda tokens =
    let (lm:id:dt:tl) = tokens
    in if ( Lexer.isToken id IdTok ) && ( Lexer.isToken dt DotTok )
       then let ( remainder, expr, msg ) = parseExpr (drop 3 tokens)
-            in ( remainder, Lamda lm id dt expr, msg )
+            in ( remainder, Lamda id expr, msg )
       else ( tokens, ErrExpr, "Bad lamda\n" )
 
 -- break out the recognizable expression categories
@@ -139,8 +137,8 @@ parseStmt tokens =
 
 -- simple statement collector
 parseStmts :: [Lexer.Token] -> ([Statement], String)
-parseStmts tokens = ( (stmt:stmts), msg++msgs )
-   where ( remainder, stmt, msg ) = parseStmt tokens
+parseStmts (h:tl) = ( (stmt:stmts), msg++msgs )
+   where ( remainder, stmt, msg ) = parseStmt (h:tl)
          (stmts, msgs) = parseStmts remainder
 parseStmts [] = ([],"") 
 
@@ -151,7 +149,7 @@ parseProgram tokens = ( Prog stmts, msgs )
 
 -- main function of the parser
 parseImp :: [Lexer.Token] -> ( Program, String )
-parseImp tokens = parseProgram tokens
+parseImp (h:tl) = parseProgram (h:tl)
 parseImp [] = (Prog [], "")
 
 -- parse a filename and string buffer to a representation and output msgs
