@@ -1,8 +1,8 @@
 import System( getArgs)
 import Control.Monad
 import System.IO
-import Tokenizer2
-import PrettyPrint2
+import Lexer
+import PrettyPrint
 import CmdOpts
 --import Lexer
 

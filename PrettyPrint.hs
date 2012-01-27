@@ -1,8 +1,8 @@
-module PrettyPrint2
+module PrettyPrint
 ( printTokenization
 ) where
 
-import Tokenizer2
+import Lexer
 import ListAux
 
 -- token symbol accessor
