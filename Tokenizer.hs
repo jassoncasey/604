@@ -13,6 +13,7 @@ import ListAux
 
 
 -- Types of tokens
+
 data TokenType = TokLit | TokId | TokBinOp | TokLambda | TokDot
   | TokLet | TokDef | TokSemi | TokParL | TokParR deriving (Show)
 
@@ -113,9 +114,7 @@ tokenizeSource fn src =
   splitAfter isTerminalToken $    -- break tokens appart into statements
     foldr (++) [] $                     -- Append all tokens together
     map (\(n,s) -> tokenize fn n s) $    -- Transforms each indexed src line to tokens
-      zip [1..(length src)] (lines src) -- Returns an indexed list (line, str)
-
-
+      zip [1..] (lines src) -- Returns an indexed list (line, str)
 
 isTerminalToken :: Token -> Bool
 isTerminalToken (Token TokSemi _ _ _ _) = True

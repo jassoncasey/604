@@ -62,12 +62,27 @@ printTokenList :: [Token] -> String
 printTokenList ts =
   foldr (++) "" (addPadMap "\n    " (map printTokenInfo ts))
 
+-- Prints a list of tokens as you would see them in source (String form)
 printTokenListAsStmt :: [Token] -> String
 printTokenListAsStmt ts =
   let
     tkn_sym = map getTokenSymbol $ spaceTknSym ts
   in foldr (++) ""  tkn_sym
 
+-- Tries to parse the code. If it can't, return false
+isParseSuccess :: [Token] -> Bool
+isParseSuccess _ = True
+
+-- Prints a statement and it's token list if a successful parse
+printIfParsed :: [Token] -> String
+printIfParsed tkns
+  | isParseSuccess tkns = "\n  " ++ (printTokenListAsStmt tkns)
+      ++ (printTokenList tkns)
+  | otherwise = "\n  " ++ "Parse error: Statement starting at line "
+      ++ (show $ l $ head tkns) ++ "is not valid.\n"
+  where l = (\(Token _ _ _ line _) -> line)
+
+-- Tokenizes the source and prints the results
 printTokenization :: String -> String -> String
 printTokenization fn src =
   let
