@@ -7,6 +7,9 @@ module Lexer
 , getTokenSymbol
 , getTokenType
 , prefixPredLength
+, isSemiTok
+, isToken
+, getErrHdr
 ) where
 
 import Data.Char as Char
@@ -18,7 +21,18 @@ import ListAux
 -- Types of tokens
 data TokId = LetTok | EqTok | LambdaTok | DotTok | NatTok | IdTok | SemiTok
            | LParenTok | RParenTok | PlusTok | MinusTok | MultTok | DivTok
+           | FoldTok
            | UnknownTok deriving (Show,Eq)
+
+--Operator order
+isTokenBinOp :: TokId -> Bool
+isTokenBinOp t = elem t [PlusTok, MinusTok, MultTok, DivTok]
+opOrder :: TokId -> Int
+opOrder MultTok = 50
+opOrder DivTok = 50
+opOrder PlusTok = 30
+opOrder MinusTok = 30
+opOrder _ = 0
 
 -- structure: string, line #, column #, filename
 data Lexeme = Lex String Int Int String deriving (Show,Eq)
@@ -44,6 +58,9 @@ getTokenSymbol (Tok _(Lex s _ _ _)) = s
 -- Shorthand to identify a Token by TokenType
 getTokenType :: Token -> TokId
 getTokenType (Tok t _) = t
+
+isToken :: Token -> TokId -> Bool
+isToken (Tok token _ ) match = token == match
 
 {- Checks for keywords and pulls keywords.
    May be more useful as the set of keywords increases.
@@ -91,7 +108,7 @@ pullLet f l c s t =
     l
     (c + 3)
     (drop 3 s)
-    (t ++ [Tok EqTok (Lex "let" l c f)])
+    (t ++ [Tok LetTok (Lex "let" l c f)])
 
 isCharOp :: Char -> Bool
 isCharOp c = elem c "\\.+*-/();="
@@ -133,13 +150,13 @@ tokenize_impl f l c s t
 -- token list represents a statement
 tokenizeBuff :: String -> String -> [[Token]]
 tokenizeBuff fn src =
-  splitAfter isTerminalToken $    -- break tokens appart into statements
+  splitAfter isSemiTok $    -- break tokens appart into statements
     foldr (++) [] $                     -- Append all tokens together
     map (\(n,s) -> tokenize fn n s) $    -- Transforms each indexed src line to tokens
       zip [1..] (lines src) -- Returns an indexed list (line, str)
 
-isTerminalToken :: Token -> Bool
-isTerminalToken (Tok SemiTok _) = True
-isTerminalToken _ = False
+isSemiTok :: Token -> Bool
+isSemiTok (Tok SemiTok _) = True
+isSemiTok _ = False
 
 

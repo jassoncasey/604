@@ -4,7 +4,7 @@ import System.IO
 import Lexer
 import PrettyPrint
 import CmdOpts
---import Lexer
+import Parser
 
 main = do
   args <- getArgs
