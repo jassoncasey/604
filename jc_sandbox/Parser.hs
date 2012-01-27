@@ -22,26 +22,27 @@ data Expression = Id Lexer.Token
                   | Complex Lexer.Token [Expression] Lexer.Token
                   | ENothing 
                   | ErrExpr
-                  deriving (Show)
+                  deriving (Show,Eq)
 data Statement = Stmt Expression 
                | ErrStmt 
-               deriving (Show)
+               deriving (Show,Eq)
 data Program   = Prog [Statement]
                | ErrPrg
-               deriving (Show)
+               deriving (Show,Eq)
 
 data Status = Success | Failure deriving (Show,Eq)
 
--- trivial error formatting functions
-getErrExpr (Id token) = Lexer.getErrHdr token
-getErrExpr (Nat token) = Lexer.getErrHdr token
-getErrExpr (Let token _ _ _) = Lexer.getErrHdr token
-getErrExpr (Lamda token _ _ _) = Lexer.getErrHdr token
-getErrExpr (Unary token _) = Lexer.getErrHdr token
-getErrExpr (Binary _ exprl _) = getErrExpr exprl
-getErrExpr (Application expr _) = getErrExpr expr
-getErrExpr (Complex token _ _) = Lexer.getErrHdr token
-getErrExpr _ = "Unknown location"
+-- retreive file/lineno/colno information as a 
+-- nicely formatted string of a token
+getErrInfo (Id token) = Lexer.getErrHdr token
+getErrInfo (Nat token) = Lexer.getErrHdr token
+getErrInfo (Let token _ _ _) = Lexer.getErrHdr token
+getErrInfo (Lamda token _ _ _) = Lexer.getErrHdr token
+getErrInfo (Unary token _) = Lexer.getErrHdr token
+getErrInfo (Binary _ exprl _) = getErrInfo exprl
+getErrInfo (Application expr _) = getErrInfo expr
+getErrInfo (Complex token _ _) = Lexer.getErrHdr token
+getErrInfo _ = "Unknown location"
 
 -- trivial code printing functions
 getStrExpr (Id token) = Lexer.getLexeme token
@@ -53,11 +54,21 @@ getStrExpr (Lamda _ param _ body) =
 getStrExpr (Unary op expr) =
    Lexer.getLexeme op ++ (getStrExpr expr)
 getStrExpr (Binary op exprl exprr) =
-   (getStrExpr exprl) ++ " " ++ (Lexer.getLexeme op) ++ " " ++ (getStrExpr exprr)
+   (getStrExpr exprl) ++ " " ++ (Lexer.getLexeme op) ++ 
+   " " ++ (getStrExpr exprr)
 getStrExpr (Application exprl exprr) =
-   (getStrExpr exprl) ++ (getStrExpr exprr)
+   (getStrExpr exprl) ++ " " ++ (getStrExpr exprr) ++ "app"
 getStrExpr (Complex _ exprl _ ) = ""
 getStrExpr _ = ""
+
+-- simple string generation for error handling
+mkErrStr :: String -> Expression -> String
+mkErrStr str expr = "----------------------\n"++
+   "Syntax Error: " ++ str ++ "\n" ++
+   (getErrInfo expr) ++
+   "\t" ++ (getStrExpr expr) ++ "\n" ++
+   "----------------------\n"
+
 --   case exprr of
 --     JExpr expr -> "( " ++ (getStrExpr exprl) ++ "; " 
 --         ++ getStrExpr expr ++ " )"
@@ -246,10 +257,8 @@ parseStmt (h:tl) =
                   -- successful statement parse
                   then ( Success, drop 1 remainder, Stmt expr, "")
                   -- failed statment parse
-                  else ( Failure, [], ErrStmt, 
-                     "Syntax error: missing semicolon\n"
-                     ++ (getErrExpr expr)
-                     ++ "\t" ++ (getStrExpr expr) ++ "\n")
+                  else ( Failure, [], ErrStmt,
+                     mkErrStr "statement missing semicolon" expr )
       -- just propagate if the error is from below
       Failure -> ( Failure, [], ErrStmt, msg )
    where ( status, remainder, expr, msg ) = parseExpr (h:tl)
