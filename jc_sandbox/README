@@ -30,3 +30,16 @@ primary  : Id
 
 complex : expression
          | expression SemiColon complex
+
+Status
+------
+Parser.hs does not support compound expressions.
+Prser.hs does not reduce list sizes for errored parses
+which results in some catestrophic executions. Should be
+a few more hours to resolve.
+
+Files
+-----
+Lexer.hs - SPL scanner
+Parser.hs - SPL parser
+Driver.hs - SPL compiler entry point
