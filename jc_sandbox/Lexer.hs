@@ -4,6 +4,10 @@ module Lexer (
    isToken,       -- Token:lexed token -> TokId:matched id -> Bool
    getLexeme,     -- Token -> String:lexeme
    getErrHdr,     -- Token -> String:formatted lineno/colno
+   getFile,
+   getLineNo,
+   getColStart,
+   getColEnd,
    TokId(..),
    Lexeme,
    Token(..)
@@ -28,11 +32,22 @@ getLexeme :: Token -> String
 getLexeme token = lexeme
    where (Lexer.Tok _ (Lex lexeme _ _ _)) = token
 
+-- Simple token accessors
+getFile :: Token -> String
+getFile (Tok _ (Lex _ _ _ fname)) = fname
+getLineNo :: Token -> String
+getLineNo (Tok _ (Lex _ lineno _ _)) = show lineno
+getColStart :: Token -> String
+getColStart (Tok _ (Lex _ _ colno _ )) = show colno
+getColEnd :: Token -> String
+getColEnd (Tok _ (Lex lexeme _ colno _)) = 
+   show (colno + (length lexeme) - 1)
+
 -- provide a string containing the relavent info of this token
 getErrHdr :: Token -> String
 getErrHdr token = 
-   "Filename: " ++ fname ++ "\nLo:" ++ (show lineno) ++ 
-   " Col:" ++  (show colno) ++ " : "
+   "Line: " ++ (show lineno) ++ " " ++
+   "Column: " ++  (show colno)
    where (Lexer.Tok _ (Lex lexeme lineno colno fname)) = token
 
 -- simple token length accessor
