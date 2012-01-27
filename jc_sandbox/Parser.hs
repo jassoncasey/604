@@ -32,35 +32,66 @@ data Program   = Prog [Statement]
 
 data Status = Success | Failure deriving (Show,Eq)
 
-getPositionInfo :: Expression -> String
-getPositionInfo (Id token) = 
-   "Filename: " ++ (Lexer.getFile token) ++ "\n" ++
-   "Line: " ++ (Lexer.getLineNo token) ++ 
-   " Colomn: " ++ (Lexer.getColStart token) ++
-   " - Column: " ++ (show (Lexer.getColEnd token)) ++ "\n"
-getPositionInfo (Nat token) =
-   "Filename: " ++ (Lexer.getFile token) ++ "\n" ++
-   "Line: " ++ (Lexer.getLineNo token) ++ 
-   " Colomn: " ++ (Lexer.getColStart token) ++
-   " - Column: " ++ (show (Lexer.getColEnd token)) ++ "\n"
+getLeadingInfo :: Expression -> String
+getLeadingInfo (Id token) = 
+   "Line: " ++ (Lexer.getLineNo token) ++ " " ++
+   "Colomn: " ++ (Lexer.getColStart token)
+getLeadingInfo (Nat token) =
+   "Line: " ++ (Lexer.getLineNo token) ++ " " ++
+   "Colomn: " ++ (Lexer.getColStart token)
+getLeadingInfo (Let token _ _ _) =
+   "Line: " ++ (Lexer.getLineNo token) ++ " " ++
+   "Colomn: " ++ (Lexer.getColStart token)
+getLeadingInfo (Lamda token _ _ _) = 
+   "Line: " ++ (Lexer.getLineNo token) ++ " " ++
+   "Colomn: " ++ (Lexer.getColStart token)
+getLeadingInfo (Unary token _) = 
+   "Line: " ++ (Lexer.getLineNo token) ++ " " ++
+   "Colomn: " ++ (Lexer.getColStart token)
+getLeadingInfo (Binary _ expr _) = getLeadingInfo expr
+getLeadingInfo (Application expr _) = getLeadingInfo expr
+getLeadingInfo (Complex token _ _) = 
+   "Line: " ++ (Lexer.getLineNo token) ++ " " ++
+   "Colomn: " ++ (Lexer.getColStart token)
+getLeadingInfo _ = "Unknown token"
+
+getTrailingInfo :: Expression -> String
+getTrailingInfo (Id token) = 
+   "Line: " ++ (Lexer.getLineNo token) ++ " " ++
+   "Colomn: " ++ (Lexer.getColEnd token)
+getTrailingInfo (Nat token) =
+   "Line: " ++ (Lexer.getLineNo token) ++ " " ++
+   "Colomn: " ++ (Lexer.getColEnd token)
+getTrailingInfo (Let _ _ _ last) = getTrailingInfo last
+getTrailingInfo (Lamda _ _ _ last) = getTrailingInfo last
+getTrailingInfo (Unary _ last) = getTrailingInfo last
+getTrailingInfo (Binary _ _ last) = getTrailingInfo last
+getTrailingInfo (Application _ last) = getTrailingInfo last
+getTrailingInfo (Complex _ _ token) = 
+   "Line: " ++ (Lexer.getLineNo token) ++ " " ++
+   "Colomn: " ++ (Lexer.getColEnd token)
+getTrailingInfo _ = "Unknown token"
 
 -- retreive file/lineno/colno information as a 
 -- nicely formatted string of a token
 getErrInfo :: Expression -> String
-getErrInfo (Id token) = Lexer.getErrHdr token
-getErrInfo (Nat token) = Lexer.getErrHdr token
+getErrInfo (Id token) = 
+   (Lexer.getErrHdr token) ++ " - " ++ (getTrailingInfo (Id token))
+getErrInfo (Nat token) = 
+   (Lexer.getErrHdr token) ++ " - " ++ (getTrailingInfo (Nat token))
 getErrInfo (Let token _ _ last) = 
-   (Lexer.getErrHdr token) ++ " - " ++ (getErrInfo last)
+   (Lexer.getErrHdr token) ++ " - " ++ (getTrailingInfo last)
 getErrInfo (Lamda token _ _ last) = 
-   (Lexer.getErrHdr token)  ++ " - " ++ (getErrInfo last)
+   (Lexer.getErrHdr token)  ++ " - " ++ (getTrailingInfo last)
 getErrInfo (Unary token last) = 
-   (Lexer.getErrHdr token) ++ " - " ++ (getErrInfo last)
+   (Lexer.getErrHdr token) ++ " - " ++ (getTrailingInfo last)
 getErrInfo (Binary _ exprl last) = 
-   (getErrInfo exprl) ++ " - " ++ (getErrInfo last)
+   (getLeadingInfo exprl) ++ " - " ++ (getTrailingInfo last)
 getErrInfo (Application expr last) = 
-   (getErrInfo expr) ++ " - " ++ (getErrInfo last)
-getErrInfo (Complex token _ last) = 
-   (Lexer.getErrHdr token) ++ " - " ++ (Lexer.getErrHdr last)
+   (getLeadingInfo expr) ++ " - " ++ (getTrailingInfo last)
+getErrInfo (Complex token m last) = 
+   (getErrInfo (Complex token m last)) ++ 
+   " - " ++ (getErrInfo (Complex token m last))
 getErrInfo _ = "Unknown location"
 
 -- trivial code printing functions

@@ -46,8 +46,8 @@ getColEnd (Tok _ (Lex lexeme _ colno _)) =
 -- provide a string containing the relavent info of this token
 getErrHdr :: Token -> String
 getErrHdr token = 
-   "Filename: " ++ fname ++ "\nLo:" ++ (show lineno) ++ 
-   " Co:" ++  (show colno)
+   "Line: " ++ (show lineno) ++ " " ++
+   "Column: " ++  (show colno)
    where (Lexer.Tok _ (Lex lexeme lineno colno fname)) = token
 
 -- simple token length accessor
