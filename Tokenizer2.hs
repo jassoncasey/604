@@ -48,20 +48,19 @@ tokenize filename line s = tokenize_impl filename line 1 s []
 -- the pull functions lift the syntax
 -- Move some of these off to detail
 prefixPredLength :: (Char -> Bool) -> String -> Int
-prefixPredLength _ [] = 0
-prefixPredLength  pred (x:xs)
-  | pred x = 1 + (prefixPredLength pred xs)
-  | otherwise = 0
+prefixPredLength p s = length (takeWhile p s)
 
 pullIdentifier :: String -> Int -> Int -> String -> [Token] -> [Token]
-pullIdentifier f l c s t =
+pullIdentifier f l c s t = let
+  p = (\x -> Char.isAlphaNum x || x == '_')
+  n = prefixPredLength p s
+  in
   tokenize_impl
     f
     l
     (c + n)
     (drop n s)
     (t ++ [Tok IdTok (Lex (take n s) l c f)])
-  where n = prefixPredLength Char.isAlphaNum s
 
 pullNatural :: String ->Int -> Int -> String -> [Token] -> [Token]
 pullNatural f l c s t =
@@ -111,7 +110,7 @@ tokenize_impl f l c s t
   | h == ' ' || h == '\n' || h == '\t' = tokenize_impl f l (c + 1) (tail s) t
   | isCharOp h = tokenize_impl f l (c+1) (tail s) (t ++ [Tok (getCharOp h) (Lex [h] l c f)])
   | isPrefixKeyword s = pullLet f l c s t
-  | Char.isAlpha h = pullIdentifier f l c s t
+  | (Char.isAlpha) h || (h ==) '_' = pullIdentifier f l c s t
   | Char.isDigit h = pullNatural f l c s t
   | otherwise = tokenize_impl f l (c+1) (tail s) (t ++ [Tok UnknownTok (Lex [h] l c f)])
   where h = head s
