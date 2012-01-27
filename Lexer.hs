@@ -1,4 +1,4 @@
-module Tokenizer2
+module Lexer
 ( tokenizeBuff
 , tokenize
 , TokId(..)

@@ -2,48 +2,50 @@ module PrettyPrint
 ( printTokenization
 ) where
 
-import Tokenizer
+import Lexer
 import ListAux
 
-printTokenInfo :: Token -> String
-printTokenInfo (Token t fn sym line col) =
+-- token symbol accessor
+tokenSymbol :: Token -> String
+tokenSymbol (Tok _ (Lex symbol _ _ _)) = symbol
+
+printTokenLexeme :: Token -> String
+printTokenLexeme (Tok t (Lex sym line col fn)) =
   (printTokenType t) ++ " '" ++ sym ++ "'" ++ " in file "
   ++ fn ++ " line " ++ (show line) ++ " column " ++ (show col)
 
-printTokenType :: TokenType -> String
+-- String identification of token type
+printTokenType :: TokId -> String
 printTokenType s =
   case s of
-    TokLit -> "Literal"
-    TokId -> "Identifier"
-    TokBinOp -> "Binary operator"
-    TokLambda -> "Operator"
-    TokDot -> "Operator"
-    TokLet -> "Operator"
-    TokDef -> "Operator"
-    TokSemi -> "Semi-colon"
-    TokParL -> "Left Parenthesis"
-    TokParR -> "Right Parenthesis"
+    LetTok -> "Operator"
+    EqTok -> "Operator"
+    LambdaTok -> "Operator"
+    DotTok -> "Operator"
+    NatTok -> "Literal"
+    IdTok -> "Identifier"
+    SemiTok -> "Semi-colon"
+    LParenTok -> "Left Parenthesis"
+    RParenTok -> "Right Parenthesis"
+    PlusTok -> "Operator"
+    MinusTok -> "Operator"
+    MultTok -> "Operator"
+    DivTok -> "Operator "
+    UnknownTok -> "Unknown token"
 
+-- Formatting detail, adds a space to the symbel held by token
 symNeedsSpace :: Token -> Token -> Bool
-symNeedsSpace t1 t2 = case t1 of
-  Token TokLet _ _ _ _ -> True
-  Token TokDef _ _ _ _ -> True
-  Token TokLambda _ _ _ _ -> False
-  Token TokSemi _ _ _ _ -> False
-  Token TokDot _ _ _ _ -> True
-  Token TokBinOp _ _ _ _ -> True
-  Token TokParL _ _ _ _ -> False
-  _ -> case t2 of
-    Token TokBinOp _ _ _ _ -> True
-    Token TokDef _ _ _ _ -> True
-    Token TokId _ _ _ _ -> True
-    Token TokLit _ _ _ _ -> True
-    _ -> False
-
-
+symNeedsSpace (Tok t1 (Lex _ _ _ _)) (Tok t2 (Lex _ _ _ _)) =
+  if elem t1 [LetTok,EqTok,DotTok,PlusTok,MinusTok,MultTok,DivTok]
+  then True
+  else if elem t1 [LambdaTok,SemiTok,LParenTok]
+  then False
+  else if elem t2 [EqTok,IdTok,NatTok,PlusTok,MinusTok,MultTok,DivTok]
+  then True
+  else False
 
 symAddSpace :: Token -> Token
-symAddSpace (Token a b sym c d) = (Token a b (sym ++ " ") c d)
+symAddSpace (Tok a (Lex sym b c d)) = (Tok a (Lex (sym ++ " ") b c d))
 
 spaceTknSym :: [Token] -> [Token]
 spaceTknSym [] = []
@@ -60,13 +62,13 @@ addPadMap padding ts = map (\x -> padding ++ x) ts
 -- Prints all of the tokens in a token list
 printTokenList :: [Token] -> String
 printTokenList ts =
-  foldr (++) "" (addPadMap "\n    " (map printTokenInfo ts))
+  foldr (++) "" (addPadMap "\n    " (map printTokenLexeme ts))
 
--- Prints a list of tokens as you would see them in source (String form)
+-- Print the list of tokens as it would appear in source code
 printTokenListAsStmt :: [Token] -> String
 printTokenListAsStmt ts =
   let
-    tkn_sym = map getTokenSymbol $ spaceTknSym ts
+    tkn_sym = map tokenSymbol $ spaceTknSym ts
   in foldr (++) ""  tkn_sym
 
 -- Tries to parse the code. If it can't, return false
@@ -80,12 +82,12 @@ printIfParsed tkns
       ++ (printTokenList tkns)
   | otherwise = "\n  " ++ "Parse error: Statement starting at line "
       ++ (show $ l $ head tkns) ++ "is not valid.\n"
-  where l = (\(Token _ _ _ line _) -> line)
+  where l = (\(Tok _ (Lex _ line _ _)) -> line)
 
--- Tokenizes the source and prints the results
+-- Basically show for parsing
 printTokenization :: String -> String -> String
 printTokenization fn src =
   let
-    tk_src = tokenizeSource fn src
+    tk_src = tokenizeBuff fn src
   in fn ++ (foldr (++) "" $
     map (\t -> "\n  " ++ (printTokenListAsStmt t) ++ (printTokenList t)) tk_src)
