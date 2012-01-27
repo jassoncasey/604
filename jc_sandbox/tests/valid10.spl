@@ -1,0 +1,5 @@
+let x = 1;
+let y = 10;
+let z = y;
+let foo = \x.\y.\z.x y z
+let foo = \x.\y.\z.x y z 
