@@ -9,4 +9,4 @@ $(TARGET): $(SRC)
 clean:
 	rm -f *.hi
 	rm -f *.o
-	rm $(TARGET)
+	rm -f $(TARGET)
