@@ -203,7 +203,8 @@ parseLet (lt:id:eq:tl) =
                -- just propagate the failure message
                Failure -> ( Failure, [], expr, msg )
       -- failure on id and/or assignment token
-      else ( Failure, [], ErrExpr, "Bad let\n" )
+      else ( Failure, [], ErrExpr, "Bad let, token mismatch\n" ++
+               (Lexer.getLexeme id) ++ (Lexer.getLexeme eq) ++ "\n" )
 -- handle the case where not enough tokens are present
 parseLet x = ( Failure, [], ErrExpr, "Bad let\n" )
 

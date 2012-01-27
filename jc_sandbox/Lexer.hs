@@ -61,7 +61,7 @@ trimPattern :: String -> String -> (String, String)
 trimPattern line pattern = trimPatternImp [] line pattern
 
 -- simple single character operators, keywords, separators
-singleChar = [ '(', ')', '.', ';', '\\', '+', '-', '*', '/']
+singleChar = [ '(', ')', '.', ';', '\\', '+', '-', '*', '/', '=']
 isSingle :: Char -> Bool
 isSingle x = elem x singleChar
 
