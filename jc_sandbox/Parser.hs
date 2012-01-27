@@ -194,7 +194,7 @@ parseApp (h:tl) =
             -- success for proper application
             then ( Success, remainder', Application primary app, "" )
             -- success for just a primary
-            else ( Success, remainder, Application primary ENothing, "" )
+            else ( Success, remainder, primary, "" )
       -- failure to parse
       else ( Failure, [], primary, msg )
    -- by greedy and assume its a proper application
