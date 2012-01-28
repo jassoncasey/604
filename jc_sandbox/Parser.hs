@@ -101,7 +101,7 @@ parseInnerCmp (h:tl) exprs hd =
    case getTokId h of
       Lexer.RParenTok -> ( Success, tl, Compound hd exprs h, "" )
       Lexer.SemiTok -> 
-         let ( status, remainder, expr, msg ) = parseExpr (h:tl)
+         let ( status, remainder, expr, msg ) = parseExpr tl
          in case status of
             Success -> parseInnerCmp remainder (exprs ++ [expr]) hd
             Failure -> ( Failure, [], ErrExpr, "" )
