@@ -25,7 +25,8 @@ data TokId = LetTok | EqTok | LamdaTok | DotTok | NatTok | IdTok | SemiTok
 data Lexeme = Lex String Int Int String deriving (Show,Eq)
 
 -- structure: type, lexeme
-data Token = Tok TokId Lexeme deriving (Show,Eq)
+data Token = Tok TokId Lexeme 
+            | Empty deriving (Show,Eq)
 
 -- extract the lexeme of a token
 getLexeme :: Token -> String

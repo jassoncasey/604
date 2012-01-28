@@ -113,12 +113,12 @@ getStrExpr (Complex _ exprl _ ) = ""
 getStrExpr _ = ""
 
 -- simple string generation for error handling
-mkErrStr :: String -> Expression -> String
-mkErrStr str expr = 
+mkErrStr :: String -> Lexer.Token -> String
+mkErrStr str token = 
    "----------------------\n" ++
    "Syntax Error: " ++ str ++ "\n" ++
-   (getErrInfo expr) ++ "\n" ++
-   "\t" ++ (getStrExpr expr) ++ "\n" ++
+   "Line: " ++ (Lexer.getLineNo token) ++ 
+   "Column: " ++ (Lexer.getColStart token) ++ "\n" ++
    "----------------------\n"
 
 --   case exprr of
@@ -139,13 +139,15 @@ getTokId (Lexer.Tok id _) = id
 parseId :: [Lexer.Token] -> (Status, [Lexer.Token], Expression, String )
 parseId (h:tl) = (Success, tl, Id h, "")
 -- handle the case where not enough tokens are present
-parseId [] = (Failure, [], ErrExpr, "Bad id parse\n")
+parseId [] = (Failure, [], ErrExpr,
+               mkErrStr "Id requires more tokens" Lexer.Empty)
 
 -- parse a NatTok into a Nat
 parseNat :: [Lexer.Token] -> (Status, [Lexer.Token], Expression, String )
 parseNat (h:tl) = (Success, tl, Nat h, "")
 -- handle the case where not enough tokens are present
-parseNat [] = (Failure, [], ErrExpr, "Bad nat parse\n")
+parseNat [] = (Failure, [], ErrExpr, 
+               mkErrStr "Nat requires more tokens" Lexer.Empty )
 
 -- attempt to parse a (LParen:tl) into a Complex
 --parseComplex :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
@@ -182,9 +184,10 @@ parsePrimary (Lexer.Tok id x:tl) =
 --            in if Lexer.isToken (head remainder) Lexer.RParen
 --                  then ( drop 1 remainder, Complex id exprs (head remainder))
 --                  else ( remainder, ErrExpr, "" )
-      _ -> ( Failure, [], ErrExpr, "Unknown primary\n" )
+      _ -> ( Failure, [], ErrExpr, mkErrStr "Unknown primary" (Lexer.Tok id x))
 -- handle the case where not enough tokens are present
-parsePrimary [] = ( Failure, [], ErrExpr, "Bad primary\n" )
+parsePrimary [] = ( Failure, [], ErrExpr, 
+                     mkErrStr "Primary requires more tokens" Lexer.Empty )
 
 -- parse an application
 parseApp :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
@@ -201,7 +204,8 @@ parseApp (h:tl) =
    where ( status, remainder, primary, msg ) = parsePrimary (h:tl)
          ( status', remainder', app, _ ) = parseApp remainder
 -- handle the case where not enough tokens are present
-parseApp [] = ( Failure, [], ErrExpr, "Bad app\n" )
+parseApp [] = ( Failure, [], ErrExpr, 
+               mkErrStr "Application requires more tokens" Lexer.Empty )
 
 -- parse a factor
 parseFactor :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
@@ -226,7 +230,8 @@ parseFactor (h:tl) =
       Failure -> ( Failure, [], app, msg )
    where ( status, remainder, app, msg)  = parseApp (h:tl)
 -- handle the case where not enough tokens are present
-parseFactor [] = ( Failure, [], ErrExpr, "Bad factor\n" )
+parseFactor [] = ( Failure, [], ErrExpr, 
+                  mkErrStr "Factor requires more tokens" Lexer.Empty )
 
 -- parse a term
 parseTerm :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
@@ -252,7 +257,8 @@ parseTerm (h:tl) =
       Failure -> ( Failure, [], factor, msg )
    where ( status, remainder, factor, msg)  = parseFactor (h:tl)
 -- handle the case where not enough tokens are present
-parseTerm [] = ( Failure, [], ErrExpr, "Bad term\n" )
+parseTerm [] = ( Failure, [], ErrExpr, 
+                  mkErrStr "Term requires more tokens" Lexer.Empty )
 
 -- attempt to parse a (LetTok:tl) into a Let
 parseLet :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
@@ -264,12 +270,13 @@ parseLet (lt:id:eq:tl) =
             in case status of
                Success -> ( Success, remainder, Let lt (Id id) eq expr, msg )
                -- just propagate the failure message
-               Failure -> ( Failure, [], expr, msg )
+               Failure -> ( Failure, [], expr, msg ++ 
+                              mkErrStr "Let contains invalid expression" lt )
       -- failure on id and/or assignment token
-      else ( Failure, [], ErrExpr, "Bad let, token mismatch\n" ++
-               (Lexer.getLexeme id) ++ (Lexer.getLexeme eq) ++ "\n" )
+      else ( Failure, [], ErrExpr, mkErrStr "Let has invalid binding" lt )
 -- handle the case where not enough tokens are present
-parseLet x = ( Failure, [], ErrExpr, "Bad let\n" )
+parseLet x = ( Failure, [], ErrExpr, 
+               mkErrStr "Let requires more tokens" Lexer.Empty )
 
 -- attempt to parse a (LamdaTok:IdTok:DotTok:tl) into a Lamda
 parseLamda :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
@@ -282,11 +289,14 @@ parseLamda (lm:id:dt:tl) =
                -- complete success
                Success -> ( Success, remainder, Lamda lm (Id id) dt expr, msg )
                -- just propagate the failure message
-               Failure -> ( Failure, [], expr, msg )
+               Failure -> ( Failure, [], expr, msg ++
+                            mkErrStr "Lamda contains invalid expression" lm )
       -- failure on id and/or dot token
-      else ( Failure, [], ErrExpr, "Bad lamda\n" )
+      else ( Failure, [], ErrExpr, 
+         mkErrStr "Lamda incorrectly specified" lm )
 -- handle the case where not enough tokens are present
-parseLamda x = ( Failure, [], ErrExpr, "Bad lamda\n" )
+parseLamda x = ( Failure, [], ErrExpr, 
+                  mkErrStr "Lamda requires more tokens" Lexer.Empty )
 
 -- break out the recognizable expression categories
 parseExpr :: [Lexer.Token] -> (Status, [Lexer.Token], Expression, String)
@@ -298,7 +308,8 @@ parseExpr (Lexer.Tok id x:tl) =
       LamdaTok    -> parseLamda tokens
       _           -> parseTerm tokens
 -- return an error if someone tries to parse on a empty list
-parseExpr [] = ( Failure, [], ErrExpr, "No more tokens" )
+parseExpr [] = ( Failure, [], ErrExpr, 
+                  mkErrStr "Expression requires more tokens" Lexer.Empty )
 
 -- parse a single statement
 parseStmt :: [Lexer.Token] -> ( Status, [Lexer.Token], Statement, String )
@@ -310,9 +321,10 @@ parseStmt (h:tl) =
                   then ( Success, drop 1 remainder, Stmt expr, "")
                   -- failed statment parse
                   else ( Failure, [], ErrStmt,
-                     mkErrStr "statement missing semicolon" expr )
+                     mkErrStr "Statement missing semicolon" expr )
       -- just propagate if the error is from below
-      Failure -> ( Failure, [], ErrStmt, msg )
+      Failure -> ( Failure, [], ErrStmt, msg ++
+                     mkErrStr "Statement contains invalid expression" h )
    where ( status, remainder, expr, msg ) = parseExpr (h:tl)
 
 -- simple statement collector
