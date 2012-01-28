@@ -117,7 +117,7 @@ mkErrStr :: String -> Lexer.Token -> String
 mkErrStr str token = 
    "----------------------\n" ++
    "Syntax Error: " ++ str ++ "\n" ++
-   "Line: " ++ (Lexer.getLineNo token) ++ 
+   "Line: " ++ (Lexer.getLineNo token) ++ " " ++
    "Column: " ++ (Lexer.getColStart token) ++ "\n" ++
    "----------------------\n"
 
@@ -270,8 +270,7 @@ parseLet (lt:id:eq:tl) =
             in case status of
                Success -> ( Success, remainder, Let lt (Id id) eq expr, msg )
                -- just propagate the failure message
-               Failure -> ( Failure, [], expr, msg ++ 
-                              mkErrStr "Let contains invalid expression" lt )
+               Failure -> ( Failure, [], expr, msg ) 
       -- failure on id and/or assignment token
       else ( Failure, [], ErrExpr, mkErrStr "Let has invalid binding" lt )
 -- handle the case where not enough tokens are present
@@ -289,8 +288,7 @@ parseLamda (lm:id:dt:tl) =
                -- complete success
                Success -> ( Success, remainder, Lamda lm (Id id) dt expr, msg )
                -- just propagate the failure message
-               Failure -> ( Failure, [], expr, msg ++
-                            mkErrStr "Lamda contains invalid expression" lm )
+               Failure -> ( Failure, [], expr, msg )
       -- failure on id and/or dot token
       else ( Failure, [], ErrExpr, 
          mkErrStr "Lamda incorrectly specified" lm )
@@ -321,10 +319,9 @@ parseStmt (h:tl) =
                   then ( Success, drop 1 remainder, Stmt expr, "")
                   -- failed statment parse
                   else ( Failure, [], ErrStmt,
-                     mkErrStr "Statement missing semicolon" expr )
+                     mkErrStr "Statement missing semicolon" h )
       -- just propagate if the error is from below
-      Failure -> ( Failure, [], ErrStmt, msg ++
-                     mkErrStr "Statement contains invalid expression" h )
+      Failure -> ( Failure, [], ErrStmt, msg )
    where ( status, remainder, expr, msg ) = parseExpr (h:tl)
 
 -- simple statement collector
