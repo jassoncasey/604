@@ -8,10 +8,6 @@ module Parser (
 
 import Lexer as Lexer
 
-data MExpr = JExpr Expression
-           | JNothing
-           deriving (Show)
-
 -- Simple Programming Language (SPL) parse representation
 data Expression = Id Lexer.Token
                   | Nat Lexer.Token
@@ -20,8 +16,7 @@ data Expression = Id Lexer.Token
                   | Unary Lexer.Token Expression
                   | Binary Lexer.Token Expression Expression
                   | Application Expression Expression
-                  | Complex Lexer.Token [Expression] Lexer.Token
-                  | ENothing 
+                  | Compound Lexer.Token [Expression] Lexer.Token
                   | ErrExpr
                   deriving (Show,Eq)
 data Statement = Stmt Expression 
@@ -32,6 +27,13 @@ data Program   = Prog [Statement]
                deriving (Show,Eq)
 
 data Status = Success | Failure deriving (Show,Eq)
+
+getSemiStr (h:tl) = 
+   if (length result) > 0
+      then (getStrExpr h) ++ ";" ++ result
+      else getStrExpr h
+   where result = getSemiStr tl
+getSemiStr [] = ""
 
 -- trivial code printing functions
 getStrExpr :: Expression -> String
@@ -48,8 +50,8 @@ getStrExpr (Binary op exprl exprr) =
    " " ++ (getStrExpr exprr)
 getStrExpr (Application exprl exprr) =
    (getStrExpr exprl) ++ " " ++ (getStrExpr exprr) 
-getStrExpr (Complex _ exprl _ ) = ""
-getStrExpr _ = ""
+getStrExpr (Compound _ exprs _ ) = "(" ++ (getSemiStr exprs) ++ ")"
+getStrExpr _ = "Unknown expression"
 
 getStrStmt :: Statement -> String
 getStrStmt (Stmt expr) = (getStrExpr expr) ++ ";"
@@ -69,11 +71,6 @@ mkErrStr str token =
    "Line: " ++ (Lexer.getLineNo token) ++ " " ++
    "Column: " ++ (Lexer.getColStart token) ++ "\n" ++
    "----------------------\n"
-
---   case exprr of
---     JExpr expr -> "( " ++ (getStrExpr exprl) ++ "; " 
---         ++ getStrExpr expr ++ " )"
---      JNothing -> "( " ++ (getStrExpr exprl) ++ " )"
 
 -- peak at the head and validate its token id
 isHeadTok :: [Lexer.Token] -> Lexer.TokId -> Bool
@@ -98,28 +95,32 @@ parseNat (h:tl) = (Success, tl, Nat h, "")
 parseNat [] = (Failure, [], ErrExpr, 
                mkErrStr "Nat requires more tokens" Lexer.Empty )
 
--- attempt to parse a (LParen:tl) into a Complex
---parseComplex :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
---parseComplex (h:tl) =
---   let ( remainder, expression, msg ) = parseExpr tl
---   in case (head remainder) of 
---      Lexer.Tok Lexer.SemiTok _ -> 
---         let (remainder', exprs, msg) = parseComplex (drop 1 remainder)
---         in ( remainder', (Complex expression (JExpr exprs)), msg )
---      Lexer.Tok Lexer.RParenTok _ -> ( remainder, (Complex expression JNothing), msg )
---      _ -> ( remainder, ErrExpr, "Invalid Complex expression\n" )
+-- parse the inside of a compound statment
+parseInnerCmp :: [Lexer.Token] -> [Expression] -> Lexer.Token -> ( Status, [Lexer.Token], Expression, String )
+parseInnerCmp (h:tl) exprs hd =
+   case getTokId h of
+      Lexer.RParenTok -> ( Success, tl, Compound hd exprs h, "" )
+      Lexer.SemiTok -> 
+         let ( status, remainder, expr, msg ) = parseExpr (h:tl)
+         in case status of
+            Success -> parseInnerCmp remainder (exprs ++ [expr]) hd
+            Failure -> ( Failure, [], ErrExpr, "" )
+      _ -> ( Failure, [], ErrExpr, "" )
+parseInnerCmp [] _ _ = ( Failure, [], ErrExpr,
+                     mkErrStr "Inner compound requires more tokens" Lexer.Empty)
 
---parseCompound :: [Lexer.Token] -> ( [Lexer.Token], Expression, String )
---parseCompound tokens =
---   if (Lexer.isToken h Lexer.LParen) || (Lexer.isToken h Lexer.SemiTok)
---      then let ( remainder, expr, msg ) = parseExpr tl
---              ( Lexer.Tok id _ ) = head remainder
---            in case id of
---               Lexer.RParenTok -> ( drop 1 remainder, Compound 
---               Lexer.SemiTok -> 
---               _ -> ( remainder, ErrExpr, "" )
---      else ( remainder, ErrExpr, "" )
---   where (h:tl) = tokens
+-- parse the outer portion of the compound expression
+parseCompound :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
+parseCompound (h:tl) =
+   case status of
+      Success -> parseInnerCmp remainder [expr] h
+      -- failed to parse expression
+      Failure -> ( Failure, [], ErrExpr, msg )
+   -- don't worry about LParen
+   where ( status, remainder, expr, msg ) = parseExpr tl
+-- handle the case where not enough tokens are present
+parseCompound [] = ( Failure, [], ErrExpr, 
+                     mkErrStr "Compound requires more tokens" Lexer.Empty)
 
 -- attempt to parse the primary terms and non-term
 parsePrimary :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression, String )
@@ -128,11 +129,7 @@ parsePrimary (Lexer.Tok id x:tl) =
    in  case id of
       Lexer.IdTok -> parseId tokens
       Lexer.NatTok -> parseNat tokens
---      Lexer.LParenTok -> parseCompound tokens
---         let (remainder, exprs, msg) = parseComplex (drop 1 tokens)
---            in if Lexer.isToken (head remainder) Lexer.RParen
---                  then ( drop 1 remainder, Complex id exprs (head remainder))
---                  else ( remainder, ErrExpr, "" )
+      Lexer.LParenTok -> parseCompound tokens
       _ -> ( Failure, [], ErrExpr, mkErrStr "Unknown primary" (Lexer.Tok id x))
 -- handle the case where not enough tokens are present
 parsePrimary [] = ( Failure, [], ErrExpr, 
