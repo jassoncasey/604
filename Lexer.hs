@@ -10,6 +10,7 @@ module Lexer
 , isSemiTok
 , isToken
 , getErrHdr
+, unwrapFoldToken
 ) where
 
 import Data.Char as Char
@@ -21,24 +22,18 @@ import ListAux
 -- Types of tokens
 data TokId = LetTok | EqTok | LambdaTok | DotTok | NatTok | IdTok | SemiTok
            | LParenTok | RParenTok | PlusTok | MinusTok | MultTok | DivTok
-           | FoldTok
+           | FoldTok [Token]
            | UnknownTok deriving (Show,Eq)
-
---Operator order
-isTokenBinOp :: TokId -> Bool
-isTokenBinOp t = elem t [PlusTok, MinusTok, MultTok, DivTok]
-opOrder :: TokId -> Int
-opOrder MultTok = 50
-opOrder DivTok = 50
-opOrder PlusTok = 30
-opOrder MinusTok = 30
-opOrder _ = 0
 
 -- structure: string, line #, column #, filename
 data Lexeme = Lex String Int Int String deriving (Show,Eq)
 
 -- structure: type, lexeme
 data Token = Tok TokId Lexeme deriving (Show,Eq)
+
+-- Extract the contents of a fold token
+unwrapFoldToken :: Token -> [Token]
+unwrapFoldToken (Tok (FoldTok innerTokens) _) = innerTokens
 
 -- extract the lexeme of a token
 getLexeme :: Token -> String
