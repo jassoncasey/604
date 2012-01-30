@@ -1,17 +1,20 @@
-import System( getArgs)
-import Control.Monad
+import System( getArgs )
+import Control.Monad( forM )
 import System.IO
-import Lexer
-import PrettyPrint
-import CmdOpts
-import Parser
 
+import CmdOpts
+
+
+
+{- Project 2:
+   In this project, the program shall print the AST of each valid program and
+   its valuation.
+-}
 main = do
   args <- getArgs
   let (argsAreGood, errorMessage) = verifyArgs args
   if argsAreGood
     then do
-      sources <- forM args readFile
-      mapM putStrLn $ map (\(x,y) -> printTokenization x y) $ zip args sources
-      return ()
-    else putStr errorMessage
+      mapM putStrL $ args
+    else
+      putStr errorMessage
