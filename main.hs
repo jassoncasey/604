@@ -2,6 +2,7 @@ import System( getArgs )
 import Control.Monad( forM )
 import System.IO
 
+import Lexer
 import CmdOpts
 
 
@@ -15,6 +16,7 @@ main = do
   let (argsAreGood, errorMessage) = verifyArgs args
   if argsAreGood
     then do
-      mapM putStrL $ args
+      mapM putStrLn $ args
+      return ()
     else
       putStr errorMessage

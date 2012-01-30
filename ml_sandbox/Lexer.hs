@@ -91,10 +91,10 @@ pullNatural f l c s t =
   tokenize_impl
     f
     l
-    (c + n)
-    (drop n s)
-    (t ++ [Tok NatTok (Lex (take n s) l c f)])
-  where n = prefixPredLength Char.isDigit s
+    (c + (length sym))
+    rest
+    (t ++ [Tok NatTok (Lex sym l c f)])
+  where (sym, rest) = break Char.isDigit s
 
 pullLet :: String -> Int -> Int -> String -> [Token] -> [Token]
 pullLet f l c s t =
