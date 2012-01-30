@@ -1,0 +1,7 @@
+1. Update error handling in jc_sandbox/Parser.hs
+2. Update Lexer.hs to integrate with jc_sandbox/Parser.hs
+3. Build Lexer.hs unit_tester with positive/negative inputs
+4. Integrate jc_sandbox/Parser.hs with Lexer.hs
+5. Build Parser.hs unit_tester with positive/negative inputs
+6. Wrap existing unit_testers into a test harness of some form
+7. Start on language dynamics
