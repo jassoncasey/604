@@ -40,6 +40,7 @@ a few more hours to resolve.
 
 Files
 -----
-Lexer.hs - SPL scanner
-Parser.hs - SPL parser
+Lexer.hs - SPL scanner/tokenizer
+Ast.hs   - SPL abstract syntax tree
+Parser.hs - SPL parser, parses a token list into a Ast
 Driver.hs - SPL compiler entry point
