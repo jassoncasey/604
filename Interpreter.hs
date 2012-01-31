@@ -7,6 +7,9 @@ module Interpreter
 import System.IO
 import Data.List( isPrefixOf )
 
+import Lexer
+import PrettyPrint
+
 
 -- Constant Strings --
 promptStr :: String
@@ -48,6 +51,8 @@ untilQuit = do
         then putStrLn "Leaving SPLi."
         else if isPrefixOf "help" cmd
           then putStr promptHelp >> untilQuit
-          else putStr ("Unknown command: " ++ cmd ++ "\n") >> untilQuit
+          else if isPrefixOf "lex" cmd
+            then putStr (printTokenList $ tokenizeBuff "-" $ drop 3 cmd) >> untilQuit
+            else putStr ("Unknown command: " ++ cmd ++ "\n") >> untilQuit
     else putStrLn input >> untilQuit
   
