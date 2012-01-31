@@ -57,7 +57,7 @@ parseStmt :: [Lexer.Token] -> ( [Lexer.Token], Statement )
 parseStmt (h:tl) =
    if isHeadToken remainder Lexer.SemiTok
       -- successful statement parse
-      then ( drop 1 remainder, Stmt expr)
+      then ( drop 1 remainder, Stmt expr (head remainder))
       -- failed statment parse
       else ( [], ErrStmt "Statement missing semicolon" )
   where ( remainder, expr ) = parseExpr (h:tl)
@@ -216,11 +216,11 @@ parseCompound (h:tl) =
 parseCompound [] = ( [], ErrExpr "Compound requires more tokens" )
 
 -- parse the inside of a compound statment
-parseInnerCmp :: [Lexer.Token] -> [Expression] -> Lexer.Token -> 
+parseInnerCmp :: [Lexer.Token] -> [(Expression,Token)] -> Lexer.Token -> 
                   ( [Lexer.Token], Expression )
 parseInnerCmp (Lexer.Tok id h:tl) exprs hd =
-   case h of
-      Lexer.RParenTok -> ( tl, Compound hd exprs h )
+   case id of
+      Lexer.RParenTok -> ( tl, Compound hd exprs (Lexer.Tok id h) )
       Lexer.SemiTok -> 
          let ( remainder, expr ) = parseExpr tl
             in if isHeadToken remainder SemiTok 
