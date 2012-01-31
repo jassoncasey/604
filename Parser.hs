@@ -1,14 +1,11 @@
 module Parser (
    parse,
-   getStrProg,
 ) where
 
 -- Import the intput type
-import Lexer as Lexer
+import Lexer
 -- Import the output type
-import Ast as Ast
-
-data Status = Success | Failure deriving (Show,Eq)
+import Ast
 
 {-- The parser returns a programm, that program may
  -  be valid or invalid depending on proper construction.
@@ -58,11 +55,11 @@ parseStmts [] = []
 -- parse a single statment
 parseStmt :: [Lexer.Token] -> ( [Lexer.Token], Statement )
 parseStmt (h:tl) =
-   if isHeadTok remainder Lexer.SemiTok
+   if isHeadToken remainder Lexer.SemiTok
       -- successful statement parse
       then ( drop 1 remainder, Stmt expr)
       -- failed statment parse
-      else ( [], ErrStmt (mkErrStr "Statement missing semicolon" h) )
+      else ( [], ErrStmt "Statement missing semicolon" )
   where ( remainder, expr ) = parseExpr (h:tl)
 
 {--Grammar--
@@ -78,23 +75,23 @@ parseExpr (Lexer.Tok id x:tl) =
    -- extract the type and pass the parse along
    in case id of
       LetTok      -> parseLet tokens
-      LamdaTok    -> parseLamda tokens
+      LambdaTok    -> parseLambda tokens
       _           -> parseTerm tokens
 -- return an error if someone tries to parse on a empty list
 parseExpr [] = ( [], ErrExpr "Expression requires more tokens" ) 
 
--- attempt to parse a (LamdaTok:IdTok:DotTok:tl) into a Lamda
-parseLamda :: [Lexer.Token] -> ( [Lexer.Token], Expression )
-parseLamda (lm:id:dt:tl) =
+-- attempt to parse a (LambdaTok:IdTok:DotTok:tl) into a Lambda
+parseLambda :: [Lexer.Token] -> ( [Lexer.Token], Expression )
+parseLambda (lm:id:dt:tl) =
    let tokens = (lm:id:dt:tl)
    in if ( Lexer.isToken id IdTok ) && ( Lexer.isToken dt DotTok )
       -- partial success
       then let ( remainder, expr ) = parseExpr (drop 3 tokens)
-            in ( remainder, Lamda lm (Id id) dt expr )
+            in ( remainder, Lambda lm (Id id) dt expr )
       -- failure on id and/or dot token
-      else ( [], ErrExpr "Lamda incorrectly specified" )
+      else ( [], ErrExpr "Lambda incorrectly specified" )
 -- handle the case where not enough tokens are present
-parseLamda x = ( [], ErrExpr "Lamda requires more tokens" )
+parseLambda x = ( [], ErrExpr "Lambda requires more tokens" )
 
 -- attempt to parse a (LetTok:tl) into a Let
 parseLet :: [Lexer.Token] -> ( [Lexer.Token], Expression )
@@ -119,11 +116,10 @@ parseLet x = ( [], ErrExpr "Let requires more tokens" )
 parseTerm :: [Lexer.Token] -> ( [Lexer.Token], Expression )
 parseTerm (h:tl) = 
    -- validat the next token is a term operator
-   if ( isHeadTok remainder Lexer.PlusTok ) ||
-         ( isHeadTok remainder Lexer.MinusTok )
+   if ( isHeadToken remainder Lexer.PlusTok ) ||
+         ( isHeadToken remainder Lexer.MinusTok )
       -- partial success
-      then let ( remainder', term ) = 
-               parseTerm (drop 1 remainder)
+      then let ( remainder', term ) = parseTerm (drop 1 remainder)
             in ( remainder', ( Binary (head remainder) factor term) )
       -- failure on operator token
       else ( remainder, factor )
@@ -141,8 +137,8 @@ parseTerm [] = ( [], ErrExpr "Term requires more tokens" )
 parseFactor :: [Lexer.Token] -> ( [Lexer.Token], Expression )
 parseFactor (h:tl) =
    -- validat the next token is a factor operator
-   if ( isHeadTok remainder Lexer.MultTok ) ||
-         ( isHeadTok remainder Lexer.DivTok )
+   if ( isHeadToken remainder Lexer.MultTok ) ||
+         ( isHeadToken remainder Lexer.DivTok )
       -- partial success  
       then let ( remainder', factor ) = parseFactor (drop 1 remainder)
               in ( remainder', Binary (head remainder) app factor )
@@ -198,7 +194,7 @@ parseId (h:tl) = ( tl, Id h )
 parseId [] = ( [], ErrExpr "Id requires more tokens" )
 
 -- parse a NatTok into a Nat
-parseNat :: [Lexer.Token] -> ( Status, [Lexer.Token], Expression )
+parseNat :: [Lexer.Token] -> ( [Lexer.Token], Expression )
 parseNat (h:tl) = ( tl, Nat h )
 -- handle the case where not enough tokens are present
 parseNat [] = ( [], ErrExpr "Nat requires more tokens" )
@@ -211,7 +207,9 @@ parseNat [] = ( [], ErrExpr "Nat requires more tokens" )
 -- parse the outer portion of the compound expression
 parseCompound :: [Lexer.Token] -> ( [Lexer.Token], Expression )
 parseCompound (h:tl) =
-      parseInnerCmp remainder [expr] h
+   if isHeadToken tl SemiTok
+      then parseInnerCmp remainder [(expr,head remainder)] h
+      else parseInnerCmp remainder [(expr,EmptyTok)] h
    -- don't worry about LParen
    where ( remainder, expr ) = parseExpr tl
 -- handle the case where not enough tokens are present
@@ -220,12 +218,14 @@ parseCompound [] = ( [], ErrExpr "Compound requires more tokens" )
 -- parse the inside of a compound statment
 parseInnerCmp :: [Lexer.Token] -> [Expression] -> Lexer.Token -> 
                   ( [Lexer.Token], Expression )
-parseInnerCmp (Lexer.Tok id x:tl) exprs hd =
-   case x of
+parseInnerCmp (Lexer.Tok id h:tl) exprs hd =
+   case h of
       Lexer.RParenTok -> ( tl, Compound hd exprs h )
       Lexer.SemiTok -> 
          let ( remainder, expr ) = parseExpr tl
-            in parseInnerCmp remainder (exprs ++ [expr]) hd
-      _ -> ( [], ErrExpr "" )
+            in if isHeadToken remainder SemiTok 
+               then parseInnerCmp remainder (exprs ++ [(expr,head remainder)]) hd
+               else parseInnerCmp remainder (exprs ++ [(expr,EmptyTok)]) hd
+      _ -> ( [], ErrExpr "Unknown compound terminator" )
 parseInnerCmp [] _ _ = ( [], ErrExpr "Inner compound requires more tokens" )
 

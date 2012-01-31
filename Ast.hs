@@ -1,7 +1,7 @@
 module Ast (
-   Expression,
-   Statement,
-   Program
+   Expression(..),
+   Statement(..),
+   Program(..)
 ) where
 
 -- Import the lexer and make 
@@ -70,7 +70,7 @@ data Expression =
    Id Token
    | Nat Token
    | Let Token Expression Token Expression
-   | Lamda Token Expression Token Expression
+   | Lambda Token Expression Token Expression
    | Unary Token Expression
    | Binary Token Expression Expression
    | Application Expression Expression

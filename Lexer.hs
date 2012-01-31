@@ -4,6 +4,8 @@ module Lexer
 , TokId(..)
 , Lexeme(..)
 , Token(..)
+, isToken
+, isHeadToken
 ) where
 
 import Data.Char as Char
@@ -19,9 +21,18 @@ data TokId = LetTok | EqTok | LambdaTok | DotTok | NatTok | IdTok | SemiTok
 data Lexeme = Lex String Int Int String deriving (Show,Eq)
 
 -- structure: type, lexeme
-data Token = Tok TokId Lexeme deriving (Show,Eq)
+data Token = Tok TokId Lexeme
+            | EmptyTok
+            deriving (Show,Eq)
 
+-- simple token id predicates
+isToken :: Token -> TokId -> Bool
+isToken (Tok token _ ) match = token == match
 
+-- peak at the head and validate its token id
+isHeadToken :: [Lexer.Token] -> Lexer.TokId -> Bool
+isHeadToken (Lexer.Tok value _:tl) id = value == id
+isHeadToken tokens id = False
 
 {- Get functions
   Functions to retrieve the contents of Tokens
