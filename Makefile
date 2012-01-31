@@ -1,12 +1,21 @@
 COMPILER=ghc
 FLAGS=--make
-TARGET=spl-parser
+MAIN=spl-parser
+INTERPRETER=spli
 SRC=main.hs
+SRCI=maini.hs
 
-$(TARGET): $(SRC)
+$(MAIN): $(SRC)
 	$(COMPILER) $(FLAGS) -o $@ $(SRC)
+
+all: $(MAIN) $(INTERPRETER)
+
+$(INTERPRETER): $(SRCI)
+	$(COMPILER) $(FLAGS) -o $@ $(SRCI)
+
 
 clean:
 	rm -f *.hi
 	rm -f *.o
-	rm -f $(TARGET)
+	rm -f $(MAIN)
+	rm -f $(INTERPRETER)

@@ -33,3 +33,4 @@ verifyArgs args
   | not (all isSplFile args) = (False, "spl-parser error: One or more files missing .spl file extension.\n" ++ printUsage)
   -- | not (all splFileExists args) = (False, "One of the specified files does not exist.")
   | otherwise = (True, "")
+

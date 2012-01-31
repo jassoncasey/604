@@ -30,7 +30,7 @@ getFile (Tok _ (Lex _ _ _ filename)) = filename
 getLineNo :: Token -> String
 getLineNo (Tok _ (Lex _ line _ _)) = show line
 getColStart :: Token -> String
-getFile (Tok _ (Lex _ _ col _)) = show col
+getColStart (Tok _ (Lex _ _ col _)) = show col
 getColEnd :: Token -> String
 getColEnd (Tok _ (Lex sym _ col _)) = show $ col + (length sym) - 1
 
