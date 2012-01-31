@@ -18,10 +18,11 @@ promptIntro :: String
 promptIntro = "spli, the spl interpreter. For options, enter ':help'.\n"
 promptHelp :: String
 promptHelp = "Command options-\n"
-  ++ "  :quit   Exit the interpreter.\n"
-  ++ "  :help   Display command information.\n"
-  ++ "  :lex    Displays token information.\n"
-  ++ "  :parse  If parse is successful, 'valid' is displayed. Otherwise display the error."
+  ++ "  :quit     Exit the interpreter.\n"
+  ++ "  :help     Display command information.\n\n"
+  ++ "  :lex s    Displays token information from lexed string s.\n"
+  ++ "  :parse s  If parse is successful, 'valid' is displayed. Otherwise display\n"
+  ++ "            the error.\n"
 
 
 
@@ -35,6 +36,7 @@ readPrompt :: IO String
 readPrompt = flushStr promptStr >> getLine
 
 isCmd :: String -> Bool
+isCmd "" = False
 isCmd s = ':' == (head $ dropWhile (==' ') s)
 
 getCmd :: String -> (String,String)
