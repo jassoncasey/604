@@ -76,7 +76,7 @@ tokenize_impl f l c s t
   | isPrefixKeyword s = pullLet f l c s t
   | (Char.isAlpha) h || (h ==) '_' = pullIdentifier f l c s t
   | Char.isDigit h = pullNatural f l c s t
-  | otherwise = [Tok (UnknownTok "Unrecognized symbol at") (Lex [h] l c f)]
+  | otherwise = [ErrorTok ("Unrecognized symbol " ++ [h] ++ " in file " ++ f ++ " line " ++ (show l) ++ " column " ++ (show c) ++".")]
   where h = head s
 
 isPrefixKeyword :: String -> Bool
@@ -101,7 +101,7 @@ pullIdentifier f l c s t = let
 
 pullNatural :: String ->Int -> Int -> String -> [Token] -> [Token]
 pullNatural f l c s t
-  | trailingChar (drop n s) = [ErrorTok "Characters may not precede ]
+  | trailingChar (drop n s) = [ErrorTok "Characters may not precede a sequence of numerals."]
   | otherwise = tokenize_impl f l (c + n) (drop n s)
       (t ++ [Tok NatTok (Lex (take n s) l c f)])
   where n = prefixPredLength Char.isDigit s
