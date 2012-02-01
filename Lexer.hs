@@ -101,9 +101,7 @@ pullIdentifier f l c s t = let
 
 pullNatural :: String ->Int -> Int -> String -> [Token] -> [Token]
 pullNatural f l c s t
-  | trailingChar (drop n s) = [Tok
-    (UnknownTok "Number may not have trailing characters.")
-    (Lex (drop n $take (n+1) s) l c f)]
+  | trailingChar (drop n s) = [ErrorTok "Characters may not precede ]
   | otherwise = tokenize_impl f l (c + n) (drop n s)
       (t ++ [Tok NatTok (Lex (take n s) l c f)])
   where n = prefixPredLength Char.isDigit s
