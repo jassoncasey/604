@@ -1,4 +1,5 @@
 import Lexer
+import System
 
 data Status = Success | Failure
 
@@ -20,11 +21,14 @@ getTestStr name result msg =
    where boilerplate = " test: " ++ name ++ "\n" ++ msg
 
 -- runTests :: [( test name, list of tests, expected token id )] -> pass|fail
-runTests :: [(String, [String], TokId)] -> String
+runTests :: [(String, [String], TokId)] -> ( Status, String )
 runTests ((name, tests, symbol):tl) =
-   (getTestStr name status msg) ++ (runTests tl)
+   let ( status', msg' ) = (runTests tl)
+   in case status of
+         Success -> ( status', (getTestStr name status msg) ++ msg' )
+         Failure -> ( Failure, (getTestStr name status msg) ++ msg' )
    where ( status, msg ) = testTokenCls tests symbol
-runTests [] = "Finished ..."
+runTests [] = ( Success, "Finished ..." )
 
 -- To extend an existing class of tests
 -- simpley add another valid input string
@@ -39,5 +43,11 @@ id_tests = ["_", "0" ]
 tests = [("digit", digit_tests, NatTok),
          ("identifier", id_tests, IdTok)]
 
+terminate Success = exitWith ExitSuccess
+terminate Failure = exitFailure
+
 main :: IO ()
-main = putStrLn ("Starting test runner...\n" ++ (runTests tests))
+main = do
+   putStrLn ("Starting test runner...\n" ++ msg)
+   terminate status
+   where ( status, msg ) = runTests tests
