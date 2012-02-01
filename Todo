@@ -2,3 +2,5 @@
 2. Build Parser.hs unit_tester with positive/negative inputs
 3. Wrap existing unit_testers into a test harness of some form
 4. Start on language dynamics
+5. Fix makefile
+6. integrate compile|interpret
