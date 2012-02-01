@@ -77,13 +77,3 @@ data Expression =
    | Compound Token [(Expression, Token)] Token
    | ErrExpr String
    deriving (Show,Eq)
-
-visit (Prog stmts) accept = accept (visit stmts)
-visit [Statement expr token] = 
-   visit expr accept
-   accept (Statement expr token)
-visit [] accept = []
-visit (ErrProg _ ) visit = 
-visit (Stmt expr ) visit = 
-visit (ErrStmt msg) visit = accept (ErrStmt msg) 
-visit 
