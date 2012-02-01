@@ -5,8 +5,6 @@ import System.IO
 import Lexer
 import CmdOpts
 
-
-
 {- Project 2:
    In this project, the program shall print the AST of each valid program and
    its valuation.
