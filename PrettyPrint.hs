@@ -34,7 +34,6 @@ printTokenType s =
     MinusTok -> "Operator"
     MultTok -> "Operator"
     DivTok -> "Operator "
-    UnknownTok -> "Unknown token"
 
 -- Formatting detail, adds a space to the symbel held by token
 symNeedsSpace :: Token -> Token -> Bool
