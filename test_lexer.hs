@@ -43,9 +43,12 @@ id_tests = ["_", "0" ]
 tests = [("digit", digit_tests, NatTok),
          ("identifier", id_tests, IdTok)]
 
+-- shell return code handling
+terminate :: Status -> IO ()
 terminate Success = exitWith ExitSuccess
 terminate Failure = exitFailure
 
+-- entry point
 main :: IO ()
 main = do
    putStrLn ("Starting test runner...\n" ++ msg)
