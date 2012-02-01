@@ -15,15 +15,13 @@ import Data.List as List
 -- types: let, =, \, ., <natural number>, <identifier>, ;, (, )
 data TokId = LetTok | EqTok | LambdaTok | DotTok | NatTok | IdTok | SemiTok
            | LParenTok | RParenTok | PlusTok | MinusTok | MultTok | DivTok
-           | UnknownTok deriving (Show,Eq)
+           | UnknownTok String deriving (Show,Eq)
 
 -- structure: lexeme, line #, column #, filename
 data Lexeme = Lex String Int Int String deriving (Show,Eq)
 
 -- structure: type, lexeme
-data Token = Tok TokId Lexeme
-            | EmptyTok
-            deriving (Show,Eq)
+data Token = Tok TokId Lexeme | ErrorTok String | EmptyTok deriving (Show,Eq)
 
 -- simple token id predicates
 isToken :: Token -> TokId -> Bool
@@ -78,7 +76,7 @@ tokenize_impl f l c s t
   | isPrefixKeyword s = pullLet f l c s t
   | (Char.isAlpha) h || (h ==) '_' = pullIdentifier f l c s t
   | Char.isDigit h = pullNatural f l c s t
-  | otherwise = tokenize_impl f l (c+1) (tail s) (t ++ [Tok UnknownTok (Lex [h] l c f)])
+  | otherwise = [ErrorTok ("Unrecognized symbol " ++ [h] ++ " in file " ++ f ++ " line " ++ (show l) ++ " column " ++ (show c) ++".")]
   where h = head s
 
 isPrefixKeyword :: String -> Bool
@@ -102,14 +100,14 @@ pullIdentifier f l c s t = let
     (t ++ [Tok IdTok (Lex (take n s) l c f)])
 
 pullNatural :: String ->Int -> Int -> String -> [Token] -> [Token]
-pullNatural f l c s t =
-  tokenize_impl
-    f
-    l
-    (c + n)
-    (drop n s)
-    (t ++ [Tok NatTok (Lex (take n s) l c f)])
+pullNatural f l c s t
+  | trailingChar (drop n s) = [ErrorTok "Characters may not precede a sequence of numerals."]
+  | otherwise = tokenize_impl f l (c + n) (drop n s)
+      (t ++ [Tok NatTok (Lex (take n s) l c f)])
   where n = prefixPredLength Char.isDigit s
+trailingChar :: String -> Bool
+trailingChar [] = False
+trailingChar (c:cs) = (Char.isAlpha c) || c == '_'
 
 pullLet :: String -> Int -> Int -> String -> [Token] -> [Token]
 pullLet f l c s t =

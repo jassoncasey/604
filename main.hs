@@ -1,6 +1,7 @@
 import System( getArgs )
 import Control.Monad( forM )
 import System.IO
+import Parser
 
 import Lexer
 import CmdOpts

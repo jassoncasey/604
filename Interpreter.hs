@@ -9,6 +9,7 @@ import Data.List( isPrefixOf )
 
 import Lexer
 import PrettyPrint
+import Environment
 
 
 -- Constant Strings --
@@ -18,11 +19,12 @@ promptIntro :: String
 promptIntro = "spli, the spl interpreter. For options, enter ':help'.\n"
 promptHelp :: String
 promptHelp = "Command options-\n"
-  ++ "  :quit     Exit the interpreter.\n"
-  ++ "  :help     Display command information.\n\n"
-  ++ "  :lex s    Displays token information from lexed string s.\n"
-  ++ "  :parse s  If parse is successful, 'valid' is displayed. Otherwise display\n"
-  ++ "            the error.\n"
+  ++ "  :quit         Exit the interpreter.\n"
+  ++ "  :help         Display command information.\n\n"
+  ++ "  :lex s        Displays token information from lexed string s.\n"
+  ++ "  :parse s      If parse is successful, 'valid' is displayed. Otherwise display\n"
+  ++ "                the error.\n"
+  ++ "  :environment  Displays current environment information\n"
 
 
 
