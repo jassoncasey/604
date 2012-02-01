@@ -13,8 +13,6 @@ all: $(MAIN) $(INTERPRETER)
 $(INTERPRETER): $(SRCI)
 	$(COMPILER) $(FLAGS) -o $@ $(SRCI)
 
-tests: 
-
 clean:
 	rm -f *.hi
 	rm -f *.o

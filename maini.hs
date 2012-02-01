@@ -1,5 +1,4 @@
 import System( getArgs )
-import Control.Monad( forever )
 import System.IO
 
 import Interpreter
