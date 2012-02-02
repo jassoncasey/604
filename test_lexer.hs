@@ -54,6 +54,6 @@ terminate Failure = exitFailure
 -- entry point
 main :: IO ()
 main = do
-   putStrLn ("Starting test runner...\n" ++ msg)
+   putStrLn ("Starting test runner: lexer ...\n" ++ msg)
    terminate status
    where ( status, msg ) = runTests unit_tests

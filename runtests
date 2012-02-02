@@ -1,3 +1,5 @@
 #!/bin/sh
 
 # execute all test_* and report on return status
+./test_lexer
+./test_parser
