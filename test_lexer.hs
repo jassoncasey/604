@@ -33,15 +33,18 @@ runTests [] = ( Success, "Finished ..." )
 -- To extend an existing class of tests
 -- simpley add another valid input string
 -- to the input list of the proper class below
+digit_tests :: [String]
 digit_tests = [ "0123456789", "a" ]
+id_tests :: [String]
 id_tests = ["_", "0" ]
 
 -- To extend a class of tests simply add
 -- a new tuple to the list that contains:
 -- name of class of tests, list of valid
 -- strings, and expected lexer token
-tests = [("digit", digit_tests, NatTok),
-         ("identifier", id_tests, IdTok)]
+unit_tests :: [ ( String, [String], TokId ) ]
+unit_tests = [ ("digit", digit_tests, NatTok),
+               ("identifier", id_tests, IdTok)]
 
 -- shell return code handling
 terminate :: Status -> IO ()
@@ -53,4 +56,4 @@ main :: IO ()
 main = do
    putStrLn ("Starting test runner...\n" ++ msg)
    terminate status
-   where ( status, msg ) = runTests tests
+   where ( status, msg ) = runTests unit_tests
