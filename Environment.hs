@@ -1,9 +1,9 @@
 module Environment
 ( Env(..)
 , lookUp
-, bind
-, pushScope
-, popScope
+--, bind
+--, pushScope
+--, popScope
 ) where
 
 import qualified Data.Map as Map
@@ -24,9 +24,8 @@ lookUp (Env (c:cs)) k =
   where result = Map.lookup k c
 
 -- Bind an identifier to the current scope
-bind :: (Ord k) => Env k a -> k -> a -> Env k a
+{-bind :: (Ord k) => Env k a -> k -> a -> Env k a
 bind Tip k a = Env [(Map.insert k a Map.empty)]
-bind
 bind (Env (c:cs)) k a = (Env ((Map.insert k a c):cs))
 
 -- Add a new scope to the environment
@@ -39,4 +38,4 @@ popScope :: Env k a -> Env k a
 popScope Tip = Tip
 popScope Env [] = Env []
 popScope (Env (_:ms)) = Env ms
-
+-}
