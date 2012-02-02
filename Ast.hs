@@ -39,6 +39,7 @@ data Program =
 
 data Statement =
    Stmt Expression Token
+   | EmptyStmt
    | ErrStmt String
    deriving (Show,Eq)
 

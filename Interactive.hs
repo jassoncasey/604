@@ -33,8 +33,6 @@ promptHelp = "Command options-\n"
   ++ "                the error.\n"
   ++ "  :environment  Displays current environment information\n"
 
-
-
 -- Puts str in the output buffer and immediately flushes it to stdout handle
 -- meaning, print str to screen immediately, avoids buffer overwrite
 flushStr :: String -> IO ()
