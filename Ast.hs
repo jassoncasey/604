@@ -1,8 +1,8 @@
-module Ast (
- Type,
- Operator,
- Program,
- Expression
+module Ast
+( Operator(..)
+, Program(..)
+, Expression(..)
+, Type(..)
 ) where
 
 import qualified ParseTree as PT
