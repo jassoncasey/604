@@ -6,7 +6,7 @@ module Environment
 , popScope
 ) where
 
-import Data.Map as Map
+import qualified Data.Map as Map
 import Data.Maybe
 
 
