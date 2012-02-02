@@ -1,5 +1,6 @@
 COMPILER=ghc
-FLAGS=-package haskell98 -Wall
+FLAGS=-Wall
+LIBS=-package haskell98
 
 # To add a new executable simple add the module name to TARGETS
 TARGETS=spl test_lexer test_parser
@@ -13,8 +14,8 @@ all: $(TARGETS)
 $(TARGETS): $(SRC:%.hs=%.o) $(TARGETS:%=%.o)
 	@echo "Building targets: $(TARGETS)"
 	@for test in $(TARGETS); do \
-		echo $(COMPILER) $(FLAGS) -o $$test $(SRC:%.hs=%.o) $$test.o; \
-		$(COMPILER) $(FLAGS) -o $$test $(SRC:%.hs=%.o) $$test.o; \
+		echo $(COMPILER) $(FLAGS) $(LIBS) -o $$test $(SRC:%.hs=%.o) $$test.o; \
+		$(COMPILER) $(FLAGS) $(LIBS) -o $$test $(SRC:%.hs=%.o) $$test.o; \
 		done
 
 %.o:%.hs
