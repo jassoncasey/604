@@ -1,5 +1,6 @@
-module Interpreter
-( readPrompt
+module Interactive
+( startInteractive
+, readPrompt
 , untilQuit
 , promptIntro
 ) where
@@ -11,6 +12,11 @@ import Lexer
 import PrettyPrint
 import Environment
 
+-- Fires up the interactive interpreter
+startInteractive :: IO ()
+startInteractive = do
+  putStr promptIntro
+  untilQuit
 
 -- Constant Strings --
 promptStr :: String
