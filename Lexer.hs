@@ -27,6 +27,7 @@ data Token = Tok TokId Lexeme | ErrorTok String | EmptyTok deriving (Show,Eq)
 isToken :: Token -> TokId -> Bool
 isToken (Tok token _ ) match = token == match
 isToken (ErrorTok _) _ = False
+isToken EmptyTok _ = False
 
 -- peak at the head and validate its token id
 isHeadToken :: [Token] -> TokId -> Bool

@@ -7,11 +7,10 @@ module Interactive
 
 import System.IO
 import Data.List( isPrefixOf )
-import qualified Data.Map as Map
 
 import Lexer
 import PrettyPrint
---import Environment
+import Environment
 
 -- Fires up the interactive interpreter
 startInteractive :: IO ()

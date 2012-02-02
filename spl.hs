@@ -1,8 +1,8 @@
 import System( getArgs )
-import Control.Monad( forM )
+--import Control.Monad( forM )
 import System.IO
 
-import Lexer
+--import Lexer
 import CmdOpts
 import Interactive
 
