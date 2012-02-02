@@ -5,7 +5,7 @@ module Parser (
 -- Import the intput type
 import Lexer
 -- Import the output type
-import Ast
+import ParseTree
 
 {-- The parser returns a programm, that program may
  -  be valid or invalid depending on proper construction.

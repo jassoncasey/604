@@ -6,7 +6,8 @@ LIBS=-package haskell98 -package containers
 TARGETS=spl test_lexer test_parser
 
 # To add a new source file simple append to SRC
-SRC=Lexer.hs Ast.hs Parser.hs CmdOpts.hs PrettyPrint.hs Environment.hs Interactive.hs
+SRC=Lexer.hs ParseTree.hs Parser.hs CmdOpts.hs PrettyPrint.hs Environment.hs \
+	 Interactive.hs
 
 all: $(TARGETS)
 
