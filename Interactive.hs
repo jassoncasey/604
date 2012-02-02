@@ -10,7 +10,7 @@ import Data.List( isPrefixOf )
 
 import Lexer
 import PrettyPrint
-import Environment
+import Environment()
 
 -- Fires up the interactive interpreter
 startInteractive :: IO ()
@@ -45,8 +45,8 @@ isCmd :: String -> Bool
 isCmd "" = False
 isCmd s = ':' == (head $ dropWhile (==' ') s)
 
-getCmd :: String -> (String,String)
-getCmd s = (takeWhile (/=' ') $ tail $ dropWhile (==' ') s,"")
+{-getCmd :: String -> (String,String)
+getCmd s = (takeWhile (/=' ') $ tail $ dropWhile (==' ') s,"")-}
 
 -- evaluates until quit
 untilQuit :: IO ()
