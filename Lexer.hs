@@ -26,23 +26,28 @@ data Token = Tok TokId Lexeme | ErrorTok String | EmptyTok deriving (Show,Eq)
 -- simple token id predicates
 isToken :: Token -> TokId -> Bool
 isToken (Tok token _ ) match = token == match
+isToken (ErrorTok _) _ = False
 
 -- peak at the head and validate its token id
-isHeadToken :: [Lexer.Token] -> Lexer.TokId -> Bool
-isHeadToken (Lexer.Tok value _:tl) id = value == id
-isHeadToken tokens id = False
+isHeadToken :: [Token] -> TokId -> Bool
+isHeadToken (Tok value _:_) tid = value == tid
+isHeadToken _ _ = False
 
 {- Get functions
   Functions to retrieve the contents of Tokens
 -}
 getFile :: Token -> String
 getFile (Tok _ (Lex _ _ _ filename)) = filename
+getFile (ErrorTok _) = ""
 getLineNo :: Token -> String
 getLineNo (Tok _ (Lex _ line _ _)) = show line
+getLineNo (ErrorTok _) = ""
 getColStart :: Token -> String
 getColStart (Tok _ (Lex _ _ col _)) = show col
+getColStart (ErrorTok _) = ""
 getColEnd :: Token -> String
 getColEnd (Tok _ (Lex sym _ col _)) = show $ col + (length sym) - 1
+getColEnd (ErrorTok _) = ""
 
 
 
@@ -107,7 +112,7 @@ pullNatural f l c s t
   where n = prefixPredLength Char.isDigit s
 trailingChar :: String -> Bool
 trailingChar [] = False
-trailingChar (c:cs) = (Char.isAlpha c) || c == '_'
+trailingChar (c:_) = (Char.isAlpha c) || c == '_'
 
 pullLet :: String -> Int -> Int -> String -> [Token] -> [Token]
 pullLet f l c s t =
@@ -133,3 +138,4 @@ getCharOp c =
     ')' -> RParenTok
     ';' -> SemiTok
     '=' -> EqTok
+    _   -> UnknownTok ""
