@@ -2,6 +2,7 @@ module CmdOpts
 ( printUsage
 , isSplFile
 , verifyArgs
+, Mode(..)
 ) where
 
 import Data.Maybe
@@ -34,10 +35,13 @@ usage_err msg = err_usage ++ msg ++ "\n" ++ usage_syntax ++ "\n"
 -- Verifies command arguments
 -- The first element of the tuple denotes if the arguments conform to the usage
 -- pattern. The second element is an error message if the arguments were invalid
-verifyArgs :: [String] -> (Bool,String)
+data Mode = Interactive | Batch | Error
+verifyArgs :: [String] -> ( Mode, String )
 verifyArgs args
-   | null args = ( False, usage_err err_no_input )
-   | not (all isSplFile args) = ( False, usage_err err_bad_ext )
+   -- no longer true with interpreter mode
+   | null args = ( Interactive, "" )
+   | not (all isSplFile args) = ( Error, usage_err err_bad_ext )
    -- | not (all splFileExists args) = (False, usage_err err_file_exist )
-   | otherwise = ( True, "" )
+   | otherwise = ( Batch, "" )
+
 
