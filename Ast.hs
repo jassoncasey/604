@@ -1,5 +1,11 @@
 module Ast (
+ Type,
+ Operator,
+ Program,
+ Expression
 ) where
+
+import qualified ParseTree as PT
 
 data Type = 
    Nat
