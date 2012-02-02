@@ -22,11 +22,17 @@ isSplFile filename
    where dot = findIndex (== '.') filename
 
 -- Basic error strings
-err_usage      = "usage error: "
-err_no_input   = "no input files."
-err_bad_ext    = "One or more files missing .spl file extension."
-err_file_exist = "One of the specified files does no    t exist."
-usage_syntax   = "usage syntax : ./spl-parser file1.spl ... filen.spl"
+err_usage :: String
+err_usage = "usage error: "
+
+err_bad_ext :: String
+err_bad_ext = "One or more files missing .spl file extension."
+
+-- err_file_exist :: String
+-- err_file_exist = "One of the specified files does not exist."
+
+usage_syntax :: String
+usage_syntax = "usage syntax : ./spl-parser file1.spl ... filen.spl"
 
 -- Error formatting
 usage_err :: String -> String
