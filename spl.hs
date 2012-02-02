@@ -1,8 +1,6 @@
 import System( getArgs )
---import Control.Monad( forM )
-import System.IO
+--import System.IO
 
---import Lexer
 import CmdOpts
 import Interactive
 
@@ -12,7 +10,7 @@ import Interactive
 -}
 
 batch :: [String] -> IO ()
-batch args = putStrLn "Done"
+batch _ = putStrLn "Done"
 
 main :: IO ()
 main = do
