@@ -5,7 +5,7 @@ FLAGS=-package haskell98 -Wall
 TARGETS=spl test_lexer test_parser
 
 # To add a new source file simple append to SRC
-SRC=Lexer.hs Ast.hs Parser.hs CmdOpts.hs 
+SRC=Lexer.hs Ast.hs Parser.hs CmdOpts.hs PrettyPrint.hs Interactive.hs
 
 all: $(TARGETS)
 

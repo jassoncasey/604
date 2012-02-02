@@ -36,7 +36,7 @@ isHeadToken _ _ = False
 {- Get functions
   Functions to retrieve the contents of Tokens
 -}
-getFile :: Token -> String
+{-getFile :: Token -> String
 getFile (Tok _ (Lex _ _ _ filename)) = filename
 getFile (ErrorTok _) = ""
 getLineNo :: Token -> String
@@ -47,7 +47,7 @@ getColStart (Tok _ (Lex _ _ col _)) = show col
 getColStart (ErrorTok _) = ""
 getColEnd :: Token -> String
 getColEnd (Tok _ (Lex sym _ col _)) = show $ col + (length sym) - 1
-getColEnd (ErrorTok _) = ""
+getColEnd (ErrorTok _) = ""-}
 
 
 
