@@ -1,8 +1,5 @@
 module Interactive
 ( startInteractive
-, readPrompt
-, untilQuit
-, promptIntro
 ) where
 
 import System.IO
@@ -16,7 +13,8 @@ import Environment()
 startInteractive :: IO ()
 startInteractive = do
   putStr promptIntro
-  untilQuit
+  -- process coreLib
+  replSpl (EnvState "Happy!")
 
 -- Constant Strings --
 promptStr :: String
@@ -31,6 +29,7 @@ promptHelp = "Command options-\n"
   ++ "  :parse s      If parse is successful, 'valid' is displayed. Otherwise display\n"
   ++ "                the error.\n"
   ++ "  :environment  Displays current environment information\n"
+
 
 -- Puts str in the output buffer and immediately flushes it to stdout handle
 -- meaning, print str to screen immediately, avoids buffer overwrite
@@ -48,9 +47,12 @@ isCmd s = ':' == (head $ dropWhile (==' ') s)
 {-getCmd :: String -> (String,String)
 getCmd s = (takeWhile (/=' ') $ tail $ dropWhile (==' ') s,"")-}
 
+-- Carries the state of the environment
+data EnvState = EnvState String deriving (Show)
+
 -- evaluates until quit
-untilQuit :: IO ()
-untilQuit = do
+replSpl :: EnvState -> IO ()
+replSpl state = do
   input <- readPrompt
   if isCmd input
     then do
@@ -58,9 +60,21 @@ untilQuit = do
       if isPrefixOf "quit" cmd
         then putStrLn "Leaving SPLi."
         else if isPrefixOf "help" cmd
-          then putStr promptHelp >> untilQuit
+          then putStr promptHelp >> replSpl state
           else if isPrefixOf "lex" cmd
-            then putStr (printTokenList $ tokenizeBuff "-" $ drop 3 cmd) >> untilQuit
-            else putStr ("Unknown command: " ++ cmd ++ "\n") >> untilQuit
-    else putStrLn input >> untilQuit
-  
+            then putStr (printTokenList $ tokenizeBuff "-" $ drop 3 cmd) >> replSpl state
+            else putStr ("Unknown command: " ++ cmd ++ "\n") >> replSpl state
+    else putStrLn input >> replSpl state
+
+{-replSpl' :: EnvState -> IO ()
+replSpl' state = do
+  input <- readPrompt
+  if isCmd input
+    then do
+      let (cmd, rest) = breakCmd input
+      return $ case cmd of
+        "quit"  -> putStrLn "Leaving SPL interactive."
+        "help"  -> promptHelp >> replSpl' state
+        "lex"   -> 
+        "parse" ->
+    else putStrLn input >> replState state-}

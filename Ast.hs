@@ -1,4 +1,8 @@
-module Ast (
+module Ast
+( Operator(..)
+, Program(..)
+, Expression(..)
+, Type(..)
 ) where
 
 data Type = 
