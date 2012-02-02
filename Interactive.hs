@@ -10,7 +10,7 @@ import Data.List( isPrefixOf )
 
 import Lexer
 import PrettyPrint
-import Environment
+--import Environment
 
 -- Fires up the interactive interpreter
 startInteractive :: IO ()

@@ -11,11 +11,15 @@ import Lexer
 -- token symbol accessor
 tokenSymbol :: Token -> String
 tokenSymbol (Tok _ (Lex symbol _ _ _)) = symbol
+tokenSymbol (ErrorTok _) = "?"
+tokenSymbol EmptyTok = ""
 
 printTokenLexeme :: Token -> String
 printTokenLexeme (Tok t (Lex sym line col fn)) =
   (printTokenType t) ++ " '" ++ sym ++ "'" ++ " in file "
   ++ fn ++ " line " ++ (show line) ++ " column " ++ (show col)
+printTokenLexeme (ErrorTok s) = s
+printTokenLexeme EmptyTok = ""
 
 -- String identification of token type
 printTokenType :: TokId -> String
@@ -34,6 +38,7 @@ printTokenType s =
     MinusTok -> "Operator"
     MultTok -> "Operator"
     DivTok -> "Operator "
+    (UnknownTok _) -> "Unknown token"
 
 -- Formatting detail, adds a space to the symbel held by token
 symNeedsSpace :: Token -> Token -> Bool
@@ -45,9 +50,11 @@ symNeedsSpace (Tok t1 (Lex _ _ _ _)) (Tok t2 (Lex _ _ _ _)) =
   else if elem t2 [EqTok,IdTok,NatTok,PlusTok,MinusTok,MultTok,DivTok]
   then True
   else False
+symNeedsSpace _ _ = False
 
 symAddSpace :: Token -> Token
 symAddSpace (Tok a (Lex sym b c d)) = (Tok a (Lex (sym ++ " ") b c d))
+symAddSpace other = other
 
 spaceTknSym :: [Token] -> [Token]
 spaceTknSym [] = []
@@ -74,17 +81,17 @@ printTokenListAsStmt ts =
   in foldr (++) ""  tkn_sym
 
 -- Tries to parse the code. If it can't, return false
-isParseSuccess :: [Token] -> Bool
-isParseSuccess _ = True
+--isParseSuccess :: [Token] -> Bool
+--isParseSuccess _ = True
 
 -- Prints a statement and it's token list if a successful parse
-printIfParsed :: [Token] -> String
+{-printIfParsed :: [Token] -> String
 printIfParsed tkns
   | isParseSuccess tkns = "\n  " ++ (printTokenListAsStmt tkns)
       ++ (printTokenList tkns)
   | otherwise = "\n  " ++ "Parse error: Statement starting at line "
       ++ (show $ l $ head tkns) ++ "is not valid.\n"
-  where l = (\(Tok _ (Lex _ line _ _)) -> line)
+  where l = (\(Tok _ (Lex _ line _ _)) -> line)-}
 
 -- Basically show for parsing
 printTokenization :: String -> String -> String
