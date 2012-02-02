@@ -1,0 +1,3 @@
+#!/bin/sh
+
+# execute all test_* and report on return status
