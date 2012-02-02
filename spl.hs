@@ -1,4 +1,4 @@
-import System( getArgs )
+import System.Environment( getArgs )
 import Control.Monad( forM )
 import System.IO
 

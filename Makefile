@@ -1,5 +1,5 @@
 COMPILER=ghc
-FLAGS=-Wall
+FLAGS=-package haskell98 -Wall
 
 # To add a new executable simple add the module name to TARGETS
 TARGETS=spl test_lexer test_parser
