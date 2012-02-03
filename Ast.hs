@@ -7,6 +7,10 @@ module Ast
 , transformStmts
 , transformStmt
 , transformExpr
+, getStrProgram
+, getStrSProgram
+, getStrExpression
+, getStrSExpression
 ) where
 
 import qualified ParseTree as PT
@@ -96,6 +100,46 @@ getStrCompound (h:tl) =
       then getStrExpression h
       else ( getStrExpression h ) ++ ";" ++ ( getStrCompound tl )
 getStrCompound [] = ""
+
+-- simple program printer
+getStrSProgram :: Program -> String
+getStrSProgram ( Prog exprs ) = 
+   "(\n" ++ ( getStrSLines exprs ) ++ ")\n"
+getStrSProgram _ = "Program errored ..."
+
+-- program helper function to print lines
+getStrSLines :: [Expression] -> String
+getStrSLines (h:tl) =
+   "\t" ++ ( getStrSExpression h ) ++ ";\n" ++ ( getStrSLines tl )
+getStrSLines [] = ""
+
+-- simple expression printer
+getStrSExpression :: Expression -> String
+getStrSExpression ( Id str ) = "( " ++ str ++ " )"
+getStrSExpression ( Num val ) = show val
+getStrSExpression ( Let target source ) = 
+   "( let " ++ ( getStrSExpression target ) ++ " = " ++ 
+      ( getStrSExpression source ) ++ " )"
+getStrSExpression ( Lambda param body ) =
+   "( \\" ++ ( getStrSExpression param ) ++ "." ++ 
+      ( getStrSExpression body ) ++ " )"
+getStrSExpression ( Binary op lhs rhs ) =
+   "( " ++ ( getStrSExpression lhs ) ++ ( getStrOp op ) ++ 
+      ( getStrSExpression rhs ) ++ " )"
+getStrSExpression ( Application lhs rhs ) =
+   "( " ++ ( getStrSExpression lhs ) ++ " " ++ ( getStrSExpression rhs ) ++ " )"
+getStrSExpression ( Compound exprs ) =
+   "( " ++ ( getStrSCompound exprs ) ++ " )"
+getStrSExpression _ = "Unknown expression"
+
+-- simple compound statement printer
+getStrSCompound :: [Expression] -> String
+getStrSCompound (h:tl) =
+   if length tl == 0
+      then getStrSExpression h
+      else ( getStrSExpression h ) ++ ";" ++ ( getStrSCompound tl )
+getStrSCompound [] = ""
+
 
 -- trnasform a prgram
 transformProg :: PT.Program -> Program
