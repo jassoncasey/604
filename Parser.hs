@@ -1,5 +1,5 @@
-module Parser (
-   parse,
+module Parser
+( parse
 ) where
 
 -- Import the intput type

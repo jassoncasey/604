@@ -1,4 +1,7 @@
-
+module Eval
+( evalProgramInter
+, getExprStr
+) where
 
 import Ast
 import Environment
@@ -25,6 +28,26 @@ eval env e
 --  | e /= e' = eval env $ e'
 --  | otherwise = e
   where e' = reduce e-}
+
+
+
+-- Given an environment, get the expression of a program
+eval :: Env -> Program -> Expression
+eval env (Prog exprs) = snd $ evalExprs env exprs
+
+getExprStr :: Expression -> String
+getExprStr (Num a) = show a
+getExprStr _ = "Not implemented yet.    -Mgmt"
+
+evalProgramInter :: Env -> Program -> (Env,Expression)
+evalProgramInter env (Prog exprs) = evalExprs env exprs
+
+evalExprs :: Env -> [Expression] -> (Env, Expression)
+evalExprs env [] = (env, ErrExpr)
+evalExprs env [e] = evalExpr env e
+evalExprs env (e:es) =
+  let (newEnv,_) = evalExpr env e in evalExprs newEnv es
+
 
 -- Apply lambda
 evalExpr :: Env-> Expression -> (Env,Expression)
