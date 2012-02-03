@@ -61,7 +61,11 @@ printTokens s = (printTokenList $ tokenizeBuff "-" s)
 
 -- FIXME Allow it to print errors
 printParseTree :: String -> String
-printParseTree s = getStrProgram  $ parse "-" (s ++ ";")
+printParseTree s = 
+  case k of
+    Ast.ErrProg -> "Failed to pase expression."
+    Ast.Prog exprs -> foldr (++) "" $ map Ast.getStrSExpression exprs
+  where k = Ast.transformProg $ parse "-" (s ++ ";")
 
 replSpl :: Env -> IO ()
 replSpl state = do
@@ -73,11 +77,11 @@ replSpl state = do
         "quit"  -> putStrLn "Leaving SPL interactive."
         "help"  -> putStr promptHelp >> replSpl state
         "lex"   -> putStr (printTokens rest) >> replSpl state
-        "parse" -> putStr (printParseTree rest) >> replSpl state
+        "parse" -> putStr ((printParseTree rest) ++ "\n") >> replSpl state
         _       -> putStrLn "Unknown command." >> replSpl state
     else do
       case (parse "-" (input ++ ";")) of
-        ErrPrg _ -> putStrLn "Malformed expression" >> replSpl state -- FIXME support for real error support
+        ErrPrg _ -> putStrLn "Malformed expression" >> replSpl state
         rawProg -> case Ast.transformProg rawProg of
           Ast.ErrProg -> putStrLn "Uncaught error on parse tree to AST tranformation" >> replSpl state
           prgm -> do
