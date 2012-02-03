@@ -1,5 +1,4 @@
 import System( getArgs )
---import System.IO
 
 import CmdOpts
 import Interactive
