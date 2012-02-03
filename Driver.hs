@@ -1,6 +1,7 @@
 import System
 import Parser
-import ParseTree
+import qualified ParseTree as PT
+import qualified Ast as Ast
 
 -- take a filename and make sure it is a *.spl format
 badPostFix :: String -> Bool
@@ -23,7 +24,9 @@ process ( file : files ) =
       putStrLn ("Compiling: " ++ file)
       let prog = parse file buf
       putStrLn "-------------------------------"
-      putStr (ParseTree.getStrProgram prog)
+      putStr (PT.getStrProgram prog)
+      putStrLn "-------------------------------"
+      putStr ( Ast.getStrSProgram ( Ast.transformProg prog ) )
       putStrLn "-------------------------------"
       process files
 process [] = return () 

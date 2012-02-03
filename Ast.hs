@@ -45,6 +45,41 @@ data Expression =
    | ErrExpr
    deriving (Show,Eq) 
 
+-- child is application predicate
+isApp :: Expression -> Bool
+isApp ( Application _ _ ) = True
+isApp _ = False
+
+-- application node helper
+lhsApp :: Expression -> Expression
+lhsApp ( Application lhs _ ) = lhs
+lhsApp _ = ErrExpr
+rhsApp :: Expression -> Expression
+rhsApp ( Application _ rhs ) = rhs
+rhsApp _ = ErrExpr
+
+-- simple transform that updates left associativity to application
+leftAssociate :: Expression -> Expression
+leftAssociate ( Let target source ) = 
+   ( Let target ( leftAssociate source ) )
+leftAssociate ( Lambda target source ) = 
+   ( Lambda target ( leftAssociate source ) )
+leftAssociate ( Binary op lhs rhs ) = 
+   ( Binary op ( leftAssociate lhs ) ( leftAssociate rhs ) )
+leftAssociate ( Application lhs rhs ) =
+   if isApp rhs
+      then leftAssociate ( Application ( Application ( lhs ) ( lhsApp rhs ) ) 
+                                       ( rhsApp rhs ) ) 
+      else ( Application lhs rhs ) 
+leftAssociate ( Compound exprs ) = 
+   ( Compound ( leftAssociateExprs exprs ) )
+leftAssociate x = x
+
+-- compound association helper
+leftAssociateExprs :: [Expression] -> [Expression]
+leftAssociateExprs (h:tl) = (leftAssociate h ):(leftAssociateExprs tl )
+leftAssociateExprs [] = []
+
 -- simple operator helper function
 getOp :: String -> Operator
 getOp operator =
@@ -115,7 +150,7 @@ getStrSLines [] = ""
 
 -- simple expression printer
 getStrSExpression :: Expression -> String
-getStrSExpression ( Id str ) = "( " ++ str ++ " )"
+getStrSExpression ( Id str ) = str
 getStrSExpression ( Num val ) = show val
 getStrSExpression ( Let target source ) = 
    "( let " ++ ( getStrSExpression target ) ++ " = " ++ 
@@ -156,7 +191,7 @@ transformStmts [] = []
 
 -- transform a statement
 transformStmt :: PT.Statement -> Expression
-transformStmt ( PT.Stmt expr _ ) = transformExpr expr
+transformStmt ( PT.Stmt expr _ ) = leftAssociate ( transformExpr expr )
 transformStmt _ = ErrExpr
 
 -- transform an expression

@@ -79,7 +79,48 @@ Department of Computer Science \\Texas A\&M University}
 \begin{enumerate}
 \item Description
 
-\item Structure
+\item Syntax
+\begin{grammar}
+program : $\epsilson$ ; statements.
+\end{grammar}
+
+program : $\epsilon$
+         $|$ statements
+       
+statements  : statement
+$|$ statement statements
+
+statement : expression ';'
+
+expression  : term
+$|$ 'let' Id '=' expression
+$|$ '\' Id '.' expression
+
+term  : factor
+$|$ factor '+' term
+$|$ factor '-' term
+
+factor   : application
+$|$ application '*' factor
+$|$ application '/' factor
+
+application : primary
+$|$ primary application
+
+primary  : Id
+$|$ Digit
+$|$ '(' compound ')'
+
+compound : expression
+$|$ expression ';' compound
+
+\item ParseTree
+
+\item Transform : Syntax $\mapsto$ ParseTree
+
+\item Ast
+
+\item Transform : ParseTree $\mapsto$ Ast
 
 \item Semantics
 \vfill
