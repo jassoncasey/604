@@ -3,7 +3,7 @@ module Interactive
 ) where
 
 import System.IO
-import Data.List( isPrefixOf )
+--import Data.List( isPrefixOf )
 
 import Eval
 import Lexer
@@ -61,7 +61,7 @@ printTokens s = (printTokenList $ tokenizeBuff "-" s)
 
 -- FIXME Allow it to print errors
 printParseTree :: String -> String
-printParseTree s = getStrProgram $ parse "-" (s ++ ";")
+printParseTree s = getStrProgram  $ parse "-" (s ++ ";")
 
 replSpl :: Env -> IO ()
 replSpl state = do
@@ -82,4 +82,4 @@ replSpl state = do
           Ast.ErrProg -> putStrLn "Uncaught error on parse tree to AST tranformation" >> replSpl state
           prgm -> do
             let (newState, expr) = evalProgramInter state prgm
-            putStrLn (getExprStr expr) >> replSpl newState
+            putStrLn (Ast.getStrExpression expr) >> replSpl newState

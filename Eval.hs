@@ -1,6 +1,8 @@
 module Eval
 ( evalProgramInter
 , getExprStr
+, evalExpr
+, evalExprs
 ) where
 
 import Ast
@@ -26,6 +28,11 @@ evalExprs env [e] = evalExpr env e
 evalExprs env (e:es) =
   let (newEnv,_) = evalExpr env e in evalExprs newEnv es
 
+isNum :: Expression -> Bool
+
+isNum (Num _) = True
+isNum _ = False
+
 -- Apply lambda
 evalExpr :: Env-> Expression -> (Env,Expression)
 -- Note, for this implementation, a let-bindings in b is in scope before lambda
@@ -38,7 +45,16 @@ evalExpr env (Application (Lambda (Id ident) e) b) =
 -- FIXME No need for new Env in call-by-value. Proof?
 evalExpr env (Application (Id a) e) =
   let (newEnv,a') = evalExpr env (Id a) in evalExpr newEnv (Application a' e)
-evalExpr env (Application _ _) = evalExpr env ErrExpr
+
+evalExpr env (Application (Num _) _) = evalExpr env ErrExpr
+
+evalExpr env (Application a b)
+  | a' == a && b' == b = (env, (Application a b))
+  | isNum a = evalExpr env ErrExpr
+  | otherwise = evalExpr envModb (Application a' b')
+  where (envModa, a') = evalExpr env a
+        (envModb, b') = evalExpr envModa b
+
 -- Apply delta rules
 evalExpr env (Binary op (Num a) (Num b)) =
   (env,deltaArith (Binary op (Num a) (Num b)))
@@ -65,12 +81,11 @@ evalExpr env (Let (Id b) e) =
     (envMode,e')= evalExpr env e
   in
     (bind envMode b e',e')
--- Any other let expressiion is wrong
+-- Any other let expression is wrong
 evalExpr env (Let _ _) = (env, ErrExpr)
 -- An error expression is an error
 evalExpr env ErrExpr = (env, ErrExpr)
--- FIXME takes a special function, not yet supported
-evalExpr env (Compound e) = (env,Compound e)
+evalExpr env (Compound exprs) = evalExprs env exprs
 
 
 

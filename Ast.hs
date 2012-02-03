@@ -132,6 +132,9 @@ getStrSExpression ( Compound exprs ) =
    "( " ++ ( getStrSCompound exprs ) ++ " )"
 getStrSExpression _ = "Unknown expression"
 
+--getStrSProgram :: Program -> [String]
+--getStrSProgram 
+
 -- simple compound statement printer
 getStrSCompound :: [Expression] -> String
 getStrSCompound (h:tl) =
