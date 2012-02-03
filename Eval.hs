@@ -95,5 +95,4 @@ deltaArith (Binary Add   (Num a) (Num b)) = Num (a + b)
 deltaArith (Binary Minus (Num a) (Num b)) = Num (a - b)
 deltaArith (Binary Mult  (Num a) (Num b)) = Num (a * b)
 deltaArith (Binary Div   (Num a) (Num b)) = Num (a `quot` b)
-deltaArith _ = error "Cannot be used on expressions that aren't arithmetic."
-
+deltaArith _ = ErrExpr
