@@ -75,6 +75,6 @@ replSpl' state = do
       return $ case cmd of
         "quit"  -> putStrLn "Leaving SPL interactive."
         "help"  -> promptHelp >> replSpl' state
-        "lex"   -> 
-        "parse" ->
+        "lex"   -> (printTokenList $ tokenizeBuff "-" rest) >> replSpl state
+        "parse" -> putStrLn "Parse..." >> replSpl state
     else putStrLn input >> replState state-}
