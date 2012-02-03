@@ -51,6 +51,52 @@ getOp operator =
       "/" -> Div
       _ -> Error
 
+-- simple operator to string helper
+getStrOp :: Operator -> String
+getStrOp op =
+   case op of
+      Add -> "+"
+      Minus -> "-"
+      Mult -> "*"
+      Div -> "/"
+      _ -> "?"
+
+-- simple program printer
+getStrProgram :: Program -> String
+getStrProgram ( Prog exprs ) = 
+   getStrLines exprs
+getStrProgram _ = "Program errored ..."
+
+-- program helper function to print lines
+getStrLines :: [Expression] -> String
+getStrLines (h:tl) =
+   ( getStrExpression h ) ++ ";\n" ++ ( getStrLines tl )
+getStrLines [] = ""
+
+-- simple expression printer
+getStrExpression :: Expression -> String
+getStrExpression ( Id str ) = str
+getStrExpression ( Num val ) = show val
+getStrExpression ( Let target source ) = 
+   "let " ++ ( getStrExpression target ) ++ " = " ++ ( getStrExpression source )
+getStrExpression ( Lambda param body ) =
+   "\\" ++ ( getStrExpression param ) ++ "." ++ ( getStrExpression body )
+getStrExpression ( Binary op lhs rhs ) =
+   ( getStrExpression lhs ) ++ ( getStrOp op ) ++ ( getStrExpression rhs ) 
+getStrExpression ( Application lhs rhs ) =
+   ( getStrExpression lhs ) ++ " " ++ ( getStrExpression rhs ) 
+getStrExpression ( Compound exprs ) =
+   "( " ++ ( getStrCompound exprs ) ++ " )"
+getStrExpression _ = "Unknown expression"
+
+-- simple compound statement printer
+getStrCompound :: [Expression] -> String
+getStrCompound (h:tl) =
+   if length tl == 0
+      then getStrExpression h
+      else ( getStrExpression h ) ++ ";" ++ ( getStrCompound tl )
+getStrCompound [] = ""
+
 -- trnasform a prgram
 transformProg :: PT.Program -> Program
 transformProg ( PT.Prog stmts ) = Prog ( transformStmts stmts )

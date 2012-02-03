@@ -68,7 +68,7 @@ evaluateExpr :: ( Environment, Ast.Expression ) ->
                   ( Environment, Ast.Expression )
 -- lookup the identifier in the environment and return its expression
 evaluateExpr ( env, Ast.Id identifier ) =
-   ( env, environmentLookup identifier env )
+   evaluateExpr ( env, environmentLookup identifier env )
 
 -- evaluate the source and bind an identifier in the current scope
 evaluateExpr ( env, Ast.Let target source ) =
