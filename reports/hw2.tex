@@ -1,0 +1,130 @@
+\documentclass[11pt,twoside]{article}
+\usepackage{times}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+%\usepackage{mathptm}
+\usepackage{fancyhdr}
+\usepackage{bussproofs}
+\ifx\pdfoutput\undefined
+% we are running LaTeX, not pdflatex
+\usepackage{epsfig,color}
+\else
+% we are running pdflatex, so convert .eps files to .pdf
+\usepackage[pdftex]{epsfig,color}
+\usepackage{epstopdf}
+\usepackage{pdfsync}
+\fi
+\usepackage{ifthen,version}
+\usepackage{listings}
+%\usepackage{temporal}
+%\usepackage{algorithmic}
+\newboolean{print-solutions}
+
+% Start of configuration section
+% Comment out the following line to exclude the printing of solutions.
+%\setboolean{print-solutions}{true}
+\newcommand{\hwnumber}{\#0}
+\newcommand{\coursenumber}{CS 604}
+\newcommand{\coursename}{Programming Language Design}
+\newcommand{\instructor}{Gabriel Dos Reis}
+% End of configuration section
+
+% Conditional definitions
+\newcommand{\dateorsol}{\LARGE \ifthenelse{\boolean{print-solutions}}%
+  {Solutions}{}}
+\newcommand{\headertxt}{\sl \ifthenelse{\boolean{print-solutions}}%
+  {Solutions to}{} Homework 2}
+\newcommand{\points}[1]{\ifthenelse{\boolean{print-solutions}}%
+  {}{[#1 points.]}}
+\ifthenelse{\boolean{print-solutions}}{\includeversion{prnt-solns}}%
+{\excludeversion{prnt-solns}}
+
+\textwidth=6.5in
+\evensidemargin=-0.1in
+\oddsidemargin=-0.1in
+
+\newcommand{\ite}{\operatorname{ite}}
+\newcommand{\itec}{\operatorname{ite\_constant}}
+
+{\theoremstyle{definition} \newtheorem{definition}{Definition}}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{proposition}{Proposition}
+{\theoremstyle{remark}
+  \newtheorem{example}{Example}
+  \newtheorem{problem}{Problem}
+  \newtheorem{note}{Note}}
+% Fortunately, proofs can be nested.
+\newenvironment{solution}{\begin{proof}[Solution]}{\end{proof}}
+
+\title{\coursenumber: \coursename\\
+Department of Computer Science \\Texas A\&M University}
+\author{\LARGE Homework 2 Report\\ \\ 
+\\Jasson Casey
+\\Michael Lopez }
+\date{\dateorsol}
+\pagestyle{fancy}
+\lhead[\rm\thepage]{\headertxt}
+\rhead[\headertxt]{\rm\thepage}
+\lfoot[\today]{\coursenumber}
+\cfoot{\instructor}
+\rfoot[\coursenumber]{\today}
+
+\begin{document}
+\bibliographystyle{alpha}
+\maketitle
+\noindent
+\begin{enumerate}
+\item Description
+
+\item Structure
+
+\item Semantics
+\vfill
+$t$ ::= $\mathbb{N}$ $|$ $x$ $|$ $let$ $x = t$ $|$ $\lambda x.t$ $|$ $t$ $t$ $|$ 
+      $t;$ $t$ $|$ $\delta$ $op$ $v$ $v$\\
+$v$ ::= $\mathbb{N}$ $|$ $\lambda x.t$ \\
+\vfill
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{seq1}$}}
+\AxiomC{}
+\UnaryInfC{$v$; $t\rightarrow t$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{app1}$}}
+\AxiomC{}
+\UnaryInfC{$( \lambda x. t_1 )$ $v_2 \rightarrow$[$ x \mapsto v_2$] $t_1$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{app2}$}}
+\AxiomC{$t_2 \rightarrow t_2'$}
+\UnaryInfC{$t_1$ $t_2 \rightarrow t_1$ $t_2'$}
+\end{prooftree}
+ 
+\begin{prooftree}
+\RightLabel{\textbf{$E_{app3}$}}
+\AxiomC{$t_1 \rightarrow t_1'$}
+\UnaryInfC{$t_1$ $v_2 \rightarrow t_1'$ $v_2$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{seq2}$}}
+\AxiomC{$t_1 \rightarrow t_1'$}
+\UnaryInfC{$t_1$ ; $t_2 \rightarrow t_1'$ ; $t_2$}
+\end{prooftree}
+
+\item Testing
+
+\vfill
+\end{enumerate}
+\end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End
+
