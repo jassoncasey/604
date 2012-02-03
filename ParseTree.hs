@@ -1,7 +1,10 @@
 module ParseTree (
    Expression(..),
    Statement(..),
-   Program(..)
+   Program(..),
+   getStrProgram,
+   getStrStatement,
+   getStrExpression
 ) where
 
 -- Import the lexer and make 
@@ -78,3 +81,44 @@ data Expression =
    | Compound Token [(Expression, Token)] Token
    | ErrExpr String
    deriving (Show,Eq)
+
+-- expression printing function
+getStrExpression :: Expression -> String
+getStrExpression ( Id ( Tok _ ( Lex str _ _ _) ) ) = str
+getStrExpression ( Nat ( Tok _ ( Lex str _ _ _) ) ) = str
+getStrExpression ( Lambda _ target _ source ) = 
+   "\\" ++ (getStrExpression target) ++ "." ++ ( getStrExpression source )
+getStrExpression ( Let _ target _ source ) =
+   "let " ++ ( getStrExpression target ) ++ "=" ++ (getStrExpression source )
+getStrExpression ( Binary ( Tok _ ( Lex str _ _ _ ) ) lhs rhs ) =
+   ( getStrExpression lhs ) ++ str ++ ( getStrExpression rhs )
+getStrExpression ( Application lhs rhs ) =
+   ( getStrExpression lhs ) ++ " " ++ ( getStrExpression rhs )
+getStrExpression ( Compound _ exprs _ ) =
+   "( " ++ ( getStrCompound exprs ) ++ " )"
+getStrExpression _ = "Malformed parse tree .. can't print expression"
+
+-- compound printing helper function
+getStrCompound :: [(Expression, Token)] -> String
+getStrCompound ( ( expr, _ ):tl ) =
+   if length tl > 0
+      then ( getStrExpression expr ) ++ "; " ++ ( getStrCompound tl )
+      else ( getStrExpression expr ) 
+getStrCompound [] = ""
+
+-- statement printing helper function
+getStrStatement :: Statement -> String
+getStrStatement ( Stmt expr _ ) = ( getStrExpression expr ) ++ ";\n"
+getStrStatement EmptyStmt = ""
+getStrStatement ( ErrStmt str ) = str
+
+-- statement list printing helper function
+getStrStatements :: [Statement] -> String
+getStrStatements ( h:tl ) = ( getStrStatement h ) ++ ( getStrStatements tl )
+getStrStatements [] = ""
+
+-- program printing helper function
+getStrProgram :: Program -> String
+getStrProgram ( Prog stmts ) = getStrStatements stmts 
+getStrProgram ( ErrPrg _ ) = "Malformed parse tree .. can't print program\n"
+

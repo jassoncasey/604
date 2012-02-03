@@ -1,5 +1,6 @@
 import System
 import Parser
+import ParseTree
 
 -- take a filename and make sure it is a *.spl format
 badPostFix :: String -> Bool
@@ -20,7 +21,10 @@ badUsage args =
 process ( file : files ) = 
    do buf <- readFile file 
       putStrLn ("Compiling: " ++ file)
-      putStrLn (snd (parse file buf))
+      let prog = parse file buf
+      putStrLn "-------------------------------\n"
+      putStrLn (ParseTree.getStrProgram prog)
+      putStrLn "-------------------------------\n"
       process files
 process [] = return () 
 
