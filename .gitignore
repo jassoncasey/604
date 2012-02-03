@@ -3,4 +3,7 @@
 *.gitignore
 *.swp
 *.DS_STORE
-test
+Driver
+test_lexer
+test_parser
+spl
