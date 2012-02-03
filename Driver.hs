@@ -17,14 +17,14 @@ badUsage :: [String] -> Bool
 badUsage args = 
    length args < 1 || badPostFixes args
 
---process :: [String] -> ()
+process :: [String] -> IO ()
 process ( file : files ) = 
    do buf <- readFile file 
       putStrLn ("Compiling: " ++ file)
       let prog = parse file buf
-      putStrLn "-------------------------------\n"
-      putStrLn (ParseTree.getStrProgram prog)
-      putStrLn "-------------------------------\n"
+      putStrLn "-------------------------------"
+      putStr (ParseTree.getStrProgram prog)
+      putStrLn "-------------------------------"
       process files
 process [] = return () 
 
