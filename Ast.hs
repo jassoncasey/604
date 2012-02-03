@@ -25,3 +25,4 @@ data Expression =
    | Binary Type Operator Expression Expression
    | Compound Type [Expression]
    deriving (Show,Eq) 
+
