@@ -1,0 +1,78 @@
+\documentclass{article}
+\usepackage{syntax}
+\usepackage{bussproofs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+%\setlength{\grammarindent}{2.5cm}
+\begin{document}
+
+\section{Parsing and Representation}
+
+SPL input files are read and split into a token stream according to the token
+syntax regular expressions. Whitespace (WS) tokens are dropped from the input
+stream. Identifiers which match the keyword ``let'' are transformed into a 
+special Let token. The parser produces a parse tree from the token stream,
+which maintains context information from the input file such as: filename, line
+and column number. The parser is a LL recursive decent parser which produces a 
+intermediate representation. Assuming no issues are encountered the parse
+tree is transformed into an AST. The right-associative application produced by
+the LL parse is transformed into a left-associative sub-tree during this phase
+using sub-tree rotations.
+
+\subsection{Regular Expression}
+
+$Id ::= [a-zA-Z\_][a-zA-Z_0-9]^{*}$\\
+$Digits ::= [0-9]^{+}$\\
+$Tokens ::= [=.+-*/();]$\\
+$WS ::= [$\textbackslash n \textbackslash t $]$
+
+\subsection{Grammar}
+
+\begin{grammar}
+<program> ::= <statements>
+   \alt $\epsilon$ 
+
+<statements> ::= <statement> <statements>
+   \alt <statement>
+
+<statement> ::= <expression> `;'
+              
+<expression> ::= <term>
+   \alt `let' Id `=' <expression>
+   \alt `\textbackslash' Id `.' <expression>
+
+<term> ::= <factor>
+   \alt <factor> `+' <term>
+   \alt <factor> `-' <term>
+
+<factor> ::= <application>
+   \alt <application> `*' <factor>
+   \alt <application> `/' <factor>
+
+<application> ::= <primary>
+   \alt <primary> <application>
+
+<primary> ::= Id
+   \alt Digits
+   \alt `(' <compound> `)'
+
+<compound> ::= <expression>
+   \alt <expression> `;' <compound>
+\end{grammar}
+
+\subsection{AST}
+
+\begin{grammar}
+<t> ::= $\mathbb{N}$ | $x$ | $let$ $x = t$ | $\lambda x.t$ 
+         | $t$ $t$ | $t;t$ | $\delta$ $op$ $t$ $t$
+
+<v> ::= $\mathbb{N}$ | $\lambda x.t$ | $\delta$ $op$ $v$ $v$
+\end{grammar}
+
+\subsection{AST}
+
+
+
+\section{}
+\end{document}
