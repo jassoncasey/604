@@ -1,0 +1,4 @@
+let k = 23;
+let double = \x.(x+x);
+let linear = (\x.\y.\z.(x*y+z));
+double k + (linear 3 3 3);
