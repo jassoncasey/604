@@ -13,7 +13,7 @@ Department of Computer Science \\Texas A\&M University}
 \\\Michael Lopez }
 
 \begin{document}
-%\maketitle
+\maketitle
 
 \section{Parsing and Representation}
 
@@ -27,6 +27,14 @@ intermediate representation. Assuming no issues are encountered the parse
 tree is transformed into an AST. The right-associative application produced by
 the LL parse is transformed into a left-associative sub-tree during this phase
 using sub-tree rotations.
+
+\subsection{Evaluation}
+Before the AST is evaluated, a core set of functionals (cons, nil, etc.) are
+evaluated and bound to the global scope. The AST is then evaluated using the
+call-by-value strategy. After the right side is a value (irreducible),
+a beta transformaton is applied and the evaluator descends into the expression
+on the left side of an application. When descent is no longer possible, the
+evaluator returns to the scope of the root of the resulting expression.
 
 \subsection{Regular Expression}
 
