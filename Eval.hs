@@ -36,6 +36,7 @@ isNum _ = False
 -- Apply lambda
 evalExpr :: Env-> Expression -> (Env,Expression)
 -- Note, for this implementation, a let-bindings in b is in scope before lambda
+-- Scope is way off! This needs to let go and find a binding!
 evalExpr env (Application (Lambda (Id ident) e) b) =
   let
     (envModb,b') = evalExpr env b
