@@ -1,6 +1,6 @@
 module Eval
 ( evalProgramInter
-, getExprStr
+, evalExprsString
 , evalExpr
 , evalExprs
 ) where
@@ -14,13 +14,30 @@ import Environment
 --eval :: Env -> Program -> Expression
 --eval env (Prog exprs) = snd $ evalExprs env exprs
 
-getExprStr :: Expression -> String
-getExprStr (Num a) = show a
-getExprStr _ = "Not implemented yet.    -Mgmt"
+evalErrored :: Expression -> Bool
+evalErrored ErrExpr = True
+evalErrored _ = False
 
 evalProgramInter :: Env -> Program -> (Env,Expression)
 evalProgramInter env (Prog exprs) = evalExprs env exprs
 evalProgramInter env ErrProg = (env, ErrExpr)
+
+-- for IO
+evalExprsString :: Env -> [Expression] -> (Env, Expression, String)
+evalExprsString env [] = (env, ErrExpr, "")
+evalExprsString env [e] =
+  let
+    (env',e') = evalExpr env e
+  in
+    (env',e', if evalErrored e' then ""
+      else ("    "++(getStrExpression e')++" from "++(getStrExpression e)++"\n"))
+evalExprsString env (e:es) =
+  let
+    (env',e') = evalExpr env e
+    (envPrev, e'', str) = evalExprsString env' es
+  in
+    (envPrev, e'', (if evalErrored e' then ""
+      else ("    "++(getStrExpression e')++" from "++(getStrExpression e) ++"\n")++str))
 
 evalExprs :: Env -> [Expression] -> (Env, Expression)
 evalExprs env [] = (env, ErrExpr)
@@ -74,7 +91,7 @@ evalExpr env (Lambda idExpr e) = (env,Lambda idExpr e)
 evalExpr env (Binary op a b)
   | a' == a && b' == b = (env, (Binary op a b))
   | otherwise = evalExpr envModb (Binary op a' b')
-  where (envModa,a') = evalExpr env a
+  where (_,a') = evalExpr env a
         (envModb,b') = evalExpr env b
 
 evalExpr env (Let (Id b) e) =

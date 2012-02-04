@@ -6,6 +6,8 @@ import Interactive
 import ParseTree
 import Parser
 import qualified Ast 
+import Eval
+import qualified Environment
 
 -- Process files for project 2
 batch :: [String] -> IO ()
@@ -18,7 +20,12 @@ batch args = do
 -- Print the AST's and results of AST's if valid
 -- Input (filename, source)
 printIfValid :: (String,String) -> String
-printIfValid (fn,src) = fn ++ "\n" ++ (foldr (++) "" (getStmts fn src)) ++ "\n\n"
+printIfValid (fn,src) =
+  let
+    Ast.Prog k = Ast.transformProg $ parse fn src
+    (_,_,s) = evalExprsString (Environment.Env []) k
+  in
+    fn ++ "\n" ++ s ++ "\n\n"
 
 --printStmtAndFilenames :: S
 
@@ -35,9 +42,15 @@ printStmt EmptyStmt = ""
 printStmt (ErrStmt err) = err
 printStmt stmt = (Ast.getStrSExpression $ Ast.transformStmt stmt) ++ "\n"
 
---printEvaluatable :: Expression -> Bool
---printEvaluatable ErrExpr = ""
---printEvaluatable _
+-- get eval results and parsing
+--getParseEval :: Ast.Expression -> String
+
+parseAndTransform :: String -> String -> Ast.Program
+parseAndTransform fn src = Ast.transformProg $ parse fn src
+
+--astToEvalPair :: Ast.Expression -> (Ast.Expression,Ast.Expression)
+--astToEvalPair e = (Eval.evalExpr
+
 
 main :: IO ()
 main = do
