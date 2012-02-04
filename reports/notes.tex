@@ -117,4 +117,40 @@ $WS ::= [$\textbackslash n \textbackslash t $]$
 \end{prooftree}
 
 \section{Testing}
+
+\section{Files}
+\subsection{Core files}
+\begin{tabular}{|l|l|}
+  \hline
+{\bf Files}&{\bf Description}\\
+  \hline
+spl.hs & Main file that initializes the SPL parser.\\
+  \hline
+Lexer.hs & Module that implements lexing and defines tokens for SPL.\\
+  \hline
+Parser.hs & Module that implements the parser for SPL.\\
+  \hline
+ParseTree.hs & Module that defines the SPL parse tree data structure and auxilliary functions.\\
+  \hline
+Ast.hs & Module that defines the AST data structure for SPL.\\
+  \hline
+Eval.hs & Module containing evaluation facilities for the SPL.\\
+  \hline
+\end{tabular}
+\subsection{Auxilliary files}
+\begin{tabular}{|l|l|}
+  \hline
+{\bf Files}&{\bf Description}\\
+  \hline
+Interactive.hs & Module that implements an REPL for SPL.\\
+  \hline
+CmdOpts.hs & Auxilliary module to handle command-line arguments supplied to the parser.\\
+  \hline
+test_lexer.hs & Executes tests for the lexer.\\
+  \hline
+test_parser.hs & Executes tests for the parser.\\
+  \hline
+PrettyPrint.hs & Module that formats internal data structures for printing.
+  \hline
+\end{tabular}
 \end{document}
