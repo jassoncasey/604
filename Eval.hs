@@ -41,7 +41,7 @@ evalExpr env (Application (Lambda (Id ident) e) b) =
     (envModb,b') = evalExpr env b
     newEnv = (bind (pushScope envModb) ident b')
   in
-    (envModb, snd $ evalExpr newEnv e) -- snd and using old scope works as pop
+    (newEnv, snd $ evalExpr newEnv e) -- snd and using old scope works as pop
 -- FIXME No need for new Env in call-by-value. Proof?
 evalExpr env (Application (Id a) e) =
   let (newEnv,a') = evalExpr env (Id a) in evalExpr newEnv (Application a' e)
@@ -74,7 +74,7 @@ evalExpr env (Binary op a b)
   | a' == a && b' == b = (env, (Binary op a b))
   | otherwise = evalExpr envModb (Binary op a' b')
   where (envModa,a') = evalExpr env a
-        (envModb,b') = evalExpr envModa b
+        (envModb,b') = evalExpr env b
 
 evalExpr env (Let (Id b) e) =
   let
@@ -96,3 +96,10 @@ deltaArith (Binary Minus (Num a) (Num b)) = Num (a - b)
 deltaArith (Binary Mult  (Num a) (Num b)) = Num (a * b)
 deltaArith (Binary Div   (Num a) (Num b)) = Num (a `quot` b)
 deltaArith _ = ErrExpr
+
+
+
+--betaReduce :: Expression -> Expression--
+--betaReduce (Compound v = 
+
+
