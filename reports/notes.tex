@@ -68,11 +68,53 @@ $WS ::= [$\textbackslash n \textbackslash t $]$
          | $t$ $t$ | $t;t$ | $\delta$ $op$ $t$ $t$
 
 <v> ::= $\mathbb{N}$ | $\lambda x.t$ | $\delta$ $op$ $v$ $v$
+
+<op> ::= $+$ | $-$ | $\times$ | $/$
 \end{grammar}
 
-\subsection{AST}
+\section{Evaluation}
 
+\begin{prooftree}
+\RightLabel{\textbf{$E_{seq1}$}}
+\AxiomC{}
+\UnaryInfC{$v$; $t\rightarrow t$}
+\end{prooftree}
+ 
+\begin{prooftree}
+\RightLabel{\textbf{$E_{app1}$}}
+\AxiomC{}
+\UnaryInfC{$( \lambda x. t_1 )$ $v_2 \rightarrow$[$ x \mapsto v_2$] $t_1$}
+\end{prooftree}
 
+\begin{prooftree}
+\RightLabel{\textbf{$E_{app2}$}}
+\AxiomC{$t_2 \rightarrow t_2'$}
+\UnaryInfC{$t_1$ $t_2 \rightarrow t_1$ $t_2'$}
+\end{prooftree}
+ 
+\begin{prooftree}
+\RightLabel{\textbf{$E_{app3}$}}
+\AxiomC{$t_1 \rightarrow t_1'$}
+\UnaryInfC{$t_1$ $v_2 \rightarrow t_1'$ $v_2$}
+\end{prooftree}
 
-\section{}
+\begin{prooftree}
+\RightLabel{\textbf{$E_{seq2}$}}
+\AxiomC{$t_1 \rightarrow t_1'$}
+\UnaryInfC{$t_1$ ; $t_2 \rightarrow t_1'$ ; $t_2$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{\delta1}$}}
+\AxiomC{$t_1 \rightarrow t_1'$}
+\UnaryInfC{$\delta$ $op$ $t_1$ $t_2 \rightarrow \delta$ $op$ $t_1'$ $t_2$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{\delta2}$}}
+\AxiomC{$t_2 \rightarrow t_2'$}
+\UnaryInfC{$\delta$ $op$ $v_1$ $t_2 \rightarrow \delta$ $op$ $v_1$ $t_2'$}
+\end{prooftree}
+
+\section{Testing}
 \end{document}
