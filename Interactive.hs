@@ -17,8 +17,10 @@ import qualified Ast
 startInteractive :: IO ()
 startInteractive = do
   putStr promptIntro
-  -- process coreLib
-  replSpl (Env [])
+  coreSource <- readFile "splCore.spl"
+  --error coreSource
+  let (env,_) = evalProgramInter (Env []) $ Ast.transformProg $ parse "" coreSource
+  replSpl env
 
 -- Constant Strings --
 promptStr :: String
