@@ -70,6 +70,9 @@ tokenizeBuff fn src =
           lineNum :: Int = line number that the source code appears in file
           src :: String = source code
   Output: token representation of source code
+
+  Notes: This takes only a single line, so '\n' characters should not exist and
+    comments simply terminate lexing
 -}
 tokenize :: String -> Int -> String -> [Token]
 tokenize fn lineNum src = tokenize_impl fn lineNum 1 src []
@@ -77,6 +80,7 @@ tokenize fn lineNum src = tokenize_impl fn lineNum 1 src []
 tokenize_impl :: String -> Int -> Int -> String -> [Token] -> [Token]
 tokenize_impl f l c s t
   | s == [] = t
+  | List.isPrefixOf "--" s = t
   | h == ' ' || h == '\n' || h == '\t' = tokenize_impl f l (c + 1) (tail s) t
   | isCharOp h = tokenize_impl f l (c+1) (tail s) (t ++ [Tok (getCharOp h) (Lex [h] l c f)])
   | isPrefixKeyword s = pullLet f l c s t
