@@ -10,10 +10,10 @@
 Department of Computer Science \\Texas A\&M University}
 \author{\LARGE Homework 2 Report\\ \\
 \\Jasson Casey
-\\\Michael Lopez }
+\\Michael Lopez }
 
 \begin{document}
-%\maketitle
+\maketitle
 
 \section{Parsing and Representation}
 
@@ -168,4 +168,12 @@ PrettyPrint.hs & Module that formats internal data structures for printing.\\
 splCore.spl & Core library that implements cons, nil and some other common functionals.\\
   \hline
 \end{tabular}
+
+\section{Analysis}
+This implementation uses more sub-term types than is strictly necessary. Let bindings
+are managed by passing an enviornment of scopes. A better implementation would transform all
+$let$ $x = t_1 ; t_2$ to an Ast term of $($ $\lambda x.t_2$ $)$ $t_1$. This would simplify the Ast
+and allow for a more uniform evaluation environment. Also, Binary terms could be reduced to an
+abstraction further simplifying the Ast and evaluation. Using these two transforms no environment
+and scope concept is necessary for successful evaluation.
 \end{document}
