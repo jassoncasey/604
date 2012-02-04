@@ -1,0 +1,6 @@
+(\x.xy)(\u.vuu) ;
+(\x.\y.yx)uv ;
+(\x.x(x(yz))x)(\u.uv) ;
+(\x.xxy)(\y.yz) ;
+(\x.\y.xyy)(\u.uyx) ;
+(\x.\y.\z.xz(yz))((\x.\y.yx)u)((\x.y.yx)v)w ;
