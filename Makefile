@@ -3,7 +3,7 @@ FLAGS=-Wall
 LIBS=-package haskell98 -package containers
 
 # To add a new executable simple add the module name to TARGETS
-TARGETS=spl test_lexer test_parser Driver
+TARGETS=spl test_lexer Driver
 
 # To add a new source file simple append to SRC
 SRC=Lexer.hs ParseTree.hs Parser.hs CmdOpts.hs PrettyPrint.hs Ast.hs \

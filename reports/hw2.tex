@@ -1,103 +1,102 @@
-\documentclass[11pt,twoside]{article}
-\usepackage{mdwtab}
+\documentclass{article}
 \usepackage{syntax}
-\usepackage{times}
-\usepackage{amssymb}
-\usepackage{amsmath}
-\usepackage{amsthm}
-%\usepackage{mathptm}
-\usepackage{fancyhdr}
 \usepackage{bussproofs}
-\ifx\pdfoutput\undefined
-% we are running LaTeX, not pdflatex
-\usepackage{epsfig,color}
-\else
-% we are running pdflatex, so convert .eps files to .pdf
-\usepackage[pdftex]{epsfig,color}
-\usepackage{epstopdf}
-\usepackage{pdfsync}
-\fi
-\usepackage{ifthen,version}
-\usepackage{listings}
-%\usepackage{temporal}
-%\usepackage{algorithmic}
-\newboolean{print-solutions}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+%\setlength{\grammarindent}{2.5cm}
 
-% Start of configuration section
-% Comment out the following line to exclude the printing of solutions.
-%\setboolean{print-solutions}{true}
-\newcommand{\hwnumber}{\#0}
-\newcommand{\coursenumber}{CS 604}
-\newcommand{\coursename}{Programming Language Design}
-\newcommand{\instructor}{Gabriel Dos Reis}
-% End of configuration section
-
-% Conditional definitions
-\newcommand{\dateorsol}{\LARGE \ifthenelse{\boolean{print-solutions}}%
-  {Solutions}{}}
-\newcommand{\headertxt}{\sl \ifthenelse{\boolean{print-solutions}}%
-  {Solutions to}{} Homework 2}
-\newcommand{\points}[1]{\ifthenelse{\boolean{print-solutions}}%
-  {}{[#1 points.]}}
-\ifthenelse{\boolean{print-solutions}}{\includeversion{prnt-solns}}%
-{\excludeversion{prnt-solns}}
-
-\textwidth=6.5in
-\evensidemargin=-0.1in
-\oddsidemargin=-0.1in
-
-\newcommand{\ite}{\operatorname{ite}}
-\newcommand{\itec}{\operatorname{ite\_constant}}
-
-{\theoremstyle{definition} \newtheorem{definition}{Definition}}
-\newtheorem{theorem}{Theorem}
-\newtheorem{lemma}{Lemma}
-\newtheorem{corollary}{Corollary}
-\newtheorem{proposition}{Proposition}
-{\theoremstyle{remark}
-  \newtheorem{example}{Example}
-  \newtheorem{problem}{Problem}
-  \newtheorem{note}{Note}}
-% Fortunately, proofs can be nested.
-\newenvironment{solution}{\begin{proof}[Solution]}{\end{proof}}
-
-\title{\coursenumber: \coursename\\
+\title{
 Department of Computer Science \\Texas A\&M University}
-\author{\LARGE Homework 2 Report\\ \\ 
+\author{\LARGE Homework 2 Report\\ \\
 \\Jasson Casey
 \\Michael Lopez }
-\date{\dateorsol}
-\pagestyle{fancy}
-\lhead[\rm\thepage]{\headertxt}
-\rhead[\headertxt]{\rm\thepage}
-\lfoot[\today]{\coursenumber}
-\cfoot{\instructor}
-\rfoot[\coursenumber]{\today}
 
 \begin{document}
-\bibliographystyle{alpha}
 \maketitle
-\noindent
-\section{Description}
-\section{Syntax}
+
+\section{Parsing and Representation}
+
+SPL input files are read and split into a token stream according to the token
+syntax regular expressions. Whitespace (WS) tokens are dropped from the input
+stream. Identifiers which match the keyword ``let'' are transformed into a 
+special Let token. The parser produces a parse tree from the token stream,
+which maintains context information from the input file such as: filename, line
+and column number. The parser is a LL recursive decent parser which produces a 
+intermediate representation. Assuming no issues are encountered the parse
+tree is transformed into an AST. The right-associative application produced by
+the LL parse is transformed into a left-associative sub-tree during this phase
+using sub-tree rotations.
+
+\subsection{Regular Expression}
+
+$Id ::= [a-zA-Z\_][a-zA-Z_0-9]^{*}$\\
+$Digits ::= [0-9]^{+}$\\
+$Tokens ::= [=.+-*/();]$\\
+$WS ::= [$\textbackslash n \textbackslash t $]$
+
+\subsection{Grammar}
+
 \begin{grammar}
-<statement> ::= a
+<program> ::= <statements>
+   \alt $\epsilon$ 
+
+<statements> ::= <statement> <statements>
+   \alt <statement>
+
+<statement> ::= <expression> `;'
+              
+<expression> ::= <term>
+   \alt `let' Id `=' <expression>
+   \alt `\textbackslash' Id `.' <expression>
+
+<term> ::= <factor>
+   \alt <factor> `+' <term>
+   \alt <factor> `-' <term>
+
+<factor> ::= <application>
+   \alt <application> `*' <factor>
+   \alt <application> `/' <factor>
+
+<application> ::= <primary>
+   \alt <primary> <application>
+
+<primary> ::= Id
+   \alt Digits
+   \alt `(' <compound> `)'
+
+<compound> ::= <expression>
+   \alt <expression> `;' <compound>
 \end{grammar}
-\section{Parse Tree}
-\section{Transform: Syntax $\mapsto$ Ast}
-\section{Semantics}
-\vfill
-$t$ ::= $\mathbb{N}$ $|$ $x$ $|$ $let$ $x = t$ $|$ $\lambda x.t$ $|$ $t$ $t$ $|$ 
-      $t;$ $t$ $|$ $\delta$ $op$ $v$ $v$\\
-$v$ ::= $\mathbb{N}$ $|$ $\lambda x.t$ \\
-\vfill
+
+\subsection{AST}
+
+\begin{grammar}
+<t> ::= $\mathbb{N}$ | $x$ | $let$ $x = t$ | $\lambda x.t$ 
+         | $t$ $t$ | $t;t$ | $\delta$ $op$ $t$ $t$
+
+<v> ::= $\mathbb{N}$ | $\lambda x.t$ | $\delta$ $op$ $v$ $v$
+
+<op> ::= $+$ | $-$ | $\times$ | $/$
+\end{grammar}
+
+\section{Evaluation}
+
+Before the AST is evaluated, a core set of functionals (cons, nil, etc.) are
+evaluated and bound to the global scope. The AST is then evaluated using the
+call-by-value strategy. After the right side is a value (irreducible),
+a beta transformaton is applied and the evaluator descends into the expression
+on the left side of an application. When descent is no longer possible, the
+evaluator returns to the scope of the root of the resulting expression.
+
+\subsection{Operational Semantics}
 
 \begin{prooftree}
 \RightLabel{\textbf{$E_{seq1}$}}
 \AxiomC{}
 \UnaryInfC{$v$; $t\rightarrow t$}
 \end{prooftree}
-
+ 
 \begin{prooftree}
 \RightLabel{\textbf{$E_{app1}$}}
 \AxiomC{}
@@ -121,12 +120,69 @@ $v$ ::= $\mathbb{N}$ $|$ $\lambda x.t$ \\
 \AxiomC{$t_1 \rightarrow t_1'$}
 \UnaryInfC{$t_1$ ; $t_2 \rightarrow t_1'$ ; $t_2$}
 \end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{\delta1}$}}
+\AxiomC{$t_1 \rightarrow t_1'$}
+\UnaryInfC{$\delta$ $op$ $t_1$ $t_2 \rightarrow \delta$ $op$ $t_1'$ $t_2$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{\delta2}$}}
+\AxiomC{$t_2 \rightarrow t_2'$}
+\UnaryInfC{$\delta$ $op$ $v_1$ $t_2 \rightarrow \delta$ $op$ $v_1$ $t_2'$}
+\end{prooftree}
+
 \section{Testing}
 
+This implementation supports both an interactive and compilation mode. Evaluator testing 
+was primarily carried out using the interactive-mode of the SPL parser.
+The interactive SPL parser allowed us to compare evaluation results against the AST and lexer information.
+It also allowed us to exercise the environment (scope information) as it is readily available for query.
 
+\section{Files}
+\subsection{Core files}
+\begin{tabular}{|l|l|}
+  \hline
+{\bf Files}&{\bf Description}\\
+  \hline
+spl.hs & Main file that initializes the SPL parser.\\
+  \hline
+Lexer.hs & Module that implements lexing and defines tokens for SPL.\\
+  \hline
+Parser.hs & Module that implements the parser for SPL.\\
+  \hline
+ParseTree.hs & Module that defines the SPL parse tree data structure and auxilliary functions.\\
+  \hline
+Ast.hs & Module that defines the AST data structure for SPL.\\
+  \hline
+Eval.hs & Module containing evaluation facilities for the SPL.\\
+  \hline
+\end{tabular}
+\subsection{Auxilliary files}
+\begin{tabular}{|l|l|}
+  \hline
+{\bf Files}&{\bf Description}\\
+  \hline
+Interactive.hs & Module that implements an REPL for SPL.\\
+  \hline
+CmdOpts.hs & Auxilliary module to handle command-line arguments supplied to the parser.\\
+  \hline
+test_lexer.hs & Executes tests for the lexer.\\
+  \hline
+test_parser.hs & Executes tests for the parser.\\
+  \hline
+PrettyPrint.hs & Module that formats internal data structures for printing.\\
+  \hline
+splCore.spl & Core library that implements cons, nil and some other common functionals.\\
+  \hline
+\end{tabular}
+
+\section{Analysis}
+This implementation uses more sub-term types than is strictly necessary. Let bindings
+are managed by passing an enviornment of scopes. A better implementation would transform all
+$let$ $x = t_1 ; t_2$ to an Ast term of $($ $\lambda x.t_2$ $)$ $t_1$. This would simplify the Ast
+and allow for a more uniform evaluation environment. Also, Binary terms could be reduced to an
+abstraction further simplifying the Ast and evaluation. Using these two transforms no environment
+and scope concept is necessary for successful evaluation.
 \end{document}
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: t
-%%% End
-

@@ -1,6 +1,7 @@
 import Parser
 import ParseTree
 import System
+import Lexer
 
 data Status = Success | Failure
 
@@ -12,7 +13,7 @@ runTests [] = ( Success, "Finished ..." )
 
 
 unit_tests :: [ ( String, [String], Expression ) ] 
-unit_tests = [ ( "test", [], )]
+unit_tests = [ ( "test", ["id;"], Id ( Tok IdTok ( Lex "id" 1 1 "" ) ) )]
 
 -- shell return code handling
 terminate :: Status -> IO ()

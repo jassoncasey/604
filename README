@@ -1,46 +1,9 @@
-Revised Grammar of SPL
-----------------------
-
-program : Empty
-        | statements
-
-statements  : statement
-            | statement statements
-
-statement : expression ';'
-
-expression  : term
-            | 'let' Id '=' expression
-            | '\' Id '.' expression
-
-term  : factor
-      | factor '+' term
-      | factor '-' term
-
-factor   : application
-         | application '*' factor
-         | application '/' factor
-
-application : primary
-            | primary application
-
-primary  : Id
-         | Digit
-         | '(' compound ')' 
-
-compound : expression
-         | expression ';' complex
-
-Status
-------
-Parser.hs does not support compound expressions.
-Prser.hs does not reduce list sizes for errored parses
-which results in some catestrophic executions. Should be
-a few more hours to resolve.
-
 Files
 -----
 Lexer.hs - SPL scanner/tokenizer
-Ast.hs   - SPL abstract syntax tree
-Parser.hs - SPL parser, parses a token list into a Ast
-Driver.hs - SPL compiler entry point
+Parser.hs - SPL parser, takes [Token] and produces a ParseTree
+ParseTree.hs - intermediate representation of SPL
+Ast.hs   - SPL abstract syntax tree, and IR transforms
+spl.hs - SPL compiler entry point
+*.hs - other supporting files
+reports/hw2.pdf - report for the evaluation assignment
