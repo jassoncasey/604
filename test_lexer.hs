@@ -34,9 +34,9 @@ runTests [] = ( Success, "Finished ..." )
 -- simpley add another valid input string
 -- to the input list of the proper class below
 digit_tests :: [String]
-digit_tests = [ "0123456789", "a" ]
+digit_tests = [ "2000000000", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" ]
 id_tests :: [String]
-id_tests = ["_", "0" ]
+id_tests = ["_", "a", "Z", "_asf04r24350a0sf" ]
 
 -- To extend a class of tests simply add
 -- a new tuple to the list that contains:
