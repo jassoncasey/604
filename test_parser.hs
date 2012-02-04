@@ -1,13 +1,18 @@
 import Parser
+import ParseTree
 import System
 
 data Status = Success | Failure
 
 --runTests :: [] -> ( Status, String )
-runTests ((name, tests, symbol):tl) = ( Success, "" )
+runTests :: [ ( String, [String], Expression) ] -> ( Status, String )
+runTests ((name, tests, symbol):tl) = 
+   ( Success, "" )
 runTests [] = ( Success, "Finished ..." )
 
-unit_tests = []
+
+unit_tests :: [ ( String, [String], Expression ) ] 
+unit_tests = [ ( "test", [], )]
 
 -- shell return code handling
 terminate :: Status -> IO ()
