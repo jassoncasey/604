@@ -78,23 +78,14 @@ Department of Computer Science \\Texas A\&M University}
 \bibliographystyle{alpha}
 \maketitle
 \noindent
-\begin{enumerate}
-\item Description
-
-\item Syntax
+\section{Description}
+\section{Syntax}
 \begin{grammar}
 <statement> ::= a
 \end{grammar}
-
-\item ParseTree
-
-\item Transform : Syntax $\mapsto$ ParseTree
-
-\item Ast
-
-\item Transform : ParseTree $\mapsto$ Ast
-
-\item Semantics
+\section{Parse Tree}
+\section{Transform: Syntax $\mapsto$ Ast}
+\section{Semantics}
 \vfill
 $t$ ::= $\mathbb{N}$ $|$ $x$ $|$ $let$ $x = t$ $|$ $\lambda x.t$ $|$ $t$ $t$ $|$ 
       $t;$ $t$ $|$ $\delta$ $op$ $v$ $v$\\
@@ -130,11 +121,9 @@ $v$ ::= $\mathbb{N}$ $|$ $\lambda x.t$ \\
 \AxiomC{$t_1 \rightarrow t_1'$}
 \UnaryInfC{$t_1$ ; $t_2 \rightarrow t_1'$ ; $t_2$}
 \end{prooftree}
+\section{Testing}
 
-\item Testing
 
-\vfill
-\end{enumerate}
 \end{document}
 %%% Local Variables:
 %%% mode: latex
