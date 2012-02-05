@@ -1,6 +1,3 @@
-1. Add to Lexer.hs unit_tester with positive/negative inputs
-2. Build Parser.hs unit_tester with positive/negative inputs
-3. Wrap existing unit_testers into a test harness of some form
-4. Start on language dynamics
-5. integrate compile|interpret
-6. Add list operators
+1. Build Parser.hs unit_tester with positive/negative inputs
+2. integrate compile|interpret
+3. Fix fresh variable code

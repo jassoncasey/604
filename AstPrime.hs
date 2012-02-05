@@ -89,7 +89,7 @@ transformAstExprs ((Ast.Let target source):tl) =
          applied = (transformAstExpr source)
 transformAstExprs (h:tl) = 
    ((transformAstExpr h):(transformAstExprs tl))
-transformAstExprs [] = [Unit]
+transformAstExprs [] = []
 
 -- simple single expression transform
 transformAstExpr :: Ast.Expression -> Expression

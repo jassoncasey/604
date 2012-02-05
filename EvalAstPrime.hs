@@ -88,7 +88,7 @@ substitution n x (Ast.Lambda param body) =
 substitution n x (Ast.Exprs (h:tl)) = 
    substitution n x (Ast.Exprs tl)
    where r = substitution n x h
-substitution _ _ (Ast.Exprs [] ) = Ast.Unit
+substitution _ _ (Ast.Exprs [] ) = Ast.Exprs []
 substitution _ _ Ast.Unit = Ast.Unit
 
 -- beginings of applications
@@ -108,9 +108,10 @@ eval ( Ast.Application lhs rhs ) =
    apply lhs' rhs'
    where rhs' = eval rhs 
          lhs' = eval lhs  
-eval ( Ast.Exprs (h:tl) ) = 
-   eval ( Ast.Exprs tl )
-   where result = eval h
-eval ( Ast.Exprs [] ) = Ast.Unit
+eval ( Ast.Exprs (h:tl) ) =
+   if length tl == 0
+      then eval h
+      else eval ( Ast.Exprs tl )
+eval ( Ast.Exprs [] ) = Ast.Exprs []
 -- simple expressions just require the identity function
 eval x = x

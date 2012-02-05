@@ -3,6 +3,7 @@ import Parser
 import qualified ParseTree as PT
 import qualified Ast as Ast
 import qualified AstPrime as AstPrime
+import qualified EvalAstPrime as EAP
 
 -- take a filename and make sure it is a *.spl format
 badPostFix :: String -> Bool
@@ -26,12 +27,15 @@ process ( file : files ) =
       let prog = parse file buf
       let ast = Ast.transformProg prog
       let ast' = AstPrime.transformAst ast
+      let result = EAP.eval ast'
       putStrLn "--------------Parse Tree-----------------"
       putStr (PT.getStrProgram prog)
       putStrLn "------------------AST--------------------"
       putStr ( Ast.getStrSProgram ast )
       putStrLn "-----------------AST'--------------------"
       putStr ( AstPrime.getStrAstPrime ast' )
+      putStrLn "-----------------Eval--------------------"
+      putStr ( AstPrime.getStrAstPrime result )
       putStrLn "-----------------------------------------"
       process files
 process [] = return () 

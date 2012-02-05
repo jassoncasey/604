@@ -96,7 +96,7 @@ getStrExpression ( Application lhs rhs ) =
    ( getStrExpression lhs ) ++ " " ++ ( getStrExpression rhs )
 getStrExpression ( Compound _ exprs _ ) =
    "( " ++ ( getStrCompound exprs ) ++ " )"
-getStrExpression _ = "Malformed parse tree .. can't print expression"
+getStrExpression _ = "Malformed parse tree .. can't print expression\n"
 
 -- compound printing helper function
 getStrCompound :: [(Expression, Token)] -> String
