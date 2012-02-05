@@ -66,6 +66,6 @@ main =
    do args <- getArgs
       if badUsage args 
          then putStrLn "usage syntax: ./splc <input>.spl+"
-         else if length args > 1
+         else if length args > 0
                   then batch args
                   else interactive
