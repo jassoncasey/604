@@ -120,6 +120,11 @@ evaluator returns to the scope of the root of the resulting expression.
 
 \subsection{Operational Semantics}
 
+Some computation steps are carried out as $\delta$ functions. $\Delta$
+identifies the set of tuples representing the mapping from domain
+to range of the $\delta$ function. Currently, the $\delta$ function is
+defined for $( +, -, x, / )$ over $\mathbb{N}$.
+
 \begin{prooftree}
 \RightLabel{\textbf{$E_{seq1}$}}
 \AxiomC{}
@@ -160,6 +165,12 @@ evaluator returns to the scope of the root of the resulting expression.
 \RightLabel{\textbf{$E_{\delta2}$}}
 \AxiomC{$t_2 \rightarrow t_2'$}
 \UnaryInfC{$\delta_{op}$ $v_1$ $t_2 \rightarrow \delta_{op}$ $v_1$ $t_2'$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{\delta3}$}}
+\AxiomC{$((\delta_{op}$, $v_1$, $v_2), v_3) \in \Delta$}
+\UnaryInfC{$\delta_{op}$ $v_1$ $v_2 \rightarrow v_3$}
 \end{prooftree}
 
 \section{Testing}
