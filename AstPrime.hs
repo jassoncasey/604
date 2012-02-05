@@ -57,7 +57,7 @@ getStrExpression (Lambda param body) =
    "(" ++ "\\" ++   (getStrExpression param) ++ "." ++
                      (getStrExpression body) ++ ")"
 getStrExpression (Application lhs rhs) =
-   "(" ++  (getStrExpression lhs) ++
+   "(" ++  (getStrExpression lhs) ++ " " ++
             (getStrExpression rhs) ++ ")"
 getStrExpression (Exprs exprs) =
    "(" ++ (getStrExprs exprs) ++ ")"

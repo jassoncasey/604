@@ -75,19 +75,31 @@ lambdaSub n x param body =
 -- core of lambda calculus substitution
 substitution :: Ast.Expression -> Ast.Expression -> Ast.Expression -> 
                      Ast.Expression
-substitution n _ (Ast.Var _) = n
+-- [N/x]x=N, [N/x]a=a
+substitution n (Ast.Var x) (Ast.Var val) = 
+   if x == val
+      then n
+      else Ast.Var val
+-- [N/x]a=a
 substitution _ _ (Ast.Nat val) = Ast.Nat val
+-- [N/x](P Q)=([N/x]P [N/x]Q)
 substitution n x (Ast.Application lhs rhs) = 
    Ast.Application (substitution n x lhs) (substitution n x rhs)
+-- [N/x](delta op P Q)=(delta op [N/x]P [N/x]Q)
 substitution n x (Ast.Delta op lhs rhs) =
    Ast.Delta op (substitution n x lhs) (substitution n x rhs)
+-- [N/x]\x.P ....
 substitution n x (Ast.Lambda param body) =
    if isEquivVar x param
+      -- =\x.P
       then (Ast.Lambda param body)
+      -- more complicated
       else lambdaSub n x param body
+-- [N/x] t:tl = [N/x]t):[N/x]tl
 substitution n x (Ast.Exprs (h:tl)) = 
    substitution n x (Ast.Exprs tl)
    where r = substitution n x h
+-- No substitution for simple expressions
 substitution _ _ (Ast.Exprs [] ) = Ast.Exprs []
 substitution _ _ Ast.Unit = Ast.Unit
 

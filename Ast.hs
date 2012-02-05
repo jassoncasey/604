@@ -70,7 +70,7 @@ leftAssociate ( Application lhs rhs ) =
    if isApp rhs
       then leftAssociate ( Application ( Application ( lhs ) ( lhsApp rhs ) ) 
                                        ( rhsApp rhs ) ) 
-      else ( Application lhs rhs ) 
+      else ( Application (leftAssociate lhs) (leftAssociate rhs) ) 
 leftAssociate ( Compound exprs ) = 
    ( Compound ( leftAssociateExprs exprs ) )
 leftAssociate x = x
