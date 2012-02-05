@@ -7,7 +7,8 @@ TARGETS=spl test_lexer Driver
 
 # To add a new source file simple append to SRC
 SRC=Lexer.hs ParseTree.hs Parser.hs CmdOpts.hs PrettyPrint.hs Ast.hs \
-	 Environment.hs Eval.hs Interactive.hs AstPrime.hs
+	 Environment.hs Eval.hs Interactive.hs AstPrime.hs CompilerUtils.hs \
+	 EvalAstPrime.hs
 
 all: $(TARGETS)
 

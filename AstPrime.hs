@@ -15,6 +15,7 @@ data Operator =
    | Mult
    | Div
    | NoOp
+   | Exception
    deriving (Show,Eq)
 
 data Expression =
@@ -34,6 +35,7 @@ getStrOp Minus = "-"
 getStrOp Mult  = "*"
 getStrOp Div   = "/"
 getStrOp NoOp  = " noop "
+getStrOp Exception = " excpetion "
 
 -- simple Ast operator transform
 getOp :: Ast.Operator -> Operator
