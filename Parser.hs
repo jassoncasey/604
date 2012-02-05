@@ -60,7 +60,7 @@ parseStmt (h:tl) =
       then ( drop 1 remainder, Stmt expr (head remainder))
       -- failed statment parse
       else ( [], ErrStmt ( ( getStrExpression expr ) ++ 
-                              "Statement missing semicolon;\n" ) )
+                              "  <--- missing ';'\n" ) )
   where ( remainder, expr ) = parseExpr (h:tl)
 parseStmt [] = ( [], EmptyStmt )
 
