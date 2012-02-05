@@ -125,7 +125,7 @@ getStrExpression ( Binary op lhs rhs ) =
 getStrExpression ( Application lhs rhs ) =
    ( getStrExpression lhs ) ++ " " ++ ( getStrExpression rhs ) 
 getStrExpression ( Compound exprs ) =
-   "( " ++ ( getStrCompound exprs ) ++ " )"
+   "(comp " ++ ( getStrCompound exprs ) ++ " )"
 getStrExpression _ = "Unknown expression"
 
 -- simple compound statement printer
@@ -206,8 +206,7 @@ transformExpr ( PT.Binary ( Lx.Tok _ ( Lx.Lex operator _ _ _ ) ) lhs rhs ) =
    Binary ( getOp operator ) ( transformExpr lhs ) ( transformExpr rhs )
 transformExpr ( PT.Application lhs rhs ) = 
    Application ( transformExpr lhs ) ( transformExpr rhs )
-transformExpr ( PT.Compound _ exprs _ ) = 
-   Compound ( transformCompound exprs )
+transformExpr ( PT.Compound _ exprs _ ) = Compound ( transformCompound exprs )
 transformExpr _ = ErrExpr
 
 -- compound transform helper

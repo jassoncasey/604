@@ -1,6 +1,7 @@
 module EvalAstPrime
 (
    eval
+   , freeVars
 ) where
 
 import qualified AstPrime as Ast
@@ -26,10 +27,10 @@ isEquivVar _ _= False
 -- generate a list of variables in use
 vars :: Ast.Expression -> [String]
 vars (Ast.Var val) = [val]
-vars (Ast.Delta _ lhs rhs) = (vars lhs ) ++ (vars rhs)
-vars (Ast.Lambda (Ast.Var val) body) = (val:(vars body))
-vars (Ast.Application lhs rhs) = (vars lhs) ++ (vars rhs)
-vars (Ast.Exprs (h:tl)) = (vars h) ++ (vars (Ast.Exprs tl))
+vars (Ast.Delta _ lhs rhs) = nub ((vars lhs) ++ (vars rhs))
+vars (Ast.Lambda (Ast.Var val) body) = nub (val:(vars body))
+vars (Ast.Application lhs rhs) = nub((vars lhs) ++ (vars rhs))
+vars (Ast.Exprs (h:tl)) = nub ((vars h) ++ (vars (Ast.Exprs tl)))
 vars (Ast.Exprs []) = []
 -- this will cover Unit and Nat
 vars _ = []
@@ -37,19 +38,18 @@ vars _ = []
 -- generate a fresh variable
 freshVar :: Ast.Expression -> Ast.Expression
 freshVar expr =
-   Ast.Var (minFreeString active)   
-   where active = nub (vars expr)
+   Ast.Var (minFreeString (vars expr))   
 
 -- return a list of free variables in a term
 freeVars :: Ast.Expression -> [Ast.Expression]
 freeVars (Ast.Var val) = [Ast.Var val]
-freeVars (Ast.Nat _) = []
-freeVars (Ast.Delta _ lhs rhs) = (freeVars lhs) ++ (freeVars rhs)
-freeVars (Ast.Lambda param body) = filter (isEquivVar param) (freeVars body)
-freeVars (Ast.Application lhs rhs) = (freeVars lhs) ++ (freeVars rhs)
-freeVars (Ast.Exprs (h:tl)) = (freeVars h) ++ (freeVars (Ast.Exprs tl))
+freeVars (Ast.Delta _ lhs rhs) = nub ((freeVars lhs) ++ (freeVars rhs))
+freeVars (Ast.Lambda param body) = filter (/= param) (freeVars body)
+freeVars (Ast.Application lhs rhs) = nub ((freeVars lhs) ++ (freeVars rhs))
+freeVars (Ast.Exprs (h:tl)) = nub ((freeVars h) ++ (freeVars (Ast.Exprs tl)))
 freeVars (Ast.Exprs []) = []
-freeVars Ast.Unit = []
+-- this will cover Unit and Nat
+freeVars _ = []
 
 -- implement a lambda substitution where a rewrite is necessary
 lambdaSubFresh :: Ast.Expression -> Ast.Expression -> Ast.Expression -> 
@@ -76,8 +76,8 @@ lambdaSub n x param body =
 substitution :: Ast.Expression -> Ast.Expression -> Ast.Expression -> 
                      Ast.Expression
 -- [N/x]x=N, [N/x]a=a
-substitution n (Ast.Var x) (Ast.Var val) = 
-   if x == val
+substitution n x (Ast.Var val) = 
+   if x == (Ast.Var val)
       then n
       else Ast.Var val
 -- [N/x]a=a
@@ -98,19 +98,26 @@ substitution n x (Ast.Lambda param body) =
 -- [N/x] t:tl = [N/x]t):[N/x]tl
 substitution n x (Ast.Exprs exprs) = Ast.Exprs (substitutionList n x exprs)
 -- No substitution for simple expressions
-substitution _ _ (Ast.Exprs [] ) = Ast.Exprs []
 substitution _ _ Ast.Unit = Ast.Unit
 
-substitutionList :: Ast.Expression -> Ast.Expression -> [Ast.Expression] -> [Ast.Expression]
+-- substitution list helper
+substitutionList :: Ast.Expression -> Ast.Expression -> [Ast.Expression] -> 
+                     [Ast.Expression]
 substitutionList n x (h:tl) = ((substitution n x h):(substitutionList n x tl))
-substitutionList n x [] = []
+substitutionList _ _ [] = []
 
 -- beginings of applications
 apply :: Ast.Expression -> Ast.Expression -> Ast.Expression
 apply ( Ast.Lambda param body ) rhs = 
-   substitution rhs param body 
+   substitution rhs param body
+apply ( Ast.Exprs exprs ) rhs = Ast.Exprs (applyList exprs rhs)
 -- can't apply if left side is not a lambda
 apply lhs rhs = Ast.Application lhs rhs   
+
+-- apply an application across a list
+applyList :: [Ast.Expression] -> Ast.Expression -> [Ast.Expression]
+applyList (h:tl) rhs = ((apply h rhs):(applyList tl) rhs)
+applyList [] _ = []
 
 eval :: Ast.Expression -> Ast.Expression
 eval term =
@@ -126,14 +133,17 @@ evaluate ( Ast.Delta op lhs rhs ) =
    deltaCompute op lhs' rhs'
    where lhs' = evaluate lhs
          rhs' = evaluate rhs
+evaluate ( Ast.Lambda param body ) =
+   Ast.Lambda param (evaluate body)
 evaluate ( Ast.Application lhs rhs ) = 
    apply lhs' rhs'
    where rhs' = evaluate rhs 
          lhs' = evaluate lhs  
-evaluate ( Ast.Exprs (h:tl) ) =
-   if length tl == 0
-      then evaluate h
-      else evaluate ( Ast.Exprs tl )
-evaluate ( Ast.Exprs [] ) = Ast.Exprs []
+-- this is broken and should be fixed
+evaluate ( Ast.Exprs exprs ) = Ast.Exprs (evalList exprs)
 -- simple expressions just require the identity function
 evaluate x = x
+
+evalList :: [Ast.Expression] -> [Ast.Expression]
+evalList (h:tl) = (evaluate h):(evalList tl)
+evalList [] = []

@@ -54,13 +54,13 @@ getStrExpression (Delta op lhs rhs) =
             (getStrExpression lhs) ++ " " ++ 
             (getStrExpression rhs) ++")"
 getStrExpression (Lambda param body) =
-   "(" ++ "\\" ++   (getStrExpression param) ++ "." ++
-                     (getStrExpression body) ++ ")"
+   "" ++ "\\" ++   (getStrExpression param) ++ "." ++
+                     (getStrExpression body) ++ ""
 getStrExpression (Application lhs rhs) =
    "(" ++  (getStrExpression lhs) ++ " " ++
             (getStrExpression rhs) ++ ")"
-getStrExpression (Exprs exprs) =
-   "(" ++ (getStrExprs exprs) ++ ")"
+getStrExpression (Exprs exprs) = getStrExprs exprs
+--   "(" ++ (getStrExprs exprs) ++ ")"
 getStrExpression Unit = "unit"
 
 getStrAstPrime :: Expression -> String
@@ -103,6 +103,9 @@ transformAstExpr (Ast.Binary op lhs rhs ) =
 transformAstExpr (Ast.Application lhs rhs ) =
    Application (transformAstExpr lhs) (transformAstExpr rhs)
 -- simplify compounds to a list of expressions
-transformAstExpr (Ast.Compound exprs) = Exprs (transformAstExprs exprs)
+transformAstExpr (Ast.Compound exprs) = 
+   if length exprs == 1
+      then transformAstExpr (head exprs)
+      else Exprs (transformAstExprs exprs)
 transformAstExpr _ = Unit
 
