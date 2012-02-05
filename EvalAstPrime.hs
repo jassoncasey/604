@@ -54,10 +54,9 @@ freeVars _ = []
 -- implement a lambda substitution where a rewrite is necessary
 lambdaSubFresh :: Ast.Expression -> Ast.Expression -> Ast.Expression -> 
                      Ast.Expression -> Ast.Expression
-lambdaSubFresh n x param body =
-   substitution n' z (Ast.Lambda z body)
-   where z = freshVar (Ast.Exprs [n, body])
-         n' = substitution z param n
+lambdaSubFresh n x y p =
+   Ast.Lambda z (substitution n x (substitution z y p))
+   where z = freshVar (Ast.Exprs [n, p])
 
 -- implement lambda substitution rules
 lambdaSub :: Ast.Expression -> Ast.Expression -> Ast.Expression -> 
