@@ -55,10 +55,9 @@ freeVars _ = []
 lambdaSubFresh :: Ast.Expression -> Ast.Expression -> Ast.Expression -> 
                      Ast.Expression -> Ast.Expression
 lambdaSubFresh n x param body =
-   Ast.Lambda z body''
+   substitution n' z (Ast.Lambda z body)
    where z = freshVar (Ast.Exprs [n, body])
-         body' = substitution z param body
-         body'' = substitution n x body'
+         n' = substitution z param n
 
 -- implement lambda substitution rules
 lambdaSub :: Ast.Expression -> Ast.Expression -> Ast.Expression -> 
