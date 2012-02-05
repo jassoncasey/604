@@ -108,22 +108,30 @@ apply :: Ast.Expression -> Ast.Expression -> Ast.Expression
 apply ( Ast.Lambda param body ) rhs = 
    substitution rhs param body 
 -- can't apply if left side is not a lambda
-apply lhs rhs = Ast.Lambda lhs rhs   
+apply lhs rhs = Ast.Application lhs rhs   
+
+eval :: Ast.Expression -> Ast.Expression
+eval term =
+   if result == result'
+      then result
+      else evaluate result'
+   where result = evaluate term
+         result' = evaluate result
 
 -- spl evaluator
-eval :: Ast.Expression -> Ast.Expression
-eval ( Ast.Delta op lhs rhs ) = 
+evaluate :: Ast.Expression -> Ast.Expression
+evaluate ( Ast.Delta op lhs rhs ) = 
    deltaCompute op lhs' rhs'
-   where lhs' = eval lhs
-         rhs' = eval rhs
-eval ( Ast.Application lhs rhs ) = 
+   where lhs' = evaluate lhs
+         rhs' = evaluate rhs
+evaluate ( Ast.Application lhs rhs ) = 
    apply lhs' rhs'
-   where rhs' = eval rhs 
-         lhs' = eval lhs  
-eval ( Ast.Exprs (h:tl) ) =
+   where rhs' = evaluate rhs 
+         lhs' = evaluate lhs  
+evaluate ( Ast.Exprs (h:tl) ) =
    if length tl == 0
-      then eval h
-      else eval ( Ast.Exprs tl )
-eval ( Ast.Exprs [] ) = Ast.Exprs []
+      then evaluate h
+      else evaluate ( Ast.Exprs tl )
+evaluate ( Ast.Exprs [] ) = Ast.Exprs []
 -- simple expressions just require the identity function
-eval x = x
+evaluate x = x
