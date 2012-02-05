@@ -1,6 +1,6 @@
-(\x.xy)(\u.vuu) ;
-(\x.\y.yx)uv ;
-(\x.x(x(yz))x)(\u.uv) ;
-(\x.xxy)(\y.yz) ;
-(\x.\y.xyy)(\u.uyx) ;
-(\x.\y.\z.xz(yz))((\x.\y.yx)u)((\x.y.yx)v)w ;
+(\x.x y)(\u.v u u) ;
+(\x.\y.y x)u v ;
+(\x.x(x(y z))x)(\u.u v) ;
+(\x.x x y)(\y.y z) ;
+(\x.\y.x y y)(\u.u y x) ;
+(\x.\y.\z.x z(y z))((\x.\y.y x)u)((\x.\y.y x)v)w ;
