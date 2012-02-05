@@ -40,25 +40,31 @@ process filename buf = do
 
 batch :: [String] -> IO ()
 batch ( file : files) = do
+   lib <- readFile "splCore.spl"
    buf <- readFile file
    putStrLn ("Compiling: " ++ file)
-   process file buf
+   process file (lib ++ buf)
    batch files
 batch [] = return ()
 
-singleLine :: String -> IO ()
-singleLine input = do
-   process "" input
-   interactive
+singleLine :: String -> String -> IO ()
+singleLine lib input = do
+   process "" (lib ++ input)
+   interactive lib
 
-interactive :: IO ()
-interactive = do
+interactive :: String -> IO ()
+interactive lib = do
    putChar '>'
    hFlush stdout
    input <- getLine
    if input == ":q"
       then return ()
-      else singleLine input
+      else singleLine lib input
+
+interactiveInit :: IO ()
+interactiveInit = do
+   lib <- readFile "splCore.spl"
+   interactive lib
 
 -- repeat the processing for each argument
 main :: IO ()
@@ -68,4 +74,4 @@ main =
          then putStrLn "usage syntax: ./splc <input>.spl+"
          else if length args > 0
                   then batch args
-                  else interactive
+                  else interactiveInit
