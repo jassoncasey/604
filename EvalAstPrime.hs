@@ -96,12 +96,14 @@ substitution n x (Ast.Lambda param body) =
       -- more complicated
       else lambdaSub n x param body
 -- [N/x] t:tl = [N/x]t):[N/x]tl
-substitution n x (Ast.Exprs (h:tl)) = 
-   substitution n x (Ast.Exprs tl)
-   where r = substitution n x h
+substitution n x (Ast.Exprs exprs) = Ast.Exprs (substitutionList n x exprs)
 -- No substitution for simple expressions
 substitution _ _ (Ast.Exprs [] ) = Ast.Exprs []
 substitution _ _ Ast.Unit = Ast.Unit
+
+substitutionList :: Ast.Expression -> Ast.Expression -> [Ast.Expression] -> [Ast.Expression]
+substitutionList n x (h:tl) = ((substitution n x h):(substitutionList n x tl))
+substitutionList n x [] = []
 
 -- beginings of applications
 apply :: Ast.Expression -> Ast.Expression -> Ast.Expression
