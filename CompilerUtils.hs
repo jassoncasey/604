@@ -1,12 +1,6 @@
 module CompilerUtils
 (
    minFreeString,
-   Tree(..),
-   buildTreeStr,
-   mergeItem,
-   mergeList,
-   mergeTree,
-   buildTree
 ) where
 
 import Data.Char
@@ -17,18 +11,33 @@ data Tree =
    deriving (Eq,Show)
 
 -- charater classes to search
-first_char :: String
-first_char = ['a'..'z'] ++ ['A'..'Z'] ++ "_"
-other_char :: String
-other_char = first_char ++ ['0'..'9']
+universe :: String
+universe = ['a'..'z'] ++ ['A'..'Z'] ++ "_" ++ ['0'..'9']
 
-minFreeList :: [Tree] -> String
-minFreeList ((Interior val children):tl) = ""
-    
-minFree :: Tree -> String
-minFree (Root children) = minFreeList children
-minFree (Interior val (h:tl)) = ""
-minFree (Interior val []) = other_char
+-- find the set difference with the current
+getPossible :: [Tree] -> String
+getPossible ((Interior val _):tl) =
+   filter (/=val) (getPossible tl) 
+getPossible _ = universe
+
+-- simple value accessor
+getVal :: Tree -> String
+getVal (Interior val _ ) = [val]
+getVal _ = "_"
+
+-- extract the minimum string not present in the tree
+getMinTree :: Tree -> String
+getMinTree (Root (h:tl)) =
+   if length possible == 0
+      then (getVal h) ++ (getMinTree h)
+      else [head possible]
+   where possible = getPossible (h:tl)
+getMinTree (Interior _ (h:tl)) = 
+   if length possible == 0
+      then (getVal h) ++ (getMinTree h)
+      else [head possible]
+   where possible = getPossible (h:tl)
+getMinTree _ = "_z_"
 
 -- merge a single item into a list of items
 mergeItem :: [Tree] -> Tree -> [Tree]
@@ -68,5 +77,4 @@ buildTreeStr [] = Root []
 -- find the minimum free string
 minFreeString :: [String] -> String
 minFreeString inputs =
-   "z"
-   where tree = buildTreeStr inputs
+   getMinTree (buildTreeStr inputs)
