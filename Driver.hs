@@ -2,6 +2,7 @@ import System
 import Parser
 import qualified ParseTree as PT
 import qualified Ast as Ast
+import qualified AstPrime as AstPrime
 
 -- take a filename and make sure it is a *.spl format
 badPostFix :: String -> Bool
@@ -23,11 +24,15 @@ process ( file : files ) =
    do buf <- readFile file 
       putStrLn ("Compiling: " ++ file)
       let prog = parse file buf
-      putStrLn "-------------------------------"
+      let ast = Ast.transformProg prog
+      let ast' = AstPrime.transformAst ast
+      putStrLn "--------------Parse Tree-----------------"
       putStr (PT.getStrProgram prog)
-      putStrLn "-------------------------------"
-      putStr ( Ast.getStrSProgram ( Ast.transformProg prog ) )
-      putStrLn "-------------------------------"
+      putStrLn "------------------AST--------------------"
+      putStr ( Ast.getStrSProgram ast )
+      putStrLn "-----------------AST'--------------------"
+      putStr ( AstPrime.getStrAstPrime ast' )
+      putStrLn "-----------------------------------------"
       process files
 process [] = return () 
 
