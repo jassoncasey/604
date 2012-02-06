@@ -7,5 +7,5 @@ let head = \l.l (\h.\t.h);
 let tail = \l.l (\h.\t.t);
 let null = \l.l (\h.\t.fls);
 let fix = \f.(\x.f(\y.x x y))(\x.f(\y.x x y));
-let g = \fct.\n. test (isZero n) 1 (n*(fct (n-1)))
+let g = \fct.\n. test (isZero n) 1 (n*(fct (n-1)));
 let factorial = fix g;
