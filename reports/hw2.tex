@@ -181,6 +181,17 @@ The interactive SPL parser allowed us to compare evaluation results against the
 AST and lexer information. It also allowed us to exercise the environment 
 (scope information) as it is readily available for query.
 
+The following expressions were taken from a Lamba calculus text to validate
+substitution rules:\\
+\begin{itemize}
+\item $(\lambda x.x y)(\lambda u.v u u) \rhd _\beta vyy$ 
+\item $(\lambda x.\lambda y.y x)u v \rhd _\beta vu$ 
+\item $(\lambda x.x(x(y z))x)(\lambda u.u v) \rhd _\beta ((yz)v)v(\lambda u.uv)$
+\item $(\lambda x.x x y)(\lambda y.y z) \rhd _\beta zzy$ 
+\item $(\lambda x.\lambda y.x y y)(\lambda u.u y x) \rhd _\beta \lambda z.zyxz$
+\item $(\lambda x.\lambda y.\lambda z.x z(y z))((\lambda x.\lambda y.y x)u)((\lambda x.\lambda y.y x)v)w \rhd _\beta wu(wv)$
+\end{itemize}
+
 \section{Files}
 \subsection{Core files}
 \begin{tabular}{|l|l|}
