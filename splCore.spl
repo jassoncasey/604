@@ -1,5 +1,8 @@
 let tru = \t.\f.t;
 let fls = \t.\f.f;
+let and = \a.\b.test a (test b tru fls) fls
+let or = \a.\b.test a tru (test b tru fls)
+let not = \a.test a fls tru
 let test = \l.\m.\n.(l m n);
 let nil = \f.tru;
 let cons = \h.\t.\f.(f h t);
