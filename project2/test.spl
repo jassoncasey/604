@@ -1,0 +1,5 @@
+let k = 23;
+let double = \x.(x+x);
+let linear = \l.(\m.(\n.(l*m+n)));
+4+ linear 2 3 4 + double 3;
+

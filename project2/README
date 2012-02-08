@@ -1,0 +1,9 @@
+Files
+-----
+Lexer.hs - SPL scanner/tokenizer
+Parser.hs - SPL parser, takes [Token] and produces a ParseTree
+ParseTree.hs - intermediate representation of SPL
+Ast.hs   - SPL abstract syntax tree, and IR transforms
+spl.hs - SPL compiler entry point
+*.hs - other supporting files
+reports/hw2.pdf - report for the evaluation assignment
