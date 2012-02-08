@@ -10,7 +10,7 @@ import Lexer
 import PrettyPrint
 import Environment
 import Parser
-import ParseTree
+--import ParseTree
 import qualified Ast
 
 -- Fires up the interactive interpreter
@@ -35,7 +35,7 @@ promptHelp = "Command options-\n"
   ++ "  :parse s      If parse is successful, 'valid' is displayed."
   ++ "Otherwise display\n"
   ++ "                the error.\n"
-  ++ "  :environment  Displays current environment information\n"
+  -- ++ "  :environment  Displays current environment information\n"
 
 
 -- Puts str in the output buffer and immediately flushes it to stdout handle
@@ -69,6 +69,30 @@ printParseTree s =
     Ast.Prog exprs -> foldr (++) "" $ map Ast.getStrSExpression exprs
   where k = Ast.transformProg $ parse "-" (s ++ ";")
 
+-- Semi-colon is not required to appear at the end of an expression when in
+-- interactive mode
+addSemiIfNot :: String -> String
+addSemiIfNot "" = ";"
+addSemiIfNot s
+ | last s == ';' = s ++ ";"
+ | otherwise     = s
+
+tryEval :: Env -> String -> (Env, String)
+tryEval env "" = (env,"")
+tryEval env s =
+  let
+    (env', e) = evalProgramInter env $
+      Ast.transformProg $ parse "-" s
+  in
+    (env', (Ast.getStrExpression e) ++ "\n")
+
+
+  {-ErrPrg -> (env, "Malformed expression. FIXME Better error?\n")
+  parseProg -> case Ast.transformProg parseProg of
+    Ast.ErrProg -> (env, "Enable to transform parse tree to AST.\n")
+    a -> (newState, Ast.getStrExpression)
+    where (newState, expr) = evalProgramInter env a-}
+
 replSpl :: Env -> IO ()
 replSpl state = do
   input <- readPrompt
@@ -82,10 +106,14 @@ replSpl state = do
         "parse" -> putStr ((printParseTree rest) ++ "\n") >> replSpl state
         _       -> putStrLn "Unknown command." >> replSpl state
     else do
-      case (parse "-" (input ++ ";")) of
+      let (newState, expr) = tryEval state input
+      putStr expr >> replSpl newState
+
+-- Old part of REPL
+      {-case (parse "-" $ addSemiIfNot input) of
         ErrPrg _ -> putStrLn "Malformed expression" >> replSpl state
         rawProg -> case Ast.transformProg rawProg of
           Ast.ErrProg -> putStrLn "Uncaught error on parse tree to AST tranformation" >> replSpl state
           prgm -> do
             let (newState, expr) = evalProgramInter state prgm
-            putStrLn (Ast.getStrExpression expr) >> replSpl newState
+            putStrLn (Ast.getStrExpression expr) >> replSpl newState-}
