@@ -1,3 +1,4 @@
-3+55;
-let k = 2+3;
-(\x.x) k;
+let tru = \t.\f.t;
+let fls = \t.\f.f;
+let test = \l.\m.\n.(n m l);
+test tru 2 3;
