@@ -11,13 +11,13 @@ data Ast =
   | Lambda String Ast
   | Application Ast Ast
   | Let Name Ast Ast
-  deriving Show
+  deriving (Eq,Show)
 
 data CstData =
     IntCst Integer
   | Constructor String Int
   | Primitive String Int
-  deriving Show
+  deriving (Eq,Show)
 
 data Name = 
     Identifier String -- source level identifier

@@ -1,9 +1,13 @@
 import System( getArgs )
 import Control.Monad( forM )
+import qualified Maybe
 
 import Lexing( lexString )
 import Parsing( Program(..), parse_program )
 import Ast( program )
+import Evaluate ( evaluate )
+
+
 
 main :: IO ()
 main = do
@@ -27,4 +31,9 @@ testDiag args = do
   putStrLn $ show parsedSource
   putStrLn "------------------ AST -----------------"
   putStrLn $ show ast
+  putStrLn "-------------- Evaluation --------------"
+  if Maybe.isJust ast
+    then do
+      putStrLn $ show $ evaluate $ Maybe.fromJust ast
+    else putStrLn "[]"
   return ()
