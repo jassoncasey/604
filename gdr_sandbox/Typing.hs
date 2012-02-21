@@ -49,10 +49,17 @@ unify :: ConstraintSet -> Substitution
 unify [] = []
 unify ((t,u):cs)
   | t == u = unify cs
-  -- Can we consatenate instead of append?
-  | isTypeVar t && (not.isSubVar) t u = (unify cs) ++ [(,)]
-  | otherwise = error "SUUUUUUPP!"
-
+  -- The book appends the new substitution to the back
+  | isTypeVar t && (not $ isSubVar t u)
+      = [(t,u)] : unify (subConstraints t u cs)
+  | isTypeVar u && (not $ isSubVar u t)
+      = [(u,t)] : unify (subConstraints u t cs)
+  | isArrow t && isArrow u =
+      let
+        (Arrow t1 t2) = t
+        (Arrow u1 u2) = u
+      in unify ((t1,u1):(t2,u2):cs)
+  | otherwise = error "SUUUUUUPP, HOLMES!"
 
 isTypeVar :: TypeSymbol -> Bool
 isTypeVar (Variable _) = True
@@ -62,16 +69,24 @@ isArrow :: TypeSymbol -> Bool
 isArrow (Arrow _ _) = True
 isArrow _ = False
 
+isList :: TypeSymbol -> Bool
+isList (List _) = True
+isList _ = False
+
 isSubVar :: TypeSymbol -> TypeSymbol -> Bool
 isSubVar t (List u) = t == u || isSubVar t u
 isSubVar t (Arrow u s) = t == u || t == s || isSubVar t u || isSubVar t s
 isSubVar _ _ = False
 
 subType :: TypeSymbol -> TypeSymbol -> TypeSymbol -> TypeSymbol
-subType t u r = t
-subType t u r = u
+subType t u (Arrow r s) = Arrow (subType t u r) (subType t u s)
+subType t u (List r) = List (subType t u r)
+subType t u r
+  | t == r = u
+  | otherwise = r
 
 
 -- Substitute every occurance of t with u
---subConstraints :: TypeSymbol -> TypeSymbol -> ConstraintSet -> ConstraintSet
---subConstraints t u ((s,r):cs) = (subType t u s, subType t u r):(subConstraints (t,u) cs)
+subConstraints :: TypeSymbol -> TypeSymbol -> ConstraintSet -> ConstraintSet
+subConstraints t u ((s,r):cs) = (subType t u s, subType t u r):(subConstraints t u cs)
+subConstraints t u [] = []
