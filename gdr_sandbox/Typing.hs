@@ -89,10 +89,6 @@ inferType ctx (Variable _ (Ast.Identifier sym)) =
 
 
 -- Gathers all constraints for an Ast
-{-getConstraints :: Ast.Ast -> Int -> ConstraintSet -> (Int, ConstraintSet)
-getConstraints (Ast.Application e1 e2) n cs =
-  let
-    getConstraints -}
 getType :: AstT -> TypeSymbol
 getType (Constant t _) = t
 getType (Variable t _) = t
@@ -100,7 +96,7 @@ getType (Lambda t _ _) = t
 getType (Application t _ _) = t
 getType (Let t _ _) = t
 
-getConstraints :: AstT -> ConstraintSet -> [(TypeSymbol,TypeSymbol)]
+getConstraints :: AstT -> ConstraintSet -> ConstraintSet
 getConstraints (Application t e1 e2) cs =
   let
     cs1 = getConstraints e1 []
@@ -158,3 +154,11 @@ subType t u r
 subConstraints :: TypeSymbol -> TypeSymbol -> ConstraintSet -> ConstraintSet
 subConstraints t u ((s,r):cs) = (subType t u s, subType t u r):(subConstraints t u cs)
 subConstraints t u [] = []
+
+-- Applies the substitution until the 
+{-applySub :: Substitution -> TypeSymbol -> TypeSymbol
+applySub ((s,u):subs) t = subType
+
+applySubOnce :: Substitution -> TypeSymbol -> TypeSymbol
+applySubOnce [] t = t
+applySubOnce ((s,u):subs) t = -}
