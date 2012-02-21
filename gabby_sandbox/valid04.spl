@@ -1,4 +1,0 @@
-let tru = \t.\f.t;
-let fls = \t.\f.f;
-let test = \l.\m.\n.(n m l);
-test tru 2 3;
