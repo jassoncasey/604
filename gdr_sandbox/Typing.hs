@@ -2,13 +2,43 @@ module Typing where
 
 import qualified Ast
 
-
 data TypeSymbol =
     Arrow TypeSymbol TypeSymbol
   | List TypeSymbol
   | Natural
-  | Variable Int
+  | TypeVar Int  -- Rename to TypeVar
   deriving (Show,Eq)
+
+data AstT = 
+    Constant TypeSymbol Ast.CstData
+  | Variable TypeSymbol Ast.Name
+  | Lambda TypeSymbol String AstT
+  | Application TypeSymbol AstT AstT
+  | Let TypeSymbol AstT AstT
+  deriving (Show,Eq)
+
+
+typifyTree :: Ast.Ast -> AstT
+typifyTree t = let (t',_) = typifyTreeImpl (t,0) in t'
+
+typifyTreeImpl :: (Ast.Ast, Int) -> (AstT, Int)
+typifyTreeImpl ((Ast.Constant (Ast.IntCst a)), n) =
+  (Constant Natural (Ast.IntCst a), n)
+typifyTreeImpl ((Ast.Constant (Ast.Primitive sym k)), n)
+  | elem sym ["+","-","*","/"] =
+      (Constant (Arrow Natural (Arrow Natural Natural)) (Ast.Primitive sym k),n)
+  | otherwise = error "Unknown Primitive!"
+typifyTreeImpl ((Ast.Variable name), n) =
+  ((Variable (TypeVar n) name), n+1)
+typifyTreeImpl ((Ast.Lambda sym e), n) =
+  let (e',n') = typifyTreeImpl (e,n) in
+  ((Lambda (TypeVar n') sym e'), n' + 1)
+typifyTreeImpl ((Ast.Application e1 e2), n) =
+  let
+    (e1',n')  = typifyTreeImpl (e1,n)
+    (e2',n'') = typifyTreeImpl (e2,n')
+  in
+    ((Application (TypeVar n'') e1' e2'), n'' + 1)
 
 -- typing environment
 -- FIXME: Move to own file?
@@ -31,29 +61,68 @@ bindVar :: TypeContext -> String -> TypeSymbol -> TypeContext
 bindVar context sym ty = ((Ast.Identifier sym),ty):context
 
 
+-- Infertype does not use unify. Instead it applies the rules as needed.
+-- Should probably not do that...
+inferType :: TypeContext -> AstT -> TypeSymbol
+inferType ctx (Application t e1 e2)
+  | isArrow ty1 = let (Arrow ty11 ty12) = ty1 in
+    case ty11 of
+      ty2 -> ty12
+      _   -> error "Expected, got m!y"
+  | otherwise = error "Expected an arrow type."
+  where ty1 = inferType ctx e1
+        ty2 = inferType ctx e2
 
-inferType :: TypeContext -> Ast.Ast -> TypeSymbol
-inferType context (Ast.Variable (Ast.Identifier sym)) =
+{-inferType ctx (Ast.Lambda sym e)
+  let
+    ctx' = bindVar ctx sym -}
+
+inferType _ (Constant ty (Ast.IntCst _)) = ty
+
+inferType _ (Constant ty (Ast.Primitive _ _)) = ty
+
+inferType ctx (Variable _ (Ast.Identifier sym)) =
   case ty of
     Just ty' -> ty'
-    Nothing -> error ("Lookup failure. " ++ sym ++ " is a free variable.")
-  where ty = lookUp context sym
-
-inferType _ (Ast.Constant (Ast.IntCst _)) = Natural
-inferType _ (Ast.Constant (Ast.Primitive sym _))
-  | elem sym ["+","-","*","/"] = Arrow Natural (Arrow Natural Natural)
-  | otherwise = error "Unknown primitive."
+    Nothing -> error ("Lookup failure. " ++ sym ++ " is not defined.")
+  where ty = lookUp ctx sym
 
 
+-- Gathers all constraints for an Ast
+{-getConstraints :: Ast.Ast -> Int -> ConstraintSet -> (Int, ConstraintSet)
+getConstraints (Ast.Application e1 e2) n cs =
+  let
+    getConstraints -}
+getType :: AstT -> TypeSymbol
+getType (Constant t _) = t
+getType (Variable t _) = t
+getType (Lambda t _ _) = t
+getType (Application t _ _) = t
+getType (Let t _ _) = t
+
+getConstraints :: AstT -> ConstraintSet -> [(TypeSymbol,TypeSymbol)]
+getConstraints (Application t e1 e2) cs =
+  let
+    cs1 = getConstraints e1 []
+    cs2 = getConstraints e2 []
+    constraint = (getType e1, Arrow (getType e2) t)
+  in constraint : (cs1++cs2++cs)
+getConstraints (Constant _ _) cs = cs
+getConstraints (Lambda _ _ _) cs = cs
+
+
+
+-- Given a set of type constraints, unify returns a principle unifier (substituion)
+-- FIXME change this to return Either. The left will return an error message
 unify :: ConstraintSet -> Substitution
 unify [] = []
 unify ((t,u):cs)
   | t == u = unify cs
   -- The book appends the new substitution to the back
   | isTypeVar t && (not $ isSubVar t u)
-      = [(t,u)] : unify (subConstraints t u cs)
+      = (t,u) : unify (subConstraints t u cs)
   | isTypeVar u && (not $ isSubVar u t)
-      = [(u,t)] : unify (subConstraints u t cs)
+      = (u,t) : unify (subConstraints u t cs)
   | isArrow t && isArrow u =
       let
         (Arrow t1 t2) = t
@@ -62,7 +131,7 @@ unify ((t,u):cs)
   | otherwise = error "SUUUUUUPP, HOLMES!"
 
 isTypeVar :: TypeSymbol -> Bool
-isTypeVar (Variable _) = True
+isTypeVar (TypeVar _) = True
 isTypeVar _ = False
 
 isArrow :: TypeSymbol -> Bool
@@ -84,7 +153,6 @@ subType t u (List r) = List (subType t u r)
 subType t u r
   | t == r = u
   | otherwise = r
-
 
 -- Substitute every occurance of t with u
 subConstraints :: TypeSymbol -> TypeSymbol -> ConstraintSet -> ConstraintSet
