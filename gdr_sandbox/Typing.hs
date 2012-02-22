@@ -52,11 +52,6 @@ typifyTreeImpl typifyTreeImpl' ((Ast.Variable (Identifier sym)), n) =
   in-}
   
 
-((Ast.Lambda sym e), n) =
-  let (e',n') = typifyTreeImpl' (e,n) in
-  ((Lambda (TypeVar n') sym e'), n' + 1)
-typifyTreeImpl
-
 
 typifyTreeImpl' :: (Ast.Ast, Int) -> (AstT, Int)
 typifyTreeImpl' ((Ast.Constant (Ast.IntCst a)), n) =
