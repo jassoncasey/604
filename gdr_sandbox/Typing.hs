@@ -1,12 +1,13 @@
 module Typing where
 
 import qualified Ast
+import qualified Environment
 
 data TypeSymbol =
     Arrow TypeSymbol TypeSymbol
   | List TypeSymbol
   | Natural
-  | TypeVar Int  -- Rename to TypeVar
+  | TypeVar Int
   deriving (Show,Eq)
 
 data AstT = 
@@ -17,29 +18,6 @@ data AstT =
   | Let TypeSymbol AstT AstT
   deriving (Show,Eq)
 
-
-typifyTree :: Ast.Ast -> AstT
-typifyTree t = let (t',_) = typifyTreeImpl (t,0) in t'
-
-typifyTreeImpl :: (Ast.Ast, Int) -> (AstT, Int)
-typifyTreeImpl ((Ast.Constant (Ast.IntCst a)), n) =
-  (Constant Natural (Ast.IntCst a), n)
-typifyTreeImpl ((Ast.Constant (Ast.Primitive sym k)), n)
-  | elem sym ["+","-","*","/"] =
-      (Constant (Arrow Natural (Arrow Natural Natural)) (Ast.Primitive sym k),n)
-  | otherwise = error "Unknown Primitive!"
-typifyTreeImpl ((Ast.Variable name), n) =
-  ((Variable (TypeVar n) name), n+1)
-typifyTreeImpl ((Ast.Lambda sym e), n) =
-  let (e',n') = typifyTreeImpl (e,n) in
-  ((Lambda (TypeVar n') sym e'), n' + 1)
-typifyTreeImpl ((Ast.Application e1 e2), n) =
-  let
-    (e1',n')  = typifyTreeImpl (e1,n)
-    (e2',n'') = typifyTreeImpl (e2,n')
-  in
-    ((Application (TypeVar n'') e1' e2'), n'' + 1)
-
 -- typing environment
 -- FIXME: Move to own file?
 type TypeContext = [(Ast.Name,TypeSymbol)]
@@ -49,6 +27,57 @@ type ConstraintSet = [(TypeSymbol,TypeSymbol)]
 -- Differs from above as it models substituion function.
 -- Given any tuple, the first element is a Variable type symbol
 type Substitution = [(TypeSymbol,TypeSymbol)]
+
+
+
+typifyTree :: Ast.Ast -> AstT
+typifyTree t = let (t',_) = typifyTreeImpl' (t,0) in t'
+
+typifyTreeImpl :: TypeContext -> Ast.Ast -> Int -> (AstT, Int)
+typifyTreeImpl ctx (Ast.Constant (Ast.IntCst a)) n =
+  (Constant Natural (Ast.IntCst a), n)
+typifyTreeImpl ctx (Ast.Constant (Ast.Primitive sym k)) n =
+  | elem sym ["+","-","*","/"] =
+      (Constant (Arrow Natural (Arrow Natural Natural)) (Ast.Primitive sym k),n)
+  | otherwise = error "Unknown Primitive!"
+typifyTreeImpl typifyTreeImpl' ((Ast.Variable (Identifier sym)), n) =
+  case typeVar of
+    Just a -> ((Variable a name),n)
+    Nothing -> error ("Unbound variable '" ++ sym ++ "'."
+  where typeVar = lookUp ctx sym
+{-typifyTreeImpl ctx (Ast.Lambda sym e) n =
+  let
+    ctx' = bindVar ctx sym (TypeVar n)
+    (et,n') = typifyTreeImpl ctx' e
+  in-}
+  
+
+((Ast.Lambda sym e), n) =
+  let (e',n') = typifyTreeImpl' (e,n) in
+  ((Lambda (TypeVar n') sym e'), n' + 1)
+typifyTreeImpl
+
+
+typifyTreeImpl' :: (Ast.Ast, Int) -> (AstT, Int)
+typifyTreeImpl' ((Ast.Constant (Ast.IntCst a)), n) =
+  (Constant Natural (Ast.IntCst a), n)
+typifyTreeImpl' ((Ast.Constant (Ast.Primitive sym k)), n)
+  | elem sym ["+","-","*","/"] =
+      (Constant (Arrow Natural (Arrow Natural Natural)) (Ast.Primitive sym k),n)
+  | otherwise = error "Unknown Primitive!"
+typifyTreeImpl' ((Ast.Variable name), n) =
+  ((Variable (TypeVar n) name), n+1)
+typifyTreeImpl' ((Ast.Lambda sym e), n) =
+  let (e',n') = typifyTreeImpl' (e,n) in
+  ((Lambda (TypeVar n') sym e'), n' + 1)
+typifyTreeImpl' ((Ast.Application e1 e2), n) =
+  let
+    (e1',n')  = typifyTreeImpl' (e1,n)
+    (e2',n'') = typifyTreeImpl' (e2,n')
+  in
+    ((Application (TypeVar n'') e1' e2'), n'' + 1)
+
+
 
 lookUp :: TypeContext -> String -> Maybe TypeSymbol
 lookUp (((Ast.Identifier nextSym),ty):cs) sym
@@ -143,6 +172,7 @@ isSubVar t (List u) = t == u || isSubVar t u
 isSubVar t (Arrow u s) = t == u || t == s || isSubVar t u || isSubVar t s
 isSubVar _ _ = False
 
+-- Given type t is equal to u, replace all instances of t in r with u
 subType :: TypeSymbol -> TypeSymbol -> TypeSymbol -> TypeSymbol
 subType t u (Arrow r s) = Arrow (subType t u r) (subType t u s)
 subType t u (List r) = List (subType t u r)
@@ -155,10 +185,11 @@ subConstraints :: TypeSymbol -> TypeSymbol -> ConstraintSet -> ConstraintSet
 subConstraints t u ((s,r):cs) = (subType t u s, subType t u r):(subConstraints t u cs)
 subConstraints t u [] = []
 
--- Applies the substitution until the 
-{-applySub :: Substitution -> TypeSymbol -> TypeSymbol
-applySub ((s,u):subs) t = subType
+-- Applies the substitution until the
+applySub :: Substitution -> TypeSymbol -> TypeSymbol
+applySub [] t = t
+applySub ((s,u):subs) t = subType s u $ applySub subs t
 
-applySubOnce :: Substitution -> TypeSymbol -> TypeSymbol
-applySubOnce [] t = t
-applySubOnce ((s,u):subs) t = -}
+--applySubOnce :: Substitution -> TypeSymbol -> TypeSymbol
+--applySubOnce [] t = t
+--applySubOnce ((s,u):subs) t = -}
