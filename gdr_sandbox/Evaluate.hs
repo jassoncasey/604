@@ -115,14 +115,14 @@ isValue (Variable _) = True
 isValue _ = False
 
 -- predicate to determine if an AST represents a constructor
-isConstructor :: Ast -> Int -> Bool
-isConstructor (Application t1 t2) n = isValue t2 && isConstructor t1 (n + 1)
+{-isConstructor :: Ast -> Int -> Bool
+isConstructor (Application t1 _) n = isValue t2 && isConstructor t1 (n + 1)
 isConstructor (Constant (Constructor _ m)) n = n <= m
-isConstructor _ _ = False
+isConstructor _ _ = False-}
 
 isClosedTerm :: [String] -> Ast -> Bool
 isClosedTerm vars (Lambda sym t) = isClosedTerm (sym:vars) t
-isClosedTerm vars (Application t1 t2) =
+isClosedTerm vars (Application t1 _) =
   isClosedTerm vars t1 && isClosedTerm vars t1
 isClosedTerm vars (Variable (Identifier sym)) = elem sym vars
 isClosedTerm _ _ = True

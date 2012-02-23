@@ -1,4 +1,1 @@
-let id = \x.x;
-(id 3) + 3;
-
-(Ast.Let (Ast.Identifier "id") (Ast.Lambda "x" (Ast.Variable (Ast.Identifier "x"))) (Ast.Application (Ast.Application (Ast.Constant (Ast.Primitive "+" 2)) (Ast.Application (Ast.Variable (Ast.Identifier "id")) (Ast.Constant (Ast.IntCst 3)))) (Ast.Constant (Ast.IntCst 3))))
+cons;
