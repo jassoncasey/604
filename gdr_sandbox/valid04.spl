@@ -1,2 +1,1 @@
-let double = \x.(x+x);
-double 3;
+\x.cons x (cons 2 nil);

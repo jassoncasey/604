@@ -44,5 +44,5 @@ testDiag args = do
     then do
       putStrLn $ printType $ decltype $ Data.Maybe.fromJust ast
       putStr "\n"
-    else putStrLn "[]"
+    else putStrLn "    No type information: Failed to parse."
   return ()

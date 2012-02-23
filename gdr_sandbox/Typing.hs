@@ -76,29 +76,23 @@ declType' ctx n (Ast.Lambda x e) =
     ctx' = bindVar ctx x (TypeVar n)
     (n',te,cs) = declType' ctx' (n+1) e
     te' = unifyOn cs te
-  in (n',Arrow (TypeVar n) te',cs)
+  in case te' of
+    Just c -> (n',Arrow (TypeVar n) c,cs)
+    Nothing -> error ("Couldn't unify")
 
 -- APP rule
--- FIXME generate a single constraint and unfy once
 -- FIXME Can't we discard some assumptions? How do constraints found previously
 --       help us?
--- FIXME Can we take out the unification? Would that ruin let statements?
 declType' ctx n (Ast.Application e1 e2) =
   case atob of
-    Arrow _ b' -> let cs = ((atob,Arrow a b'):(c1++c2)) in
-      (n'', unifyOn cs b', [(atob,Arrow a b')])
+    Arrow _ b' -> let constr = (atob,Arrow a b') in
+      case unified of
+        Just c -> (n'', c, [(atob,Arrow a b')])
+        Nothing -> error ("Expected a', but got a")
+      where unified = unifyOn ((atob,Arrow a b'):(c1++c2)) b'
     _ -> error "Cannot apply non-lambda 'atob' to 'a'"
   where (n',atob,c1)  = declType' ctx n e1  -- get constraints and type from lhs
         (n'',a,c2) = declType' ctx n' e2    -- get constraints and type from rhs
-
-{-declType' ctx n (Ast.Application e1 e2) =
-  case tatob of
-    Arrow a' b' | a' == ta -> (n'',b',((tatob,Arrow ta b'):(c1++c2)))
-    _ -> error ("Expected 'a', but got 'ta' in _.")
-  where (n',atob,c1)  = declType' ctx n e1  -- get constraints and type from lhs
-        (n'',a,c2) = declType' ctx n' e2    -- get constraints and type from rhs
-        tatob = unifyOn c1 atob             -- deduce most general type of lhs
-        ta = unifyOn c2 a-}                   -- deduce most general type of rhs
 
 -- When a let expression occurs with a unique id, then the variable is not used
 -- elsewhere in the spl program. As such we only run decltype on the expression
@@ -113,13 +107,16 @@ declType' ctx n (Ast.Let (Ast.Identifier sym) e1 e2) =
     (n',e1t,cs1) = declType' ctx n e1
     ctx' = bindVar ctx sym e1t
     (n'',e2t,cs2) = declType' ctx' n' e2
-  in (n'',unifyOn (cs1++cs2) e2t,cs1++cs2)
+    unified = unifyOn (cs1++cs2) e2t
+  in case unified of
+    Just c -> (n'',c,cs1++cs2)
+    Nothing -> error "Unification Error!"
 
 
 
 -- Given a set of type constraints, unify returns a principle unifier
 -- FIXME change this to return Either. The left will return an error message
-unify :: ConstraintSet -> Substitution
+{-unify :: ConstraintSet -> Substitution
 unify [] = []
 unify ((t,u):cs)
   | t == u = unify cs
@@ -135,25 +132,26 @@ unify ((t,u):cs)
         (List t') = t
         (List u') = u
       in unify ((t',u'):cs)
-  | otherwise = error "SUUUUUUPP, HOLMES!"
+  | otherwise = error "SUUUUUUPP, HOLMES!"-}
 
 -- Need Soft fail with maybe!
 unify' :: ConstraintSet -> Substitution
 unify' [] = []
 unify' ((t,u):cs) =
   case (t,u) of
-    _ | t == u -> unify cs
+    _ | t == u -> unify' cs
     ((TypeVar _),_) | (not $ isSubVar t u) ->
-      (t,u): unify (subConstraints t u cs)
+      (t,u): unify' (subConstraints t u cs)
     (_,(TypeVar _)) | (not $ isSubVar u t) ->
-      (u,t) : unify (subConstraints u t cs)
-    (Arrow t1 t2,Arrow u1 u2) -> unify ((t1,u1):(t2,u2):cs)
-    (List t', List u') -> unify ((t',u'):cs)
+      (u,t) : unify' (subConstraints u t cs)
+    (Arrow t1 t2,Arrow u1 u2) -> unify' ((t1,u1):(t2,u2):cs)
+    (List t', List u') -> unify' ((t',u'):cs)
     _ -> error "SUUUUUUPP, HOLMES!"
 
-unifyOn :: ConstraintSet -> TypeSymbol -> TypeSymbol
-unifyOn [] t = t
-unifyOn cs t = applySub (unify' cs) t
+
+unifyOn :: ConstraintSet -> TypeSymbol -> Maybe TypeSymbol
+unifyOn [] t = Just $ t
+unifyOn cs t = Just $ applySub (unify' cs) t
 
 isSubVar :: TypeSymbol -> TypeSymbol -> Bool
 isSubVar t (List u) = t == u || isSubVar t u
