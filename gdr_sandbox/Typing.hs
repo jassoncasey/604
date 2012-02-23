@@ -1,6 +1,6 @@
 module Typing where
 
-import qualified Ast
+import Ast
 import Data.List( nub )
 import Data.Maybe( fromJust )
 
@@ -35,6 +35,7 @@ bindVar context sym ty = ((Ast.Identifier sym),ty):context
 
 -- This declType' gathers constraints on application
 -- FIXME - discard old constraints?
+-- FIXME - Turn Decltype into a giant case statement?
 decltype :: Ast.Ast -> TypeSymbol
 decltype ast = let (_,t,_) = declType' [] 0 ast in t
 
@@ -78,13 +79,26 @@ declType' ctx n (Ast.Lambda x e) =
   in (n',Arrow (TypeVar n) te',cs)
 
 -- APP rule
-declType' ctx n (Ast.Application e1 e2)
-  | isArrow atob = case atob of
-      Arrow _ b -> (n'',b , ((atob,Arrow a b):(c1++c2)))
-      _ -> error ("Expected a, but got _ in _")
-  | otherwise = error ("Expected a -> b, but got _ in _")
-  where (n',atob,c1)  = declType' ctx n e1
-        (n'',a,c2) = declType' ctx n' e2
+-- FIXME generate a single constraint and unfy once
+-- FIXME Can't we discard some assumptions? How do constraints found previously
+--       help us?
+-- FIXME Can we take out the unification? Would that ruin let statements?
+declType' ctx n (Ast.Application e1 e2) =
+  case atob of
+    Arrow _ b' -> let cs = ((atob,Arrow a b'):(c1++c2)) in
+      (n'', unifyOn cs b', [(atob,Arrow a b')])
+    _ -> error "Cannot apply non-lambda 'atob' to 'a'"
+  where (n',atob,c1)  = declType' ctx n e1  -- get constraints and type from lhs
+        (n'',a,c2) = declType' ctx n' e2    -- get constraints and type from rhs
+
+{-declType' ctx n (Ast.Application e1 e2) =
+  case tatob of
+    Arrow a' b' | a' == ta -> (n'',b',((tatob,Arrow ta b'):(c1++c2)))
+    _ -> error ("Expected 'a', but got 'ta' in _.")
+  where (n',atob,c1)  = declType' ctx n e1  -- get constraints and type from lhs
+        (n'',a,c2) = declType' ctx n' e2    -- get constraints and type from rhs
+        tatob = unifyOn c1 atob             -- deduce most general type of lhs
+        ta = unifyOn c2 a-}                   -- deduce most general type of rhs
 
 -- When a let expression occurs with a unique id, then the variable is not used
 -- elsewhere in the spl program. As such we only run decltype on the expression
@@ -109,11 +123,8 @@ unify :: ConstraintSet -> Substitution
 unify [] = []
 unify ((t,u):cs)
   | t == u = unify cs
-  -- The book appends the new substitution to the back
-  | isTypeVar t && (not $ isSubVar t u)
-      = (t,u) : unify (subConstraints t u cs)
-  | isTypeVar u && (not $ isSubVar u t)
-      = (u,t) : unify (subConstraints u t cs)
+  | isTypeVar t && (not $ isSubVar t u) = (t,u) : unify (subConstraints t u cs)
+  | isTypeVar u && (not $ isSubVar u t) = (u,t) : unify (subConstraints u t cs)
   | isArrow t && isArrow u =
       let
         (Arrow t1 t2) = t
@@ -126,21 +137,23 @@ unify ((t,u):cs)
       in unify ((t',u'):cs)
   | otherwise = error "SUUUUUUPP, HOLMES!"
 
+-- Need Soft fail with maybe!
+unify' :: ConstraintSet -> Substitution
+unify' [] = []
+unify' ((t,u):cs) =
+  case (t,u) of
+    _ | t == u -> unify cs
+    ((TypeVar _),_) | (not $ isSubVar t u) ->
+      (t,u): unify (subConstraints t u cs)
+    (_,(TypeVar _)) | (not $ isSubVar u t) ->
+      (u,t) : unify (subConstraints u t cs)
+    (Arrow t1 t2,Arrow u1 u2) -> unify ((t1,u1):(t2,u2):cs)
+    (List t', List u') -> unify ((t',u'):cs)
+    _ -> error "SUUUUUUPP, HOLMES!"
+
 unifyOn :: ConstraintSet -> TypeSymbol -> TypeSymbol
 unifyOn [] t = t
-unifyOn cs t = applySub (unify cs) t
-
-isTypeVar :: TypeSymbol -> Bool
-isTypeVar (TypeVar _) = True
-isTypeVar _ = False
-
-isArrow :: TypeSymbol -> Bool
-isArrow (Arrow _ _) = True
-isArrow _ = False
-
-isList :: TypeSymbol -> Bool
-isList (List _) = True
-isList _ = False
+unifyOn cs t = applySub (unify' cs) t
 
 isSubVar :: TypeSymbol -> TypeSymbol -> Bool
 isSubVar t (List u) = t == u || isSubVar t u
@@ -171,7 +184,7 @@ applySub ((s,u):subs) t = subType s u $ applySub subs t
 -- pretty printing for TypeSymbol
 printType :: TypeSymbol -> String
 printType t =
-  printTypeImpl t (zip (nub $ getTypeVars t) ['t':(show i) | i <- [0..]])
+  printTypeImpl t (zip (nub $ getTypeVars t) ['t':(show i) | i <- [(0::Int)..]])
 
 printTypeImpl :: TypeSymbol -> [(Int,String)] -> String
 printTypeImpl t typeMap =
@@ -189,3 +202,15 @@ getTypeVars (Arrow t u) = getTypeVars t ++ getTypeVars u
 getTypeVars (List t) = getTypeVars t
 getTypeVars (TypeVar n) = [n]
 getTypeVars _ = []
+
+isTypeVar :: TypeSymbol -> Bool
+isTypeVar (TypeVar _) = True
+isTypeVar _ = False
+
+isArrow :: TypeSymbol -> Bool
+isArrow (Arrow _ _) = True
+isArrow _ = False
+
+isList :: TypeSymbol -> Bool
+isList (List _) = True
+isList _ = False
