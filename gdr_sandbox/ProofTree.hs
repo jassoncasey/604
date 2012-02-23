@@ -13,27 +13,32 @@ data Type =
    | Forall Int Type
    deriving (Show,Eq)
 
--- Built-in typing relationships
-builtins :: Ast.CstData -> Type
-builtins InstCst val = Natural
-builtins Constructor name arity = 
+-- Constant typing relationships
+typeConstant :: Ast.CstData -> Int -> ( Type, Int )
+typeConstant (InstCst val) id = ( Natural, id )
+typeConstant (Constructor name arity) id = 
    case name of 
-      "cons" -> Arrow $ Variable freshId $List Variable freshId
-      "nil" -> List $ Variable freshId
-      otherwise -> Error
+      "cons" -> ( ( Arrow $ Variable id $List Variable id), id+1 )
+      "nil" -> ( List $ Variable id, id+1 )
+      otherwise -> ( Error, id )
+typeConstant Primitive name arity = 
+   case name of 
+      "+" -> ( Arrow Natural Natural, id )
+      "-" -> ( Arrow Natural Natural, id )
+      "*" -> ( Arrow Natural Natural, id )
+      "/" -> ( Arrow Natural Natural, id )
+      otherwise -> ( Error, id )
 
-builtins Primitive name arity = 
-   case name of 
-      "+" -> Arrow Natural Natural
-      "-" -> Arrow Natural Natural
-      "*" -> Arrow Natural Natural
-      "/" -> Arrow Natural Natural
-      otherwise -> Error
+-- Tautology rule
+tautology :: Context -> Ast.Name -> Int -> ( Type, Int )
+tautology ctx name id = 
+    
+   where type_ = lookup ctx name
 
 -- map the ast structure to formal rules
-inftype :: Context -> Ast.Ast -> Type
-inftype ctx (Constant constant) = builtins constant
-inftype ctx (Variable name) = taut ctx name
-inftype ctx (Applicaiton lhs rhs) = app ctx lhs rhs
-inftype ctx (Lambda param body) =  abs ctx param body
-inftype ctx (Let name input body) = let ctx name input body
+inftype :: Context -> Ast.Ast -> Int -> ( Type, Int )
+inftype ctx (Constant constant) id = ( typeConstant constant, id )
+inftype ctx (Variable name) id = ( tautology ctx name, id )
+inftype ctx (Applicaiton lhs rhs) id = ( app ctx lhs rhs, id )
+inftype ctx (Lambda param body) id = ( abs ctx param body, id )
+inftype ctx (Let name input body) id = ( let ctx name input body, id )
