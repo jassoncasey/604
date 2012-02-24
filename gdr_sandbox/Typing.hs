@@ -42,13 +42,13 @@ bindVar context sym ty = ((Ast.Identifier sym),ty):context
 -- FIXME - discard old constraints?
 -- FIXME - Turn Decltype into a giant case statement?
 -- FIXME - return type should be maybe
-decltype :: Ast.Ast -> Maybe TypeSymbol
+decltype :: Ast.Ast -> Either String TypeSymbol
 --decltype ast = let (_,t,_) = declType' [] 0 ast in t
 decltype ast =
   let
     (_,t,subs) = decltype' [] [] 0 ast
-    (t',_) = unifyOn' subs t
-  in t'
+    (Just t',_) = unifyOn' subs t
+  in Right t'
 
 
 -- old LET' rule

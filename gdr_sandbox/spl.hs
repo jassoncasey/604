@@ -34,9 +34,9 @@ typeChecknPrint filename = do
         then putStrLn "  Error extracting ast from source."
         else do
           let ty = decltype $ fromJust ast
-          if isJust ty
-            then putStrLn $ printType $ fromJust ty
-            else putStrLn "  Type error."
+          case ty of
+            Right ty' -> putStrLn $ printType ty'
+            Left typeErr -> putStrLn typeErr
 
 
 -- print out information for diagnostics
@@ -65,7 +65,8 @@ testDiag args = do
   putStrLn "\n\n---------------- Typing ----------------"
   if Data.Maybe.isJust ast
     then do
-      putStrLn $ printType $ fromJust $ decltype $ fromJust ast
+      --putStrLn $ printType $ fromJust $ decltype $ fromJust ast
       putStr "\n"
     else putStrLn "    No type information: Failed to parse."
   return ()
+
