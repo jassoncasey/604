@@ -42,76 +42,17 @@ bindVar context sym ty = ((Ast.Identifier sym),ty):context
 -- FIXME - discard old constraints?
 -- FIXME - Turn Decltype into a giant case statement?
 -- FIXME - return type should be maybe
-decltype :: Ast.Ast -> TypeSymbol
+decltype :: Ast.Ast -> Maybe TypeSymbol
 --decltype ast = let (_,t,_) = declType' [] 0 ast in t
-decltype ast = let (_,t,subs) = decltype' [] [] 0 ast in case unifyOn' subs t of
-  (Just t',_) -> t'
-  (Nothing,_) -> error "."
-
-declType' :: TypeContext -> Int -> Ast.Ast -> (Int,TypeSymbol,ConstraintSet)
-
--- TAUT' rule
-declType' ctx n (Ast.Variable (Ast.Identifier sym)) =
-  case ty of
-    Just ty' -> (n,ty',[])
-    Nothing -> error ("Lookup failure:'" ++ sym ++ "' is not defined.")
-  where ty = lookUp ctx sym
--- This should never happen...
-declType' _ _ (Ast.Variable (Ast.Unique _)) = error "Found a unique variable."
-
--- Primitives follow 'delta' rules. So
---   '+','-','*','/' :: Natural -> Natural -> Natural
-declType' _ n (Ast.Constant (Ast.Primitive sym _))
-  | elem sym ["+","-","*","/"] = (n,(Arrow Natural (Arrow Natural Natural)),[])
-  | otherwise = error ("Lookup failure:'" ++ sym ++ "' is not defined.")
-
--- Constructor types defined in Assignment 3
---   cons :: forall a.a -> [a] -> [a]
---   nil :: forall a.[a]
-declType' _ n (Ast.Constant (Ast.Constructor "cons" _)) =
-  let t = TypeVar n in
-  (n + 1 ,Arrow t (Arrow (List t) (List t)),[])
-declType' _ n (Ast.Constant (Ast.Constructor "nil" _)) =
-  (n + 1 , List (TypeVar n),[])
-declType' _ _ (Ast.Constant (Ast.Constructor a _)) =
-  error ("Unknown constructor " ++ a ++ ".")
-
--- IntCst are type nat
-declType' _ n (Ast.Constant (Ast.IntCst _)) = (n,Natural,[])
-
--- ABS rule
-declType' ctx n (Ast.Lambda x e) =
+decltype ast =
   let
-    ctx' = bindVar ctx x (TypeVar n)
-    (n',te,cs) = declType' ctx' (n+1) e
-    te' = unifyOn cs te
-  in case te' of
-    Just c -> (n',Arrow (TypeVar n) c,cs)
-    Nothing -> error ("Couldn't unify")
+    (_,t,subs) = decltype' [] [] 0 ast
+    (t',_) = unifyOn' subs t
+  in t'
 
--- APP rule
--- FIXME Can't we discard some assumptions? How do constraints found previously
---       help us?
-declType' ctx n (Ast.Application e1 e2) =
-  case atob of
-    Arrow _ b' -> let constr = (atob,Arrow a b') in
-      case unified of
-        Just c -> (n'', c, [(atob,Arrow a b')])
-        Nothing -> error ("Expected a', but got a")
-      where unified = unifyOn ((atob,Arrow a b'):(c1++c2)) b'
-    _ -> error "Cannot apply non-lambda 'atob' to 'a'"
-  where (n',atob,c1)  = declType' ctx n e1  -- get constraints and type from lhs
-        (n'',a,c2) = declType' ctx n' e2    -- get constraints and type from rhs
 
--- When a let expression occurs with a unique id, then the variable is not used
--- elsewhere in the spl program. As such we only run decltype on the expression
--- to ensure type safety. It's type information is not relevant to the rest of
--- the program.
-declType' ctx n (Ast.Let (Ast.Unique _) e1 e2) =
-  let _ = declType' ctx 0 e1 in declType' ctx n e2
-
--- LET' rule
-declType' ctx n (Ast.Let (Ast.Identifier sym) e1 e2) =
+-- old LET' rule
+{-declType' ctx n (Ast.Let (Ast.Identifier sym) e1 e2) =
   let
     (n',e1t,cs1) = declType' ctx n e1
     ctx' = bindVar ctx sym e1t
@@ -119,7 +60,7 @@ declType' ctx n (Ast.Let (Ast.Identifier sym) e1 e2) =
     unified = unifyOn (cs1++cs2) e2t
   in case unified of
     Just c -> (n'',c,cs1++cs2)
-    Nothing -> error "Unification Error!"
+    Nothing -> error "Unification Error!"-}
 
 ------------------------
 ------------------------
@@ -177,7 +118,7 @@ decltype' ctx _ n (Ast.Application e1 e2) =
 -- Let 
 decltype' ctx _ n (Ast.Let (Ast.Unique _) e1 e2) =
   let _ = decltype' ctx [] 0 e1 in decltype' ctx [] n e2
--- Does this via betareduction. BADNESS CHANGE!!!
+-- Does this via betareduction. BADNESS! PLEASE CHANGE!!!
 decltype' ctx _ n (Ast.Let (Ast.Identifier sym) e1 e2) =
   let e2' = Evaluate.betaReduction sym e1 e2
   in decltype' ctx [] n e2'

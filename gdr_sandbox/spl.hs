@@ -1,6 +1,6 @@
 import System( getArgs )
 import Control.Monad( forM )
-import Data.Maybe( isJust, fromJust )
+import Data.Maybe( isJust, fromJust, isNothing )
 
 import Lexing( lexString )
 import Parsing( Program(..), parse_program )
@@ -13,7 +13,30 @@ import Typing
 main :: IO ()
 main = do
   args <- getArgs
-  testDiag args
+  _ <- forM args typeChecknPrint
+  return ()
+  -- Check args
+  --testDiag args
+
+
+-- typecheck the a file
+typeChecknPrint :: String -> IO()
+typeChecknPrint filename = do
+  putStrLn ("Processing " ++ filename ++ ":")
+  source <- readFile filename
+  let tokens = lexString filename source
+  let (Program parsedSource, err) = parse_program tokens
+  if (not.null) err
+    then putStrLn "  Error parsing file."
+    else do
+      let ast = program (Program parsedSource)
+      if isNothing ast
+        then putStrLn "  Error extracting ast from source."
+        else do
+          let ty = decltype $ fromJust ast
+          if isJust ty
+            then putStrLn $ printType $ fromJust ty
+            else putStrLn "  Type error."
 
 
 -- print out information for diagnostics
@@ -42,7 +65,7 @@ testDiag args = do
   putStrLn "\n\n---------------- Typing ----------------"
   if Data.Maybe.isJust ast
     then do
-      putStrLn $ printType $ decltype $ Data.Maybe.fromJust ast
+      putStrLn $ printType $ fromJust $ decltype $ fromJust ast
       putStr "\n"
     else putStrLn "    No type information: Failed to parse."
   return ()

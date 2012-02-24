@@ -15,7 +15,7 @@ import Char
 -- MJ Edit
 -- return the tokens from the source of a file
 lexString :: String -> String -> [Token]
-lexString fname src= tokenize (mk_source_locus fname 1 0) src
+lexString fname src = tokenize (mk_source_locus fname 1 0) src
 
 
 -- break an input string into a list of tokens, with a specified
