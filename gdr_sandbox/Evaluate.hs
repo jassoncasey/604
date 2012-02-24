@@ -1,4 +1,4 @@
-module Evaluate( evaluate, evalStep, isValue, applyN ) where
+module Evaluate( evaluate, evalStep, isValue, applyN, betaReduction ) where
 
 import Ast
 

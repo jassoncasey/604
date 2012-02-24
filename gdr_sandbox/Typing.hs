@@ -6,11 +6,14 @@ import Ast
 import Data.List( nub )
 import Data.Maybe( fromJust )
 
+import qualified Evaluate
+
 data TypeSymbol =
     Arrow TypeSymbol TypeSymbol
   | List TypeSymbol
   | Natural
   | TypeVar Int
+--  | ForAll TypeSymbol
   deriving (Show,Eq)
 
 -- typing environment
@@ -38,8 +41,12 @@ bindVar context sym ty = ((Ast.Identifier sym),ty):context
 -- This declType' gathers constraints on application
 -- FIXME - discard old constraints?
 -- FIXME - Turn Decltype into a giant case statement?
+-- FIXME - return type should be maybe
 decltype :: Ast.Ast -> TypeSymbol
-decltype ast = let (_,t,_) = declType' [] 0 ast in t
+--decltype ast = let (_,t,_) = declType' [] 0 ast in t
+decltype ast = let (_,t,subs) = decltype' [] [] 0 ast in case unifyOn' subs t of
+  (Just t',_) -> t'
+  (Nothing,_) -> error "."
 
 declType' :: TypeContext -> Int -> Ast.Ast -> (Int,TypeSymbol,ConstraintSet)
 
@@ -114,27 +121,71 @@ declType' ctx n (Ast.Let (Ast.Identifier sym) e1 e2) =
     Just c -> (n'',c,cs1++cs2)
     Nothing -> error "Unification Error!"
 
+------------------------
+------------------------
+------------------------
+-- New and imporved declType
+decltype' :: TypeContext -> Substitution -> Int -> Ast.Ast
+             -> (Int,TypeSymbol,Substitution)
+-- TAUT' rule
+decltype' ctx _ n (Ast.Variable (Ast.Identifier sym)) =
+  case ty of
+    Just ty' -> (n,ty',[])
+    Nothing -> error ("The variable '" ++ sym ++ "' is not defined.")
+  where ty = lookUp ctx sym
+-- This should never happen...
+decltype' _ _ _ (Ast.Variable (Ast.Unique _)) = error "Found a unique variable."
 
+-- Primitives follow 'delta' rules. So
+--   '+','-','*','/' :: Natural -> Natural -> Natural
+decltype' _ _ n (Ast.Constant (Ast.Primitive sym _))
+  | elem sym ["+","-","*","/"] = (n,(Arrow Natural (Arrow Natural Natural)),[])
+  | otherwise = error ("Lookup failure:'" ++ sym ++ "' is not defined.")
 
--- Given a set of type constraints, unify returns a principle unifier
--- FIXME change this to return Either. The left will return an error message
-{-unify :: ConstraintSet -> Substitution
-unify [] = []
-unify ((t,u):cs)
-  | t == u = unify cs
-  | isTypeVar t && (not $ isSubVar t u) = (t,u) : unify (subConstraints t u cs)
-  | isTypeVar u && (not $ isSubVar u t) = (u,t) : unify (subConstraints u t cs)
-  | isArrow t && isArrow u =
-      let
-        (Arrow t1 t2) = t
-        (Arrow u1 u2) = u
-      in unify ((t1,u1):(t2,u2):cs)
-  | isList t && isList u =
-      let
-        (List t') = t
-        (List u') = u
-      in unify ((t',u'):cs)
-  | otherwise = error "SUUUUUUPP, HOLMES!"-}
+-- Constructor types defined in Assignment 3
+--   cons :: forall a.a -> [a] -> [a]
+--   nil :: forall a.[a]
+decltype' _ _ n (Ast.Constant (Ast.Constructor "cons" _)) =
+  let t = TypeVar n in
+  (n + 1 ,Arrow t (Arrow (List t) (List t)),[])
+decltype' _ _ n (Ast.Constant (Ast.Constructor "nil" _)) =
+  (n + 1 , List (TypeVar n),[])
+decltype' _ _ _ (Ast.Constant (Ast.Constructor a _)) =
+  error ("Unknown constructor " ++ a ++ ".")
+
+decltype' _ _ n (Ast.Constant (Ast.IntCst _)) = (n,Natural,[])
+
+-- Lambda
+decltype' ctx _ n (Ast.Lambda x e) =
+  let
+    newTypeVar = (TypeVar n)
+    ctx' = bindVar ctx x newTypeVar
+    (n', typeof_e, subs) = decltype' ctx' [] (n+1) e
+  in (n', Arrow newTypeVar typeof_e,subs)
+
+-- Application
+decltype' ctx _ n (Ast.Application e1 e2) =
+  case atob of
+    Arrow _ b' -> case maybe_ty of
+        Just ty -> (n'', ty, subs)
+        Nothing -> error ("Expected type _, but got _ instead.")
+      where (maybe_ty,subs) = unifyOn' ((atob, Arrow a b'):(subs1++subs2)) b'
+    _ -> error "Expected a function type, but got 'atob' instead."
+  where (n' ,atob,subs1) = decltype' ctx [] n e1
+        (n'',a   ,subs2) = decltype' ctx [] n' e2
+
+-- Let 
+decltype' ctx _ n (Ast.Let (Ast.Unique _) e1 e2) =
+  let _ = decltype' ctx [] 0 e1 in decltype' ctx [] n e2
+-- Does this via betareduction. BADNESS CHANGE!!!
+decltype' ctx _ n (Ast.Let (Ast.Identifier sym) e1 e2) =
+  let e2' = Evaluate.betaReduction sym e1 e2
+  in decltype' ctx [] n e2'
+    --(n' ,ForAll typeof_e1,subs1) = decltype' ctx [] n e1
+    --ctx' = bindVar ctx sym typeof_e1
+    --(n'',typeof_e2,subs2) = decltype' ctx' [] n e1
+  --in (n'',typeof_e2,subs1++subs2)
+
 
 -- Need Soft fail with maybe!
 unify' :: ConstraintSet -> Substitution
@@ -154,6 +205,10 @@ unify' ((t,u):cs) =
 unifyOn :: ConstraintSet -> TypeSymbol -> Maybe TypeSymbol
 unifyOn [] t = Just $ t
 unifyOn cs t = Just $ applySub (unify' cs) t
+unifyOn' :: ConstraintSet -> TypeSymbol -> (Maybe TypeSymbol,Substitution)
+unifyOn' [] t = (Just $ t, [])
+unifyOn' cs t =
+  let subs = unify' cs in (Just $ applySub subs t, subs)
 
 isSubVar :: TypeSymbol -> TypeSymbol -> Bool
 isSubVar t (List u) = t == u || isSubVar t u
