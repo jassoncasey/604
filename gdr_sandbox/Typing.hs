@@ -1,5 +1,7 @@
 module Typing where
 
+-- FIXME \x.(let y = \z.(cons z x); y 3; y 3); doesn't work
+
 import Ast
 import Data.List( nub )
 import Data.Maybe( fromJust )
