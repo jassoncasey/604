@@ -1,1 +1,1 @@
-\x.cons x (cons 2 nil);
+\x.(let y = \z.(cons z x); y 3);
