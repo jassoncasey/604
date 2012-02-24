@@ -2,7 +2,6 @@ module ProofTree
 where
 
 import Ast
-import Env
 
 data Type = 
    Error
@@ -16,11 +15,16 @@ data Type =
 type Requirements = [ ( Type, Type ) ]
 type Environment  = [ ( Ast.Name, Type ) ]
 
-data ProofTree = 
-   Proof { 
+data Context = 
+   Ctx {
       id    :: Int,
       reqs  :: Requirements,
-      env   :: Environment,
+      env   :: Environment
+   }
+
+data ProofTree = 
+   Proof { 
+      ctx   :: Context
       term  :: Ast.Ast,
       type_ :: Type,
       rule  :: String,
@@ -43,6 +47,23 @@ base = [
          (Ast.Identifier "/", binat) 
        ]
 
+-- generate a generic instance from a type scheme
+instantiate :: Type -> Int -> [Int] -> ( Type, Int )
+instantiate (Arrow lhs rhs) id bound = 
+   ( Arrow lhs' rhs', idr' )
+   where ( lhs', idl' ) = instantiate lhs id bound
+         ( rhs', idr' ) = instantiate rhs id bound
+instantiate (List type_) id bound =
+   ( List r, id' )
+   where ( r, id' ) = instantiate type_ id bound
+instantiate (Forall arity type_) id bound = 
+   instantiate type_ id (arity:bound)
+instantiate Natural id bound = ( Natural, id )
+instantiate (Alpha id) next_id bound = 
+   if elem id bound 
+      then ( Alpha next_id, next_id+1 )
+      else ( Alpha id, next_id )
+
 -- environment loookup
 lookup :: Environment -> Ast.Name -> Maybe Type
 lookup ((key, type_):tl) name =
@@ -50,20 +71,27 @@ lookup ((key, type_):tl) name =
       else lookup tl name
 lookup [] name = Nothing
 
+-- type lookup wrapper
+getName :: Environment -> Ast.Name -> Type
+getName env name =
+   case result of 
+      Just r -> r
+      Nohthing -> Error
+   where result = lookup env name
+
 -- Constant typing relationships
-typeConstant :: Environment -> Ast.CstData -> ProofTree
-typeConstant env (InstCst val) = 
-   Proof ( env, Natural 
-typeConstant env (Constructor name _) = tautology env name
-typeConstant env (Primitive name _) = tautology env name
+infConstType :: Context -> Ast.CstData -> Type
+infConstType ctx (InstCst val) = Natural
+infConstType ctx (Constructor name _) = getName (env ctx) name
+infConstType ctx (Primitive name _) = getName (env ctx) name
 
 -- Tautology rule
-tautology :: Environment -> Ast.Name -> ProofTree
+tautology :: Environment -> Ast.Name -> Type
 tautology ctx name id = 
-   case type_ of
-      Just type_' -> -- not sure how to get a generic instance here
-      Nothing -> ( Error, id )
-   where type_ = lookup ctx name
+   case result of 
+      Forall arity body -> instantiate 
+      r -> r
+   where result = getName (env ctx) name
 
 -- abstraction rule
 abstraction :: Context -> Ast.Name -> Ast.Ast -> Int -> ( Type, Int )
@@ -77,10 +105,15 @@ application ctx lhs rhs id =
 
 -- map the ast structure to formal rules
 proofTree :: Context -> Ast.Ast -> ProofTree
-proofTree ctx (Constant constant) = 
-   case 
-   typeConstant ctx constant
-proofTree ctx (Variable name) = tautology ctx name, id )
-proofTree ctx (Applicaiton lhs rhs) = application ctx lhs rhs, id )
-proofTree ctx (Lambda param body) = abstraction ctx param body, id )
-proofTree ctx (Let name input body) = letb ctx name input body, id )
+proofTree ctx' t@(Constant constant) = 
+   Proof{ ctx = ctx', term = t, type_ = type_', rule = "Const", prem = [] }
+   where type_' = infConstType ctx' constant
+proofTree ctx' t@(Variable name) = 
+   Proof{ ctx = ctx', term = t, type_ = type_', rule = "Taut", prem = [] }
+   where type_' = tautology ctx' name
+proofTree ctx' t@(Applicaiton lhs rhs) = 
+    Proof{ ctx = ctx', term = t, type_ = type_', rule = "App", prem = [] }
+proofTree ctx' t@(Lambda param body) = 
+    Proof{ ctx = ctx', term = t, type_ = type_', rule = "Abs", prem = [] }
+proofTree ctx' t@(Let name input body) = 
+    Proof{ ctx = ctx', term = t, type_ = type_', rule = "Let", prem = [] }

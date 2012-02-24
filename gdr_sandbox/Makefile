@@ -4,7 +4,7 @@ LIBS=-package haskell98 -package containers
 
 TARGETS=spl
 
-SRC=Lexing.hs Parsing.hs Ast.hs Evaluate.hs Typing.hs ProofTree.hs
+SRC=Lexing.hs Parsing.hs Ast.hs Evaluate.hs Typing.hs 
 
 all: $(TARGETS)
 
