@@ -5,6 +5,7 @@ module Typing where
 import Ast
 import Data.List( nub )
 import Data.Maybe( fromJust )
+--import Data.Either(Either(..))
 
 import qualified Evaluate
 
@@ -36,13 +37,6 @@ lookUp _ _ = Nothing
 bindVar :: TypeContext -> String -> TypeSymbol -> TypeContext
 bindVar context sym ty = ((Ast.Identifier sym),ty):context
 
-{-bindReplaceVar :: TypeContext -> String -> TypeSymbol -> TypeContext
-bindReplaceVar ctx sym ty =
-  case lookUp ctx sym ty of
-    Nothing -> ((Ast.Identifier sym),ty):ctx
-    Just _ -> let (f,(b:l)) = break (\(a,b) -> a==sym) in
-      f ++ [((Ast.Identifier sym),ty)] ++ l-}
-
 
 
 -- This declType' gathers constraints on application
@@ -51,145 +45,88 @@ bindReplaceVar ctx sym ty =
 -- FIXME - return type should be maybe
 decltype :: Ast.Ast -> Either String TypeSymbol
 --decltype ast = let (_,t,_) = declType' [] 0 ast in t
-decltype ast =
-  let
-    (_,t,subs) = decltype' [] [] 0 ast
-    (Just t',_) = unifyOn' subs t
-  in Right t'
+decltype ast = case decltype' [] [] 0 ast of
+  Right (_,t,subs) -> let (Just t',_) = unifyOn' subs t in Right t'
+  Left str -> Left str
+
+
 
 ------------------------
 ------------------------
 ------------------------
 -- New and imporved declType
 decltype' :: TypeContext -> Substitution -> Int -> Ast.Ast
-             -> (Int,TypeSymbol,Substitution)
+             -> Either String (Int,TypeSymbol,Substitution)
 -- TAUT' rule
 decltype' ctx _ n (Ast.Variable (Ast.Identifier sym)) =
   case ty of
-    Just ty' -> (n,ty',[])
-    Nothing -> error ("The variable '" ++ sym ++ "' is not defined.")
+    Just ty' -> Right (n,ty',[])
+    Nothing -> Left ("The variable '" ++ sym ++ "' is not defined.")
   where ty = lookUp ctx sym
 -- This should never happen...
-decltype' _ _ _ (Ast.Variable (Ast.Unique _)) = error "Found a unique variable."
+decltype' _ _ _ (Ast.Variable (Ast.Unique _)) =
+  Left "Found a unique variable."
 
 -- Primitives follow 'delta' rules. So
 --   '+','-','*','/' :: Natural -> Natural -> Natural
 decltype' _ _ n (Ast.Constant (Ast.Primitive sym _))
-  | elem sym ["+","-","*","/"] = (n,(Arrow Natural (Arrow Natural Natural)),[])
-  | otherwise = error ("Lookup failure:'" ++ sym ++ "' is not defined.")
+  | elem sym ["+","-","*","/"] =
+      Right (n,(Arrow Natural (Arrow Natural Natural)),[])
+  | otherwise = Left ("Lookup failure:'" ++ sym ++ "' is not defined.")
 
 -- Constructor types defined in Assignment 3
 --   cons :: forall a.a -> [a] -> [a]
 --   nil :: forall a.[a]
 decltype' _ _ n (Ast.Constant (Ast.Constructor "cons" _)) =
   let t = TypeVar n in
-  (n + 1 ,Arrow t (Arrow (List t) (List t)),[])
+  Right (n + 1 ,Arrow t (Arrow (List t) (List t)),[])
 decltype' _ _ n (Ast.Constant (Ast.Constructor "nil" _)) =
-  (n + 1 , List (TypeVar n),[])
+  Right (n + 1 , List (TypeVar n),[])
 decltype' _ _ _ (Ast.Constant (Ast.Constructor a _)) =
-  error ("Unknown constructor " ++ a ++ ".")
+  Left ("Unknown constructor " ++ a ++ ".")
 
-decltype' _ _ n (Ast.Constant (Ast.IntCst _)) = (n,Natural,[])
+decltype' _ _ n (Ast.Constant (Ast.IntCst _)) = Right (n,Natural,[])
 
 -- Lambda
 decltype' ctx _ n (Ast.Lambda x e) =
   let
     newTypeVar = (TypeVar n)
     ctx' = bindVar ctx x newTypeVar
-    (n', typeof_e, subs) = decltype' ctx' [] (n+1) e
-  in (n', Arrow newTypeVar typeof_e,subs)
+    typ = decltype' ctx' [] (n+1) e
+  in case typ of
+    Left str -> Left str
+    Right (n', typeof_e, subs) -> Right (n', Arrow newTypeVar typeof_e,subs)
 
 -- Application
 decltype' ctx _ n (Ast.Application e1 e2) =
-  case atob of
-    Arrow _ b' -> case maybe_ty of
-        Just ty -> (n'', ty, subs)
-        Nothing -> error ("Expected type _, but got _ instead.")
-      where (maybe_ty,subs) = unifyOn' ((atob, Arrow a b'):(subs1++subs2)) b'
-    _ -> case maybe_ty of
-        Just ty -> (n''+1, ty, subs)
-        Nothing -> error ("Expected type _, but got _ instead.")
-      where (a',b') = (atob,(TypeVar (n''+1)))
-            (maybe_ty,subs) = unifyOn' ((Arrow a' b', Arrow a b'):(subs1++subs2)) b'
-    --_ -> error ("Cannot match non-arrow type" ++ show atob)
-         
-  where (n' ,atob,subs1) = decltype' ctx [] n e1
-        (n'',a   ,subs2) = decltype' ctx [] n' e2
+  case decltype' ctx [] n e1 of
+    Left str -> Left str
+    Right (n' ,atob,subs1) -> case decltype' ctx [] n' e2 of
+      Left str -> Left str
+      Right (n'',a   ,subs2) -> case atob of
+          Arrow _ b' -> case maybe_ty of
+              Just ty -> Right (n'', ty, subs)
+              Nothing -> Left ("Expected type _, but got _ instead.")
+            where (maybe_ty,subs) = unifyOn' ((atob, Arrow a b'):(subs1++subs2)) b'
+          _ -> case maybe_ty of
+              Just ty -> Right (n''+1, ty, subs)
+              Nothing -> Left ("Expected type _, but got _ instead.")
+            where (a',b') = (atob,(TypeVar (n''+1)))
+                  (maybe_ty,subs) = unifyOn' ((Arrow a' b', Arrow a b'):(subs1++subs2)) b'
+          --_ -> error ("Cannot match non-arrow type" ++ show atob)
 
 -- Let 
 decltype' ctx _ n (Ast.Let (Ast.Unique _) e1 e2) =
-  let _ = decltype' ctx [] 0 e1 in decltype' ctx [] n e2
+  let _ = decltype' ctx [] 0 e1 in case decltype' ctx [] n e2 of
+    Left str -> Left str
+    Right a -> Right a
 -- Does this via betareduction. BADNESS! PLEASE CHANGE!!!
 decltype' ctx _ n (Ast.Let (Ast.Identifier sym) e1 e2) =
   let e2' = Evaluate.betaReduction sym e1 e2
-  in decltype' ctx [] n e2' 
+  in case decltype' ctx [] n e2' of
+    Left str -> Left str
+    Right a -> Right a
 
-------------------------
-------------------------
-------------------------
--- New and imporved declType
-{-decltype' :: TypeContext -> Substitution -> Int -> Ast.Ast
-             -> (TypeContext,Int,TypeSymbol,Substitution)
--- TAUT' rule
-decltype' ctx _ n (Ast.Variable (Ast.Identifier sym)) =
-  case ty of
-    Just ty' -> (ctx,n,ty',[])
-    Nothing -> error ("The variable '" ++ sym ++ "' is not defined.")
-  where ty = lookUp ctx sym
--- This should never happen...
-decltype' _ _ _ (Ast.Variable (Ast.Unique _)) = error "Found a unique variable."
-
--- Primitives follow 'delta' rules. So
---   '+','-','*','/' :: Natural -> Natural -> Natural
-decltype' _ _ n (Ast.Constant (Ast.Primitive sym _))
-  | elem sym ["+","-","*","/"] = ([],n,(Arrow Natural (Arrow Natural Natural)),[])
-  | otherwise = error ("Lookup failure:'" ++ sym ++ "' is not defined.")
-
--- Constructor types defined in Assignment 3
---   cons :: forall a.a -> [a] -> [a]
---   nil :: forall a.[a]
-decltype' _ _ n (Ast.Constant (Ast.Constructor "cons" _)) =
-  let t = TypeVar n in
-  ([],n + 1 ,Arrow t (Arrow (List t) (List t)),[])
-decltype' _ _ n (Ast.Constant (Ast.Constructor "nil" _)) =
-  ([],n + 1 , List (TypeVar n),[])
-decltype' _ _ _ (Ast.Constant (Ast.Constructor a _)) =
-  error ("Unknown constructor " ++ a ++ ".")
-
-decltype' _ _ n (Ast.Constant (Ast.IntCst _)) = ([],n,Natural,[])
-
--- Lambda
-decltype' ctx _ n (Ast.Lambda x e) =
-  let
-    newTypeVar = (TypeVar n)
-    ctx' = bindVar ctx x newTypeVar
-    (n', typeof_e, subs) = decltype' ctx' [] (n+1) e
-  in (ctx,n', Arrow newTypeVar typeof_e,subs)
-
--- Application
-decltype' ctx _ n (Ast.Application e1 e2) =
-  case atob of
-    Arrow _ b' -> case maybe_ty of
-        Just ty -> (n'', ty, subs)
-        Nothing -> error ("Expected type _, but got _ instead.")
-      where (maybe_ty,subs) = unifyOn' ((atob, Arrow a b'):(subs1++subs2)) b'
-    _ -> case maybe_ty of
-        Just ty -> (n''+1, ty, subs)
-        Nothing -> error ("Expected type _, but got _ instead.")
-      where (a',b') = (atob,(TypeVar (n''+1)))
-            (maybe_ty,subs) = unifyOn' ((Arrow a' b', Arrow a b'):(subs1++subs2)) b'
-    --_ -> error ("Cannot match non-arrow type" ++ show atob)
-         
-  where (n' ,atob,subs1) = decltype' ctx [] n e1
-        (n'',a   ,subs2) = decltype' ctx [] n' e2
-
--- Let 
-decltype' ctx _ n (Ast.Let (Ast.Unique _) e1 e2) =
-  let _ = decltype' ctx [] 0 e1 in decltype' ctx [] n e2
--- Does this via betareduction. BADNESS! PLEASE CHANGE!!!
-decltype' ctx _ n (Ast.Let (Ast.Identifier sym) e1 e2) =
-  let e2' = Evaluate.betaReduction sym e1 e2
-  in decltype' ctx [] n e2'-}
 
 
 -- Need Soft fail with maybe!
