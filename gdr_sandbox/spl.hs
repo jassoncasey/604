@@ -1,6 +1,7 @@
 import System( getArgs )
 import Control.Monad( forM )
 import Data.Maybe( isJust, fromJust, isNothing )
+import Data.List( isSuffixOf )
 
 import Lexing( lexString )
 import Parsing( Program(..), parse_program )
@@ -13,13 +14,19 @@ import Typing
 main :: IO ()
 main = do
   args <- getArgs
-  _ <- forM args typeChecknPrint
+  let (mode, filenames) = processArgs args
+  case mode of
+    Batch -> typeCheck filenames
+    Diagnostics -> testDiag filenames
+    ArgError -> putStrLn "Error in arguments."
   return ()
-  -- Check args
-  --testDiag args
 
 
 -- typecheck the a file
+typeCheck ::[String] -> IO()
+typeCheck args = do
+  _ <- forM args typeChecknPrint
+  return ()
 typeChecknPrint :: String -> IO()
 typeChecknPrint filename = do
   putStrLn ("Processing " ++ filename ++ ":")
@@ -69,4 +76,22 @@ testDiag args = do
       putStr "\n"
     else putStrLn "    No type information: Failed to parse."
   return ()
+
+processArgs :: [String] -> (SplMode, [String])
+processArgs args' = case args' of
+  (('-':cmd):args) -> case allSplFiles args of
+    True -> ( modeFromStr cmd,args)
+    False -> (ArgError, [])
+  args -> case allSplFiles args of
+    True -> (Batch,args)
+    False -> (ArgError, [])
+  where allSplFiles = all (isSuffixOf ".spl")
+
+
+data SplMode = Batch | Diagnostics | ArgError
+modeFromStr :: String -> SplMode
+modeFromStr cmd = case cmd of
+  "" -> Batch
+  "d" -> Diagnostics
+  _ -> ArgError
 

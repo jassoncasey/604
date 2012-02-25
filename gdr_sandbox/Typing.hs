@@ -111,7 +111,13 @@ decltype' ctx _ n (Ast.Application e1 e2) =
         Just ty -> (n'', ty, subs)
         Nothing -> error ("Expected type _, but got _ instead.")
       where (maybe_ty,subs) = unifyOn' ((atob, Arrow a b'):(subs1++subs2)) b'
-    _ -> error "Expected a function type, but got 'atob' instead."
+    TypeVar_ -> case maybe_ty of
+        Just ty -> (n''+1, ty, subs)
+        Nothing -> error ("Expected type _, but got _ instead.")
+      where (a',b') = (atob,(TypeVar (n''+1)))
+            (maybe_ty,subs) = (unifyOn' (Arrow a' b', Arrow a b'):(subs1++subs2)) b'
+    _ -> error "Cannot match non-arrow type"
+         
   where (n' ,atob,subs1) = decltype' ctx [] n e1
         (n'',a   ,subs2) = decltype' ctx [] n' e2
 
@@ -122,10 +128,6 @@ decltype' ctx _ n (Ast.Let (Ast.Unique _) e1 e2) =
 decltype' ctx _ n (Ast.Let (Ast.Identifier sym) e1 e2) =
   let e2' = Evaluate.betaReduction sym e1 e2
   in decltype' ctx [] n e2'
-    --(n' ,ForAll typeof_e1,subs1) = decltype' ctx [] n e1
-    --ctx' = bindVar ctx sym typeof_e1
-    --(n'',typeof_e2,subs2) = decltype' ctx' [] n e1
-  --in (n'',typeof_e2,subs1++subs2)
 
 
 -- Need Soft fail with maybe!

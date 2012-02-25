@@ -1,0 +1,179 @@
+\documentclass{article}
+\usepackage{syntax}
+\usepackage{bussproofs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+%\setlength{\grammarindent}{2.5cm}
+
+\title{
+Department of Computer Science \\Texas A\&M University}
+\author{\LARGE Homework 3 Report\\ \\
+\\Jasson Casey
+\\Michael Lopez }
+
+\begin{document}
+\maketitle
+
+\section{Typechecking}
+SPL input files are read and typechecked. An AST is constructed from each file. The typechecker constructs a type context $\Gamma$, initializes a type variable generator and initializes the type substitution $\sigma$ to identity. At each node of the AST, the appropriate type rule is applied and $\Gamma$ and $\sigma$ are updated according to the rule. Unification is only executed when the APP rule is applied. Upon application of APP, the typechecker unifies the constraints gathered from each child AST and the result is composed with $\sigma$. This approach is inspired by the Damas-Milner system and algorithms found in the Mini-ML paper.
+
+
+\section{Typing Relations}
+\subsection{Types}
+Types used in the program.
+
+\subsection{Type System}
+The rules are inspired by the modified Damas-Milner system and includes support for natural numbers, primitives and the list constructors.
+
+\begin{center}
+\begin{prooftree}
+\RightLabel{{T-TAUT}}
+\AxiomC{$x:\tau \in \Gamma$}
+\UnaryInfC{$\Gamma \vdash x : \tau$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{{T-NAT}}
+\AxiomC{$n \in N$}
+\UnaryInfC{$\Gamma \vdash n : \mbox{Nat}$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{{T-ARITH}}
+\AxiomC{$s \in \{ +,-,*,/ \}$}
+\UnaryInfC{$\Gamma \vdash s : \mbox{Nat} \rightarrow \mbox{Nat} \rightarrow \mbox{Nat}$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{{T-CONS}}
+\AxiomC{}
+\UnaryInfC{$\Gamma \vdash \mbox{cons} : \tau \rightarrow [\tau] \rightarrow [\tau]$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{{T-CONS}}
+\AxiomC{}
+\UnaryInfC{$\Gamma \vdash \mbox{nil} : [\tau]$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{{T-APP}}
+\AxiomC{
+  $\Gamma \vdash e : \tau' \rightarrow \tau$
+  \hspace{6mm}
+  $\Gamma \vdash e' : \tau'$}
+\UnaryInfC{$\Gamma \vdash e \hspace{1mm} e' : \tau$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{{T-ABS}}
+\AxiomC{
+  $\Gamma_x \cup \{x:\tau'\}\vdash e : \tau$}
+\UnaryInfC{$\Gamma \vdash \lambda x. e : \tau' \rightarrow \tau$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{{T-LET}}
+\AxiomC{
+  $\Gamma \vdash e' : \tau'$
+  \hspace{6mm}
+  $\Gamma_x \cup \{ x : \sigma \} \vdash e : \tau$}
+\UnaryInfC{$\Gamma \vdash \mbox{ let } x = e' \mbox{ in } e : \tau$}
+\end{prooftree}
+\end{center}
+
+\section{Evaluation}
+
+Before the AST is evaluated, a core set of functionals (cons, nil, etc.) are
+evaluated and bound to the global scope. The AST is then evaluated using the
+call-by-value strategy. After the right side is a value (irreducible),
+a beta transformation is applied and the evaluator descends into the expression
+on the left side of an application. When descent is no longer possible, the
+evaluator returns to the scope of the root of the resulting expression.
+
+\subsection{Operational Semantics}
+
+Some computation steps are carried out as $\delta$ functions. $\Delta$
+identifies the set of tuples representing the mapping from domain
+to range of the $\delta$ function. Currently, the $\delta$ function is
+defined for $( +, -, x, / )$ over $\mathbb{N}$.
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{seq1}$}}
+\AxiomC{}
+\UnaryInfC{$v$; $t\rightarrow t$}
+\end{prooftree}
+ 
+\begin{prooftree}
+\RightLabel{\textbf{$E_{app1}$}}
+\AxiomC{}
+\UnaryInfC{$( \lambda x. t_1 )$ $v_2 \rightarrow$[$ x \mapsto v_2$] $t_1$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{app2}$}}
+\AxiomC{$t_2 \rightarrow t_2'$}
+\UnaryInfC{$t_1$ $t_2 \rightarrow t_1$ $t_2'$}
+\end{prooftree}
+ 
+\begin{prooftree}
+\RightLabel{\textbf{$E_{app3}$}}
+\AxiomC{$t_1 \rightarrow t_1'$}
+\UnaryInfC{$t_1$ $v_2 \rightarrow t_1'$ $v_2$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{seq2}$}}
+\AxiomC{$t_1 \rightarrow t_1'$}
+\UnaryInfC{$t_1$ ; $t_2 \rightarrow t_1'$ ; $t_2$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{\delta1}$}}
+\AxiomC{$t_1 \rightarrow t_1'$}
+\UnaryInfC{$\delta_{op}$ $t_1$ $t_2 \rightarrow \delta_{op}$ $t_1'$ $t_2$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{\delta2}$}}
+\AxiomC{$t_2 \rightarrow t_2'$}
+\UnaryInfC{$\delta_{op}$ $v_1$ $t_2 \rightarrow \delta_{op}$ $v_1$ $t_2'$}
+\end{prooftree}
+
+\begin{prooftree}
+\RightLabel{\textbf{$E_{\delta3}$}}
+\AxiomC{$((\delta_{op}$, $v_1$, $v_2), v_3) \in \Delta$}
+\UnaryInfC{$\delta_{op}$ $v_1$ $v_2 \rightarrow v_3$}
+\end{prooftree}
+
+\section{Testing}
+
+Some testing
+
+\section{Files}
+\subsection{Core files}
+\begin{tabular}{|p{20mm}|p{93mm}|}
+  \hline
+{\bf Files}&{\bf Description}\\
+  \hline
+spl.hs & Main file that initializes the SPL typechecker.\\
+  \hline
+Lexing.hs & Module that implements lexing and defines tokens for SPL.\\
+  \hline
+Parsing.hs & Module that implements the parser for SPL.\\
+  \hline
+Ast.hs & Module that defines the AST data structure for SPL.\\
+  \hline
+Eval.hs & Module containing evaluation facilities for the SPL.\\
+  \hline
+Typing.hs & Module that implements type inference and type error reporting.\\
+  \hline
+ProofTree.hs & Module that implements type inference and returns the proof tree.\\
+  \hline
+\end{tabular}
+
+\section{Division of labor}
+The division of labor is quite fair. We both implemented our own versions of the typechecker. We collaborate heavily in the ideas phase and in much of the planning phase. The output of which, as exhibited in this project, was a quick and simple typechecker and a more robust typechecker that incorporates elements of system F and outputs a proof tree. ???The latter is in the works, but will be available soon.
+
+\end{document}
