@@ -36,6 +36,13 @@ lookUp _ _ = Nothing
 bindVar :: TypeContext -> String -> TypeSymbol -> TypeContext
 bindVar context sym ty = ((Ast.Identifier sym),ty):context
 
+{-bindReplaceVar :: TypeContext -> String -> TypeSymbol -> TypeContext
+bindReplaceVar ctx sym ty =
+  case lookUp ctx sym ty of
+    Nothing -> ((Ast.Identifier sym),ty):ctx
+    Just _ -> let (f,(b:l)) = break (\(a,b) -> a==sym) in
+      f ++ [((Ast.Identifier sym),ty)] ++ l-}
+
 
 
 -- This declType' gathers constraints on application
@@ -49,18 +56,6 @@ decltype ast =
     (_,t,subs) = decltype' [] [] 0 ast
     (Just t',_) = unifyOn' subs t
   in Right t'
-
-
--- old LET' rule
-{-declType' ctx n (Ast.Let (Ast.Identifier sym) e1 e2) =
-  let
-    (n',e1t,cs1) = declType' ctx n e1
-    ctx' = bindVar ctx sym e1t
-    (n'',e2t,cs2) = declType' ctx' n' e2
-    unified = unifyOn (cs1++cs2) e2t
-  in case unified of
-    Just c -> (n'',c,cs1++cs2)
-    Nothing -> error "Unification Error!"-}
 
 ------------------------
 ------------------------
@@ -111,12 +106,12 @@ decltype' ctx _ n (Ast.Application e1 e2) =
         Just ty -> (n'', ty, subs)
         Nothing -> error ("Expected type _, but got _ instead.")
       where (maybe_ty,subs) = unifyOn' ((atob, Arrow a b'):(subs1++subs2)) b'
-    TypeVar_ -> case maybe_ty of
+    _ -> case maybe_ty of
         Just ty -> (n''+1, ty, subs)
         Nothing -> error ("Expected type _, but got _ instead.")
       where (a',b') = (atob,(TypeVar (n''+1)))
-            (maybe_ty,subs) = (unifyOn' (Arrow a' b', Arrow a b'):(subs1++subs2)) b'
-    _ -> error "Cannot match non-arrow type"
+            (maybe_ty,subs) = unifyOn' ((Arrow a' b', Arrow a b'):(subs1++subs2)) b'
+    --_ -> error ("Cannot match non-arrow type" ++ show atob)
          
   where (n' ,atob,subs1) = decltype' ctx [] n e1
         (n'',a   ,subs2) = decltype' ctx [] n' e2
@@ -127,7 +122,74 @@ decltype' ctx _ n (Ast.Let (Ast.Unique _) e1 e2) =
 -- Does this via betareduction. BADNESS! PLEASE CHANGE!!!
 decltype' ctx _ n (Ast.Let (Ast.Identifier sym) e1 e2) =
   let e2' = Evaluate.betaReduction sym e1 e2
-  in decltype' ctx [] n e2'
+  in decltype' ctx [] n e2' 
+
+------------------------
+------------------------
+------------------------
+-- New and imporved declType
+{-decltype' :: TypeContext -> Substitution -> Int -> Ast.Ast
+             -> (TypeContext,Int,TypeSymbol,Substitution)
+-- TAUT' rule
+decltype' ctx _ n (Ast.Variable (Ast.Identifier sym)) =
+  case ty of
+    Just ty' -> (ctx,n,ty',[])
+    Nothing -> error ("The variable '" ++ sym ++ "' is not defined.")
+  where ty = lookUp ctx sym
+-- This should never happen...
+decltype' _ _ _ (Ast.Variable (Ast.Unique _)) = error "Found a unique variable."
+
+-- Primitives follow 'delta' rules. So
+--   '+','-','*','/' :: Natural -> Natural -> Natural
+decltype' _ _ n (Ast.Constant (Ast.Primitive sym _))
+  | elem sym ["+","-","*","/"] = ([],n,(Arrow Natural (Arrow Natural Natural)),[])
+  | otherwise = error ("Lookup failure:'" ++ sym ++ "' is not defined.")
+
+-- Constructor types defined in Assignment 3
+--   cons :: forall a.a -> [a] -> [a]
+--   nil :: forall a.[a]
+decltype' _ _ n (Ast.Constant (Ast.Constructor "cons" _)) =
+  let t = TypeVar n in
+  ([],n + 1 ,Arrow t (Arrow (List t) (List t)),[])
+decltype' _ _ n (Ast.Constant (Ast.Constructor "nil" _)) =
+  ([],n + 1 , List (TypeVar n),[])
+decltype' _ _ _ (Ast.Constant (Ast.Constructor a _)) =
+  error ("Unknown constructor " ++ a ++ ".")
+
+decltype' _ _ n (Ast.Constant (Ast.IntCst _)) = ([],n,Natural,[])
+
+-- Lambda
+decltype' ctx _ n (Ast.Lambda x e) =
+  let
+    newTypeVar = (TypeVar n)
+    ctx' = bindVar ctx x newTypeVar
+    (n', typeof_e, subs) = decltype' ctx' [] (n+1) e
+  in (ctx,n', Arrow newTypeVar typeof_e,subs)
+
+-- Application
+decltype' ctx _ n (Ast.Application e1 e2) =
+  case atob of
+    Arrow _ b' -> case maybe_ty of
+        Just ty -> (n'', ty, subs)
+        Nothing -> error ("Expected type _, but got _ instead.")
+      where (maybe_ty,subs) = unifyOn' ((atob, Arrow a b'):(subs1++subs2)) b'
+    _ -> case maybe_ty of
+        Just ty -> (n''+1, ty, subs)
+        Nothing -> error ("Expected type _, but got _ instead.")
+      where (a',b') = (atob,(TypeVar (n''+1)))
+            (maybe_ty,subs) = unifyOn' ((Arrow a' b', Arrow a b'):(subs1++subs2)) b'
+    --_ -> error ("Cannot match non-arrow type" ++ show atob)
+         
+  where (n' ,atob,subs1) = decltype' ctx [] n e1
+        (n'',a   ,subs2) = decltype' ctx [] n' e2
+
+-- Let 
+decltype' ctx _ n (Ast.Let (Ast.Unique _) e1 e2) =
+  let _ = decltype' ctx [] 0 e1 in decltype' ctx [] n e2
+-- Does this via betareduction. BADNESS! PLEASE CHANGE!!!
+decltype' ctx _ n (Ast.Let (Ast.Identifier sym) e1 e2) =
+  let e2' = Evaluate.betaReduction sym e1 e2
+  in decltype' ctx [] n e2'-}
 
 
 -- Need Soft fail with maybe!
@@ -142,12 +204,13 @@ unify' ((t,u):cs) =
       (u,t) : unify' (subConstraints u t cs)
     (Arrow t1 t2,Arrow u1 u2) -> unify' ((t1,u1):(t2,u2):cs)
     (List t', List u') -> unify' ((t',u'):cs)
-    _ -> error "SUUUUUUPP, HOLMES!"
+    _ -> error ("Unify error: " ++ show (t,u))
 
 
 unifyOn :: ConstraintSet -> TypeSymbol -> Maybe TypeSymbol
 unifyOn [] t = Just $ t
 unifyOn cs t = Just $ applySub (unify' cs) t
+
 unifyOn' :: ConstraintSet -> TypeSymbol -> (Maybe TypeSymbol,Substitution)
 unifyOn' [] t = (Just $ t, [])
 unifyOn' cs t =
