@@ -107,28 +107,22 @@ getStrEnvironment env =
                else (getStrName name) ++ ":" ++ (getStrType type_) ++ ", " ++
                   (makeString tail)                  
       makeString [] = ""
-{-
--- environment loookup
-lookup :: Environment -> Ast.Name -> Maybe Type
-lookup ((key, type_):tl) name =
-   if key == name then Just type_
-      else lookup tl name
-lookup [] name = Nothing
 
--- type lookup wrapper
-getName :: Environment -> Ast.Name -> Type
-getName env name =
-   case result of 
-      Just r -> r
-      Nohthing -> Error
-   where result = lookup env name
+-- environment loookup
+lookupType :: Environment -> Ast.Name -> Type
+lookupType ((key, type_):tl) name =
+   if key == name then type_
+      else lookupType tl name
+lookupType [] name = Error
 
 -- Constant typing relationships
 infConstType :: Context -> Ast.CstData -> Type
-infConstType ctx (InstCst val) = Natural
-infConstType ctx (Constructor name _) = getName (env ctx) name
-infConstType ctx (Primitive name _) = getName (env ctx) name
-
+infConstType ctx (IntCst val) = Natural
+infConstType ctx (Constructor name _ ) = 
+   lookupType (env ctx) (Ast.Identifier name)
+infConstType ctx (Primitive name _ ) = 
+   lookupType (env ctx) (Ast.Identifier name)
+{-
 -- Tautology rule
 tautology :: Environment -> Ast.Name -> Type
 tautology ctx name id = 
