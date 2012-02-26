@@ -17,10 +17,11 @@ type Environment  = [ ( Ast.Name, Type ) ]
 
 data Context = 
    Ctx {
-      id    :: Int,
+      nid   :: Int,
       sub   :: Substitution,
       env   :: Environment
    }
+   deriving (Show,Eq)
 
 data ProofTree = 
    Proof { 
@@ -30,6 +31,19 @@ data ProofTree =
       rule  :: String,
       prem  :: [ ProofTree ]
    }
+   deriving (Show,Eq)
+
+-- Add a binding to the context and update the counter
+bindVar :: Context -> String -> (Context, Type)
+bindVar ctx' name =
+   ( ctx'', typevar )
+   where typevar = Alpha (nid ctx')
+         binding = ((Ast.Identifier name), typevar )
+         ctx'' = Ctx{nid=(nid ctx'), sub=(sub ctx'), env=(binding:(env ctx'))}
+
+-- simple helper to build an arrow type
+mkArrowType :: Type -> ProofTree -> Type
+mkArrowType ltype typing = Arrow ltype (type_ typing)
 
 -- built in type definitions
 cons' = Forall 1 (Arrow (Alpha 1) (Arrow (List (Alpha 1)) (List (Alpha 1))))
@@ -47,34 +61,38 @@ base = [
          (Ast.Identifier "/", binat) 
        ]
 
+-- provide a helper for the initial context
+ctx0 :: Context
+ctx0 = Ctx{nid=3, sub=[], env=base}
+
 -- helpder to drop type variables bound more than once
 type TypeBinding = ( Int, Int )
 dropBinding :: Int -> [TypeBinding] -> [TypeBinding]
-dropBinding id list =
+dropBinding nid list =
    filter dropPredicate list
-   where dropPredicate ( lhs, _ ) = id /= lhs
+   where dropPredicate ( lhs, _ ) = nid /= lhs
 
 -- generate a generic instance from a type scheme
 instantiate :: Type -> Int -> [(Int,Int)] -> ( Type, Int )
-instantiate (Arrow lhs rhs) id bindings = 
+instantiate (Arrow lhs rhs) nid bindings = 
    ( Arrow lhs' rhs', idr' )
-   where ( lhs', idl' ) = instantiate lhs id bindings
+   where ( lhs', idl' ) = instantiate lhs nid bindings
          ( rhs', idr' ) = instantiate rhs idl' bindings
-instantiate (List type_) id bindings =
-   ( List r, id' )
-   where ( r, id' ) = instantiate type_ id bindings
-instantiate (Forall id type_) next_id bindings =
-   instantiate type_ (next_id+1) ((id, next_id):bindings')
-   where bindings' = dropBinding id bindings
-instantiate Natural id bindings = ( Natural, id )
-instantiate (Alpha id) next_id bindings = 
-   ( Alpha (lookupBinding id bindings), next_id )
+instantiate (List type_) nid bindings =
+   ( List r, nid' )
+   where ( r, nid' ) = instantiate type_ nid bindings
+instantiate (Forall nid type_) next_id bindings =
+   instantiate type_ (next_id+1) ((nid, next_id):bindings')
+   where bindings' = dropBinding nid bindings
+instantiate Natural nid bindings = ( Natural, nid )
+instantiate (Alpha nid) next_id bindings = 
+   ( Alpha (lookupBinding nid bindings), next_id )
    where 
-      lookupBinding id ((lhs, rhs):tail) = 
-         if id == lhs 
+      lookupBinding nid ((lhs, rhs):tail) = 
+         if nid == lhs 
             then rhs
-            else lookupBinding id tail
-      lookupBinding id [] = id
+            else lookupBinding nid tail
+      lookupBinding nid [] = nid
 
 -- print the type
 getStrType :: Type -> String
@@ -82,17 +100,17 @@ getStrType (Arrow lhs rhs) =
    (getStrType lhs) ++ "->" ++ (getStrType rhs)
 getStrType (List type_) = 
    "[" ++ (getStrType type_) ++ "]"
-getStrType (Forall id type_) = 
-   "forall a_" ++ (show id) ++ "." ++ (getStrType type_)
+getStrType (Forall nid type_) = 
+   "forall a_" ++ (show nid) ++ "." ++ (getStrType type_)
 getStrType Natural = 
    "Nat"
-getStrType (Alpha id) = 
-   "a_" ++ (show id)
+getStrType (Alpha nid) = 
+   "a_" ++ (show nid)
 
 -- ast.name printer
 getStrName :: Ast.Name -> String
 getStrName (Identifier name) = name
-getStrName (Unique id) = "v_" ++ (show id)
+getStrName (Unique nid) = "v_" ++ (show nid)
 
 -- environment printer
 getStrEnvironment :: Environment -> String
@@ -115,45 +133,56 @@ lookupType ((key, type_):tl) name =
       else lookupType tl name
 lookupType [] name = Error
 
--- Constant typing relationships
-infConstType :: Context -> Ast.CstData -> Type
-infConstType ctx (IntCst val) = Natural
-infConstType ctx (Constructor name _ ) = 
-   lookupType (env ctx) (Ast.Identifier name)
-infConstType ctx (Primitive name _ ) = 
-   lookupType (env ctx) (Ast.Identifier name)
-{-
+-- Constant and variable typing relationships
+infConstType :: Context -> Ast.CstData -> ( Context, Type )
+infConstType ctx (IntCst val) = ( ctx, Natural )
+infConstType ctx ( Constructor name _ ) = 
+   (Ctx { nid=nid', env=(env ctx), sub=(sub ctx) }, type_ )
+   where generic = lookupType (env ctx) (Ast.Identifier name)
+         ( type_, nid' ) = instantiate generic (nid ctx) []
+infConstType ctx ( Primitive name _ ) = 
+   (Ctx { nid=nid', env=(env ctx), sub=(sub ctx) }, type_ )
+   where generic = lookupType (env ctx) (Ast.Identifier name)
+         ( type_, nid' ) = instantiate generic (nid ctx) []
+infNameType :: Context -> Ast.Name -> ( Context, Type )
+infNameType ctx name =
+   (Ctx { nid=nid', env=(env ctx), sub=(sub ctx) }, type_ )
+   where generic = lookupType (env ctx) name
+         ( type_, nid' ) = instantiate generic (nid ctx) []
+
+-- Main typing function
+proofTree :: Context -> Ast.Ast -> ProofTree
+
 -- Tautology rule
-tautology :: Environment -> Ast.Name -> Type
-tautology ctx name id = 
-   case result of 
-      Forall arity body -> instantiate 
-      r -> r
-   where result = getName (env ctx) name
+proofTree ctx' t@(Constant val) = 
+   Proof{ctx=ctx'', term=t, type_=type_', rule="TAUT", prem=[]}
+   where ( ctx'', type_' ) = infConstType ctx' val
+proofTree ctx' t@(Variable val) = 
+   Proof{ctx=ctx'', term=t, type_=type_', rule="TAUT", prem=[]}
+   where ( ctx'', type_' ) = infNameType ctx' val
 
 -- abstraction rule
-abstraction :: Context -> Ast.Name -> Ast.Ast -> Int -> ( Type, Int )
-abstraction ctx param body id = 
-   ( Arrow (Alpha id) type_, id' )
-   where ( type_, id' ) = inftype ((param, Alpha id):ctx) body (id+1)
-
-application :: Context -> Ast.Ast -> Ast.Ast -> Int -> ( Type, Int )
-application ctx lhs rhs id = 
-   
-
--- map the ast structure to formal rules
-proofTree :: Context -> Ast.Ast -> ProofTree
-proofTree ctx' t@(Constant constant) = 
-   Proof{ ctx = ctx', term = t, type_ = type_', rule = "Const", prem = [] }
-   where type_' = infConstType ctx' constant
-proofTree ctx' t@(Variable name) = 
-   Proof{ ctx = ctx', term = t, type_ = type_', rule = "Taut", prem = [] }
-   where type_' = tautology ctx' name
-proofTree ctx' t@(Applicaiton lhs rhs) = 
-    Proof{ ctx = ctx', term = t, type_ = type_', rule = "App", prem = [] }
 proofTree ctx' t@(Lambda param body) = 
-    Proof{ ctx = ctx', term = t, type_ = type_', rule = "Abs", prem = [] }
-proofTree ctx' t@(Let name input body) = 
-    Proof{ ctx = ctx', term = t, type_ = type_', rule = "Let", prem = [] }
+   Proof{ctx=(Ctx{nid=(nid (ctx premise)), sub=(sub (ctx premise)), 
+         env=(env ctx')}), term=t, type_=type_'', rule="ABS", prem=[premise]}
+   where ( ctx'', type_' ) = bindVar ctx' param
+         premise = proofTree ctx'' body
+         type_'' = mkArrowType type_' premise
 
--}
+-- application rule ... not done
+proofTree ctx' t@(Application lhs rhs) =
+   Proof{ctx=(Ctx{nid=(nid (ctx rproof)), sub=(sub (ctx rproof)), 
+         env=(env ctx')}), term=t, type_=type_', rule="APP", 
+         prem=[lproof,rproof]}
+   where lproof = proofTree ctx' lhs
+         rproof = proofTree (ctx lproof) rhs
+         type_' = 
+
+-- let rule .... not done
+proofTree ctx' t@(Let name lhs rhs) =
+   Proof{ctx=(Ctx{nid=(nid (ctx rproof)), sub=(sub (ctx rproof)),
+         env=(env ctx')}), term=t, type_=type_', rule="LET", 
+         prem=[lproof,rproof]}
+   where lproof = proofTree ctx' lhs
+         rproof = proofTree (ctx lproof) rhs
+         type_' = 
