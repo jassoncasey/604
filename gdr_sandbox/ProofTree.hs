@@ -33,6 +33,14 @@ data ProofTree =
    }
    deriving (Show,Eq)
 
+-- generate an arrow type if necessary
+genArrow :: Type -> Int -> ( Type, Int )
+genArrow (List _) nid = ( Error, nid )
+genArrow Natural nid = ( Error, nid )
+genArrow (Forall _ _) nid = ( Error, nid )
+genArrow (Alpha id') nid = ( (Arrow (Alpha nid) (Alpha (nid+1))), nid+2 )
+genArrow t@(Arrow _ _) nid = ( t, nid )
+
 -- build a universally quantified type
 mkForallType :: [Int] -> Type -> Type
 mkForallType (h:tail) type_ = 
@@ -92,6 +100,7 @@ mkArrowType ltype typing = Arrow ltype (type_ typing)
 -- simple function type extractor
 getBodyType :: Type -> Type
 getBodyType (Arrow _ rtype) = rtype
+getBodyType Error = Error
 getBodyType x = x
 
 -- unify these two types and return results with new substitutions
@@ -231,14 +240,14 @@ proofTree ctx' t@(Lambda param body) =
 
 -- application rule ... not done
 proofTree ctx' t@(Application lhs rhs) =
-   Proof{ctx=(Ctx{nid=(nid (ctx rproof)), sub=sub',
-         env=(env ctx')}), term=t, type_=type_', rule="APP", 
+   Proof{ctx=(Ctx{nid=nid', sub=sub',
+         env=(env ctx')}), term=t, type_=type_'', rule="APP", 
          prem=[lproof,rproof]}
    where lproof = proofTree ctx' lhs
          rproof = proofTree (ctx lproof) rhs
-         (ltype, rtype, sub' ) = unify (sub (ctx rproof)) 
-                                       (type_ lproof) (type_ rproof)
-         type_' = getBodyType (type_ lproof)
+         ( type_', nid' ) = genArrow (type_ lproof) (nid (ctx rproof))
+         (ltype, rtype, sub' ) = unify (sub (ctx rproof)) type_' (type_ rproof)
+         type_'' = getBodyType ltype
 
 -- let rule .... not done
 proofTree ctx' t@(Let name lhs rhs) =
@@ -248,3 +257,8 @@ proofTree ctx' t@(Let name lhs rhs) =
    where lproof = proofTree ctx' lhs
          rproof = proofTree (letBind (ctx lproof) name (type_ lproof)) rhs
          type_' = type_ rproof
+
+-- main entry point to build a proof tree
+typeTerm :: Ast.Ast -> ProofTree
+typeTerm term =
+   proofTree ctx0 term
