@@ -1,6 +1,8 @@
 module ProofTree
 where
 
+import Data.List( nub )
+import Data.Maybe( fromJust )
 import Ast
 
 data Type = 
@@ -208,6 +210,22 @@ getStrType Natural =
 getStrType (Alpha nid) = 
    "a_" ++ (show nid)
 
+-- Print the type (Pretty!)
+printType :: Type -> String
+printType t =
+  let alphaStrMap = (zip (nub $ freeVars t) ['t':(show i) | i <- [(0::Int)..]])
+  in printWithMap t alphaStrMap
+    where
+      printWithMap t m =
+        case t of
+          Natural   -> "Nat"
+          List u    -> "[" ++ (printWithMap u m) ++ "]"
+          Alpha n   -> fromJust $ lookup n m
+          Arrow u r -> case u of
+            Arrow _ _ -> "(" ++ (printWithMap u m) ++ ") -> "
+              ++ (printWithMap r m)
+            _ -> (printWithMap u m) ++ " -> " ++ (printWithMap r m)
+
 -- ast.name printer
 getStrName :: Ast.Name -> String
 getStrName (Identifier name) = name
@@ -278,7 +296,7 @@ proofTree ctx' t@(Application lhs rhs) =
    where lproof = proofTree ctx' lhs
          rproof = proofTree (ctx lproof) rhs
          ( type_', nid' ) = genArrow (type_ lproof) (nid (ctx rproof))
-         (ltype, rtype, sub' ) = unify (sub (ctx rproof)) type_' (type_ rproof)
+         (ltype, _, sub' ) = unify (sub (ctx rproof)) type_' (type_ rproof)
          type_'' = getBodyType ltype
 
 -- let rule .... not done

@@ -8,6 +8,7 @@ import Parsing( Program(..), parse_program )
 import Ast( program )
 --import Evaluate ( evaluate )
 import Typing
+import ProofTree
 
 
 
@@ -18,6 +19,8 @@ main = do
   case mode of
     Batch -> typeCheck filenames
     Diagnostics -> testDiag filenames
+    ProofTree -> putStrLn "We are waiting on the proof tree."
+    LatexProofTree -> "Yeah right :)"
     ArgError -> putStrLn "Error in arguments."
   return ()
 
@@ -88,10 +91,17 @@ processArgs args' = case args' of
   where allSplFiles = all (isSuffixOf ".spl")
 
 
-data SplMode = Batch | Diagnostics | ArgError
+data SplMode =
+    Batch
+  | Diagnostics
+  | LatexProofTree
+  | ProofTree
+  | ArgError
 modeFromStr :: String -> SplMode
 modeFromStr cmd = case cmd of
   "" -> Batch
   "d" -> Diagnostics
+  "tree" -> ProofTree
+  "tex" -> LatexProofTree
   _ -> ArgError
 
