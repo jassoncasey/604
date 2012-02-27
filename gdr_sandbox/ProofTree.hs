@@ -103,13 +103,41 @@ getBodyType (Arrow _ rtype) = rtype
 getBodyType Error = Error
 getBodyType x = x
 
+
 -- unify these two types and return results with new substitutions
 unify :: Substitution -> Type -> Type -> ( Type, Type, Substitution)
-unify sub ltype rtype = 
-    case (t,u) of
-        _ | t == u -> (t,u,sub)
-        _ -> error
-            ("Unification error: Cannot unify " show t ++ " and " show u)
+unify sub ltype rtype = (applySub sub' ltype, applySub sub' rtype, sub')
+    where sub'' = unification [(ltype,rtype)]
+          sub' = sub ++ sub''
+
+-- Given a set of constraints, generate a substitution
+unification :: [(Type,Type)] -> Substitution
+unification [] = []
+unification ((t,u):cs) =
+  case (t,u) of
+    _ | t == u -> unification cs
+    ((Alpha n),_) | not $ elem n $ freeVars u ->
+      (t,u):(unification $ map (\(a,b) -> (a,applySub [(t,u)] b)) cs)
+    (_,(Alpha n)) | not $ elem n $ freeVars t ->
+      (u,t):(unification $ map (\(a,b) -> (a,applySub [(u,t)] b)) cs)
+    (Arrow t1 t2,Arrow u1 u2) -> unification ((t1,u1):(t2,u2):cs)
+    (List t', List u') -> unification ((t',u'):cs)
+    _ -> [(t,Error)]
+
+-- Given a substitution, apply it to a type scheme
+applySub :: Substitution -> Type -> Type
+applySub [] type_ = type_
+applySub (s:ss) type_ =
+    applySub ss $ applySingleSub s type_
+  where
+    applySingleSub :: (Type,Type) -> Type -> Type
+    applySingleSub (t,u) (List r) = List $ applySingleSub (t,u) r
+    applySingleSub (t,u) (Arrow r s) =
+        Arrow (applySingleSub (t,u) r) (applySingleSub (t,u) s)
+    applySingleSub (t,u) r
+        | t == r = u
+        | otherwise = r
+
 
 -- produce the proper environment for the right premise of a let 
 letBind :: Context -> Ast.Name -> Type -> Context
