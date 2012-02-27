@@ -75,7 +75,7 @@ availableVars [] list = []
 letType :: Type -> Environment -> Type
 letType type_ env =
    mkForallType quant type_
-   where quant = availableVars (freeVars type_) (availableVars env)
+   where quant = availableVars (freeVars type_) (freeVarsEnv env)
 
 -- Add a binding to the context and update the counter
 bindVar :: Context -> String -> (Context, Type)
@@ -99,7 +99,7 @@ unify :: Substitution -> Type -> Type -> ( Type, Type, Substitution)
 unify sub ltype rtype = ( ltype, rtype, sub )
 
 -- produce the proper environment for the right premise of a let 
-letBind :: Context -> Type -> Ast.Name -> Context
+letBind :: Context -> Ast.Name -> Type -> Context
 letBind ctx' name type_ = 
    Ctx{nid=(nid ctx'), sub=(sub ctx'), env=((name, type_'):(env ctx'))}
    where env' = env ctx'
@@ -247,4 +247,4 @@ proofTree ctx' t@(Let name lhs rhs) =
          prem=[lproof,rproof]}
    where lproof = proofTree ctx' lhs
          rproof = proofTree (letBind (ctx lproof) name (type_ lproof)) rhs
-         type_' = type_ (ctx rproof)
+         type_' = type_ rproof
