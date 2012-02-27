@@ -19,8 +19,8 @@ main = do
   case mode of
     Batch -> typeCheck filenames
     Diagnostics -> testDiag filenames
-    ProofTree -> putStrLn "We are waiting on the proof tree."
-    LatexProofTree -> "Yeah right :)"
+    ProofTree -> typeCheckTree filenames
+    LatexProofTree -> putStrLn "Yeah right :)"
     ArgError -> putStrLn "Error in arguments."
   return ()
 
@@ -48,6 +48,25 @@ typeChecknPrint filename = do
             Right ty' -> putStrLn $ printType ty'
             Left typeErr -> putStrLn typeErr
 
+typeCheckTree :: [String] -> IO()
+typeCheckTree args = do
+  _ <- forM args typeChecknPrintTree
+  return ()
+typeChecknPrintTree :: String -> IO()
+typeChecknPrintTree filename = do
+  putStrLn ("Typechecking " ++ filename ++ ":")
+  source <- readFile filename
+  let tokens = lexString filename source
+  let (Program parsedSource, err) = parse_program tokens
+  if (not.null) err
+    then putStrLn "  Error parsing file."
+    else do
+      let ast = program (Program parsedSource)
+      if isNothing ast
+        then putStrLn "  Error extracting ast from source."
+        else do
+          let ty = typeTerm $ fromJust ast
+          putStrLn $ show $ sub $ ctx ty -- $ getStrType $ type_ ty
 
 -- print out information for diagnostics
 testDiag :: [String] -> IO ()

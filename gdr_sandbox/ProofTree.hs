@@ -124,13 +124,19 @@ unification ((t,u):cs) =
       (u,t):(unification $ map (\(a,b) -> (a,applySub [(u,t)] b)) cs)
     (Arrow t1 t2,Arrow u1 u2) -> unification ((t1,u1):(t2,u2):cs)
     (List t', List u') -> unification ((t',u'):cs)
-    _ -> [(t,Error)]
+    _ -> error $ show (t,u) -- [(t,Error)]
+
+applySub :: Substitution -> Type -> Type
+applySub sub t
+  | t == t' = t
+  | otherwise = applySub sub t'
+  where t' = applySub' sub t
 
 -- Given a substitution, apply it to a type scheme
-applySub :: Substitution -> Type -> Type
-applySub [] type_ = type_
-applySub (s:ss) type_ =
-    applySub ss $ applySingleSub s type_
+applySub' :: Substitution -> Type -> Type
+applySub' [] type_ = type_
+applySub' (s:ss) type_ =
+    applySub' ss $ applySingleSub s type_
   where
     applySingleSub :: (Type,Type) -> Type -> Type
     applySingleSub (t,u) (List r) = List $ applySingleSub (t,u) r
@@ -196,23 +202,11 @@ instantiate (Alpha nid) next_id bindings =
             then rhs
             else lookupBinding nid tail
       lookupBinding nid [] = nid
+instantiate Error n ns = error (show n ++ show ns )
 
--- print the type
+-- Print the type. Has support for labeling alphas with 'tn' notation
 getStrType :: Type -> String
-getStrType (Arrow lhs rhs) =
-   (getStrType lhs) ++ "->" ++ (getStrType rhs)
-getStrType (List type_) = 
-   "[" ++ (getStrType type_) ++ "]"
-getStrType (Forall nid type_) = 
-   "forall a_" ++ (show nid) ++ "." ++ (getStrType type_)
-getStrType Natural = 
-   "Nat"
-getStrType (Alpha nid) = 
-   "a_" ++ (show nid)
-
--- Print the type (Pretty!)
-printType :: Type -> String
-printType t =
+getStrType t =
   let alphaStrMap = (zip (nub $ freeVars t) ['t':(show i) | i <- [(0::Int)..]])
   in printWithMap t alphaStrMap
     where
@@ -289,10 +283,10 @@ proofTree ctx' t@(Lambda param body) =
          type_'' = mkArrowType type_' premise
 
 -- application rule ... not done
-proofTree ctx' t@(Application lhs rhs) =
-   Proof{ctx=(Ctx{nid=nid', sub=sub',
+proofTree ctx' t@(Application lhs rhs) = error (show (sub (ctx rproof)) ++ show type_' ++ show (type_ rproof))
+   {-Proof{ctx=(Ctx{nid=nid', sub=sub',
          env=(env ctx')}), term=t, type_=type_'', rule="APP", 
-         prem=[lproof,rproof]}
+         prem=[lproof,rproof]}-}
    where lproof = proofTree ctx' lhs
          rproof = proofTree (ctx lproof) rhs
          ( type_', nid' ) = genArrow (type_ lproof) (nid (ctx rproof))
