@@ -96,7 +96,11 @@ getBodyType x = x
 
 -- unify these two types and return results with new substitutions
 unify :: Substitution -> Type -> Type -> ( Type, Type, Substitution)
-unify sub ltype rtype = ( ltype, rtype, sub )
+unify sub ltype rtype = 
+    case (t,u) of
+        _ | t == u -> (t,u,sub)
+        _ -> error
+            ("Unification error: Cannot unify " show t ++ " and " show u)
 
 -- produce the proper environment for the right premise of a let 
 letBind :: Context -> Ast.Name -> Type -> Context
