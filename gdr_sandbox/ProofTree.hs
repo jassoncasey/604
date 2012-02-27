@@ -33,6 +33,50 @@ data ProofTree =
    }
    deriving (Show,Eq)
 
+-- build a universally quantified type
+mkForallType :: [Int] -> Type -> Type
+mkForallType (h:tail) type_ = 
+   Forall h (mkForallType tail type_)
+mkForallType [] type_ = type_
+
+-- find all the free type variables in a type scheme
+freeVars :: Type -> [Int]
+freeVars type_ =
+   free_vars type_ []
+   where 
+      free_vars :: Type -> [Int] -> [Int]
+      free_vars Error _ = []
+      free_vars Natural _ = []
+      free_vars (Arrow lhs rhs) bound = 
+         (free_vars lhs bound) ++ (free_vars rhs bound)
+      free_vars (List type_) bound = free_vars type_ bound
+      free_vars (Alpha nid) bound = 
+         if elem nid bound
+            then []
+            else [nid]
+      free_vars (Forall nid type_) bound = 
+         free_vars type_ (nid:bound)
+
+-- Collect all the free type variables in an environment
+freeVarsEnv :: Environment -> [Int]
+freeVarsEnv ((name, type_):tail) =
+   (freeVars type_) ++ (freeVarsEnv tail)
+freeVarsEnv [] = []
+
+-- Find all the free type variables between two lists
+availableVars :: [Int] -> [Int] -> [Int]
+availableVars (h:tl) list =
+   if elem h list 
+      then availableVars tl list
+      else (h:(availableVars tl list))
+availableVars [] list = []
+
+-- Build a let type
+letType :: Type -> Environment -> Type
+letType type_ env =
+   mkForallType quant type_
+   where quant = availableVars (freeVars type_) (availableVars env)
+
 -- Add a binding to the context and update the counter
 bindVar :: Context -> String -> (Context, Type)
 bindVar ctx' name =
@@ -44,6 +88,22 @@ bindVar ctx' name =
 -- simple helper to build an arrow type
 mkArrowType :: Type -> ProofTree -> Type
 mkArrowType ltype typing = Arrow ltype (type_ typing)
+
+-- simple function type extractor
+getBodyType :: Type -> Type
+getBodyType (Arrow _ rtype) = rtype
+getBodyType x = x
+
+-- unify these two types and return results with new substitutions
+unify :: Substitution -> Type -> Type -> ( Type, Type, Substitution)
+unify sub ltype rtype = ( ltype, rtype, sub )
+
+-- produce the proper environment for the right premise of a let 
+letBind :: Context -> Type -> Ast.Name -> Context
+letBind ctx' name type_ = 
+   Ctx{nid=(nid ctx'), sub=(sub ctx'), env=((name, type_'):(env ctx'))}
+   where env' = env ctx'
+         type_' = letType type_ env'
 
 -- built in type definitions
 cons' = Forall 1 (Arrow (Alpha 1) (Arrow (List (Alpha 1)) (List (Alpha 1))))
@@ -171,12 +231,14 @@ proofTree ctx' t@(Lambda param body) =
 
 -- application rule ... not done
 proofTree ctx' t@(Application lhs rhs) =
-   Proof{ctx=(Ctx{nid=(nid (ctx rproof)), sub=(sub (ctx rproof)), 
+   Proof{ctx=(Ctx{nid=(nid (ctx rproof)), sub=sub',
          env=(env ctx')}), term=t, type_=type_', rule="APP", 
          prem=[lproof,rproof]}
    where lproof = proofTree ctx' lhs
          rproof = proofTree (ctx lproof) rhs
-         type_' = 
+         (ltype, rtype, sub' ) = unify (sub (ctx rproof)) 
+                                       (type_ lproof) (type_ rproof)
+         type_' = getBodyType (type_ lproof)
 
 -- let rule .... not done
 proofTree ctx' t@(Let name lhs rhs) =
@@ -184,5 +246,5 @@ proofTree ctx' t@(Let name lhs rhs) =
          env=(env ctx')}), term=t, type_=type_', rule="LET", 
          prem=[lproof,rproof]}
    where lproof = proofTree ctx' lhs
-         rproof = proofTree (ctx lproof) rhs
-         type_' = 
+         rproof = proofTree (letBind (ctx lproof) name (type_ lproof)) rhs
+         type_' = type_ (ctx rproof)
