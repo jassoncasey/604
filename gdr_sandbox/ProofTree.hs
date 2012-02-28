@@ -146,7 +146,6 @@ applySub' (s:ss) type_ =
         | t == r = u
         | otherwise = r
 
-
 -- produce the proper environment for the right premise of a let 
 letBind :: Context -> Ast.Name -> Type -> Context
 letBind ctx' name type_ = 
