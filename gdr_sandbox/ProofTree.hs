@@ -308,4 +308,7 @@ proofTree ctx' t@(Let name lhs rhs) =
 -- main entry point to build a proof tree
 typeTerm :: Ast.Ast -> ProofTree
 typeTerm term =
-   proofTree ctx0 term
+  let
+    (Proof ctx@(Ctx _ subs _) d type_' e f) = proofTree ctx0 term
+    type_'' = applySub subs type_'
+  in (Proof ctx d type_'' e f)

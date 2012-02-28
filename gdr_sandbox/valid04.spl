@@ -1,1 +1,1 @@
-\t.\f.t;
+\x.(cons x (cons 3 nil));
