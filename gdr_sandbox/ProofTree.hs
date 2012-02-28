@@ -282,8 +282,9 @@ proofTree ctx' t@(Lambda param body) =
          premise = proofTree ctx'' body
          type_'' = mkArrowType type_' premise
 
--- application rule ... not done
-proofTree ctx' t@(Application lhs rhs) = error (show (sub (ctx rproof)) ++ show type_' ++ show (type_ rproof))
+-- application rule 
+proofTree ctx' t@(Application lhs rhs) = 
+   error (show (sub (ctx rproof)) ++ show type_' ++ show (type_ rproof))
    {-Proof{ctx=(Ctx{nid=nid', sub=sub',
          env=(env ctx')}), term=t, type_=type_'', rule="APP", 
          prem=[lproof,rproof]}-}
@@ -293,7 +294,7 @@ proofTree ctx' t@(Application lhs rhs) = error (show (sub (ctx rproof)) ++ show 
          (ltype, _, sub' ) = unify (sub (ctx rproof)) type_' (type_ rproof)
          type_'' = getBodyType ltype
 
--- let rule .... not done
+-- let rule
 proofTree ctx' t@(Let name lhs rhs) =
    Proof{ctx=(Ctx{nid=(nid (ctx rproof)), sub=(sub (ctx rproof)),
          env=(env ctx')}), term=t, type_=type_', rule="LET", 
