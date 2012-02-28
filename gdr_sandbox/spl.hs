@@ -18,7 +18,7 @@ main = do
   let (mode, filenames) = processArgs args
   case mode of
     Batch -> typeCheck filenames
-    Diagnostics -> testDiag filenames
+    AstDiag -> testDiag filenames
     ProofTree -> typeCheckTree filenames
     LatexProofTree -> putStrLn "Yeah right :)"
     ArgError -> putStrLn "Error in arguments."
@@ -32,28 +32,6 @@ typeCheck args = do
   return ()
 typeChecknPrint :: String -> IO()
 typeChecknPrint filename = do
-  putStrLn ("Processing " ++ filename ++ ":")
-  source <- readFile filename
-  let tokens = lexString filename source
-  let (Program parsedSource, err) = parse_program tokens
-  if (not.null) err
-    then putStrLn "  Error parsing file."
-    else do
-      let ast = program (Program parsedSource)
-      if isNothing ast
-        then putStrLn "  Error extracting ast from source."
-        else do
-          let ty = decltype $ fromJust ast
-          case ty of
-            Right ty' -> putStrLn $ printType ty'
-            Left typeErr -> putStrLn typeErr
-
-typeCheckTree :: [String] -> IO()
-typeCheckTree args = do
-  _ <- forM args typeChecknPrintTree
-  return ()
-typeChecknPrintTree :: String -> IO()
-typeChecknPrintTree filename = do
   putStrLn ("Typechecking " ++ filename ++ ":")
   source <- readFile filename
   let tokens = lexString filename source
@@ -67,6 +45,9 @@ typeChecknPrintTree filename = do
         else do
           let ty = typeTerm $ fromJust ast
           putStrLn $ getStrType $ type_ ty
+
+typeCheckTree :: [String] -> IO()
+typeCheckTree args = putStrLn "Not implemented yet."
 
 -- print out information for diagnostics
 testDiag :: [String] -> IO ()
@@ -112,14 +93,14 @@ processArgs args' = case args' of
 
 data SplMode =
     Batch
-  | Diagnostics
+  | AstDiag
   | LatexProofTree
   | ProofTree
   | ArgError
 modeFromStr :: String -> SplMode
 modeFromStr cmd = case cmd of
   "" -> Batch
-  "d" -> Diagnostics
+  "ast" -> AstDiag
   "tree" -> ProofTree
   "tex" -> LatexProofTree
   _ -> ArgError
