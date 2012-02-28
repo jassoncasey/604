@@ -20,7 +20,7 @@ main = do
     Batch -> typeCheck filenames
     AstDiag -> testDiag filenames
     ProofTree -> typeCheckTree filenames
-    LatexProofTree -> putStrLn "Yeah right :)"
+    LatexProofTree -> texifyProofTrees filenames
     ArgError -> putStrLn "Error in arguments."
   return ()
 
@@ -89,6 +89,29 @@ processArgs args' = case args' of
     True -> (Batch,args)
     False -> (ArgError, [])
   where allSplFiles = all (isSuffixOf ".spl")
+
+
+-- Tex the output
+texifyProofTrees :: [String] -> IO()
+texifyProofTrees args = do
+  _ <- forM args texifyProofTree
+  return ()
+
+texifyProofTree :: String -> IO()
+texifyProofTree filename = do
+  source <- readFile filename
+  let tokens = lexString filename source
+  let (Program parsedSource, err) = parse_program tokens
+  if (not.null) err
+    then putStrLn ("Error parsing file: " ++ filename ++ ".\n\n")
+    else do
+      let ast = program (Program parsedSource)
+      if isNothing ast
+        then putStrLn ("Error building ast in file: " ++ filename ++ ".\n\n")
+        else do
+          let ty = typeTerm $ fromJust ast
+          putStr $ texInDocTree ty
+
 
 
 data SplMode =

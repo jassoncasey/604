@@ -1,7 +1,7 @@
 module ProofTree
 where
 
-import Data.List( nub )
+import Data.List( nub, intersperse, concat )
 import Data.Maybe( fromJust )
 import Ast
 
@@ -281,10 +281,11 @@ proofTree ctx' t@(Lambda param body) =
    Proof{ctx=(Ctx{nid=(nid (ctx premise)), sub=(sub (ctx premise)), 
          env=(env ctx')}), term=t, type_=type_'', rule="ABS", prem=[premise]}
    where ( ctx'', type_' ) = bindVar ctx' param
-         premise = proofTree ctx'' body
+         premise = proofTree ctx'' body 
          type_'' = mkArrowType type_' premise
 
--- application rule 
+-- application rule
+-- FIXME Don't need to apply sub here. Can be a single application in typeTerm
 proofTree ctx' t@(Application lhs rhs) =
    Proof{ctx=(Ctx{nid=nid', sub=sub',
          env=(env ctx')}), term=t, type_=type_'', rule="APP", 
@@ -312,3 +313,101 @@ typeTerm term =
     (Proof ctx@(Ctx _ subs _) d type_' e f) = proofTree ctx0 term
     type_'' = applySub subs type_'
   in (Proof ctx d type_'' e f)
+
+
+
+-- LaTeX Pretty printing
+--FIXME filter out cons and nil
+joinOn :: String -> [String] -> String
+joinOn delim strs= concat $ intersperse delim strs
+
+texBeginRule :: String -> String
+texBeginRule s = "\\RightLabel{" ++ s ++ "}\n"
+
+texPremises :: [ProofTree] -> String
+texPremises prfs = 
+  "\\AxiomC{" ++
+  joinOn " \\hspace{1mm} " strs ++
+  "}\n"
+  where strs = map treeToTex prfs
+
+texConclusion :: Int -> Context -> Type -> String
+texConclusion n c t =
+  "\\" ++ premInf n ++ "{$" ++
+  texContext c ++
+  " \\vdash " ++
+  " : " ++ texType t ++ "$}\n"
+  where
+    premInf :: Int -> String
+    premInf 0 = "UnaryInfC"
+    premInf 1 = "UnaryInfC"
+    premInf 2 = "BinaryInfC"
+    premInf _ = "TrinaryInfC"
+
+texContext :: Context -> String
+texContext (Ctx _ _ env) =  joinOn ", " $ texBindings $ drop 6 env
+  where
+    texBindings :: Environment -> [String]
+    texBindings [] = []
+    texBindings ((Unique _,_):bs) = texBindings bs
+    texBindings ((Identifier sym,t):bs) =
+      (sym ++ " : " ++ (texType t)):texBindings bs
+
+texType :: Type -> String
+texType _ = "\\tau"
+
+treeToTex' :: ProofTree -> String
+treeToTex' ptree =
+  "\\begin{prooftree}\n" ++
+  treeToTex ptree ++
+  "\\end{prooftree}\n"
+
+treeToTex :: ProofTree -> String
+treeToTex(Proof context _ typ "TAUT" _) =
+  "\\AxiomC{ }\n" ++ -- this is where you call the other stuff
+  --texBeginRule "T-TAUT" ++
+  texConclusion 0 context typ
+
+treeToTex(Proof context _ typ "ABS" premises) =
+  --texBeginRule "T-ABS" ++
+  joinOn " " (map treeToTex premises) ++ -- this is where you call the other stuff
+  texConclusion (length premises) context typ
+
+treeToTex(Proof context _ typ "APP" premises) =
+  --texBeginRule "T-APP" ++
+  joinOn " " (map treeToTex premises) ++ -- this is where you call the other stuff
+  texConclusion (length premises) context typ
+
+treeToTex(Proof context _ typ "LET" premises) =
+  --texBeginRule "T-LET" ++
+  joinOn " " (map treeToTex premises) ++ -- this is where you call the other stuff
+  texConclusion (length premises) context typ
+
+treeToTex(Proof context _ typ shto premises) = error shto
+
+texInDocTree :: ProofTree -> String
+texInDocTree ptree =
+  "\\documentclass{article}\n" ++
+  "\\usepackage{syntax}\n" ++
+  "\\usepackage{bussproofs}\n" ++
+  "\\usepackage{amsmath}\n" ++
+  "\\usepackage{amssymb}\n" ++
+  "\\usepackage{amsthm}\n" ++
+  "\\begin{document}\n" ++
+  treeToTex' ptree ++
+  "\\end{document}\n"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
