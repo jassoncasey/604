@@ -102,9 +102,11 @@ mkArrowType ltype typing = Arrow ltype (type_ typing)
 -- simple function type extractor
 getBodyType :: Type -> Type
 getBodyType (Arrow _ rtype) = rtype
-getBodyType Error = Error
 getBodyType x = x
 
+getParamType :: Type -> Type
+getParamType (Arrow ltype _) = ltype
+getParamType _ = Error
 
 -- unify these two types and return results with new substitutions
 unify :: Substitution -> Type -> Type -> ( Type, Type, Substitution)
@@ -290,7 +292,8 @@ proofTree ctx' t@(Application lhs rhs) =
    where lproof = proofTree ctx' lhs
          rproof = proofTree (ctx lproof) rhs
          ( type_', nid' ) = genArrow (type_ lproof) (nid (ctx rproof))
-         (ltype, _, sub' ) = unify (sub (ctx rproof)) type_' (type_ rproof)
+         ptype = getParamType type_'
+         (ltype, _, sub' ) = unify (sub (ctx rproof)) ptype (type_ rproof)
          type_'' = getBodyType ltype
 
 -- let rule
