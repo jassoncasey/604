@@ -93,7 +93,7 @@ bindVar ctx' name =
    ( ctx'', typevar )
    where typevar = Alpha (nid ctx')
          binding = ((Ast.Identifier name), typevar )
-         ctx'' = Ctx{nid=(nid ctx'), sub=(sub ctx'), env=(binding:(env ctx'))}
+         ctx'' = Ctx{nid=((nid ctx')+1), sub=(sub ctx'), env=(binding:(env ctx'))}
 
 -- simple helper to build an arrow type
 mkArrowType :: Type -> ProofTree -> Type
