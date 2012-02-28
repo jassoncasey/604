@@ -66,7 +66,7 @@ typeChecknPrintTree filename = do
         then putStrLn "  Error extracting ast from source."
         else do
           let ty = typeTerm $ fromJust ast
-          putStrLn $ show $ sub $ ctx ty -- $ getStrType $ type_ ty
+          putStrLn $ getStrType $ type_ ty
 
 -- print out information for diagnostics
 testDiag :: [String] -> IO ()

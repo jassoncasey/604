@@ -109,6 +109,7 @@ getParamType (Arrow ltype _) = ltype
 getParamType _ = Error
 
 -- unify these two types and return results with new substitutions
+-- FIXME add error support
 unify :: Substitution -> Type -> Type -> ( Type, Type, Substitution)
 unify sub ltype rtype = (applySub sub' ltype, applySub sub' rtype, sub')
     where sub'' = unification [(ltype,rtype)]
@@ -126,7 +127,7 @@ unification ((t,u):cs) =
       (u,t):(unification $ map (\(a,b) -> (a,applySub [(u,t)] b)) cs)
     (Arrow t1 t2,Arrow u1 u2) -> unification ((t1,u1):(t2,u2):cs)
     (List t', List u') -> unification ((t',u'):cs)
-    _ -> error $ show (t,u) -- [(t,Error)]
+    _ -> [(t,Error)]
 
 applySub :: Substitution -> Type -> Type
 applySub sub t
@@ -203,7 +204,7 @@ instantiate (Alpha nid) next_id bindings =
             then rhs
             else lookupBinding nid tail
       lookupBinding nid [] = nid
-instantiate Error n ns = error (show n ++ show ns )
+--instantiate Error n ns = error (show n ++ show ns )
 
 -- Print the type. Has support for labeling alphas with 'tn' notation
 getStrType :: Type -> String
@@ -284,17 +285,16 @@ proofTree ctx' t@(Lambda param body) =
          type_'' = mkArrowType type_' premise
 
 -- application rule 
-proofTree ctx' t@(Application lhs rhs) = 
-   error (show (sub (ctx rproof)) ++ show type_' ++ show (type_ rproof))
-   {-Proof{ctx=(Ctx{nid=nid', sub=sub',
+proofTree ctx' t@(Application lhs rhs) =
+   Proof{ctx=(Ctx{nid=nid', sub=sub',
          env=(env ctx')}), term=t, type_=type_'', rule="APP", 
-         prem=[lproof,rproof]}-}
+         prem=[lproof,rproof]}
    where lproof = proofTree ctx' lhs
          rproof = proofTree (ctx lproof) rhs
          ( type_', nid' ) = genArrow (type_ lproof) (nid (ctx rproof))
          ptype = getParamType type_'
-         (ltype, _, sub' ) = unify (sub (ctx rproof)) ptype (type_ rproof)
-         type_'' = getBodyType ltype
+         (ltype, _, sub' ) = unify (sub (ctx rproof)) (ptype) (type_ rproof)
+         type_'' = applySub sub' $ getBodyType type_'
 
 -- let rule
 proofTree ctx' t@(Let name lhs rhs) =
