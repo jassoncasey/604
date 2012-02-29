@@ -331,11 +331,12 @@ texPremises prfs =
   "}\n"
   where strs = map treeToTex prfs
 
-texConclusion :: Int -> Context -> Type -> String
-texConclusion n c t =
+texConclusion :: Int -> Context -> Type -> String -> String
+texConclusion n c t conc =
   "\\" ++ premInf n ++ "{$" ++
   texContext c ++
   " \\vdash " ++
+  conc ++
   " : " ++ texType t ++ "$}\n"
   where
     premInf :: Int -> String
@@ -345,7 +346,7 @@ texConclusion n c t =
     premInf _ = "TrinaryInfC"
 
 texContext :: Context -> String
-texContext (Ctx _ _ env) =  joinOn ", " $ texBindings $ drop 6 env
+texContext (Ctx _ _ env) =  joinOn ", " $ texBindings $ dropEnd 6 env
   where
     texBindings :: Environment -> [String]
     texBindings [] = []
@@ -354,7 +355,26 @@ texContext (Ctx _ _ env) =  joinOn ", " $ texBindings $ drop 6 env
       (sym ++ " : " ++ (texType t)):texBindings bs
 
 texType :: Type -> String
-texType _ = "\\tau"
+texType Natural = "\\mbox{Nat} "
+texType (Alpha n) = "\\tau _{" ++ show n ++ "} "
+texType Error = "\\perp "
+texType (Forall n t) = "\\forall \\tau _{" ++ show n ++ "}." ++ texType t
+texType (List t) = "\\left[" ++ texType t ++ "\\right]"
+texType (Arrow t u) =
+  case t of
+    Arrow _ _ -> "(" ++ texType t ++ ")" ++ " \\rightarrow " ++ texType u
+    _         -> texType t ++ " \\rightarrow " ++ texType u
+
+texAst :: Ast -> String
+texAst (Let name ast1 ast2) =
+  "\\mbox{let} " ++ texAst ast1 ++ " in " ++ texAst ast2
+texAst (Variable (Identifier sym)) = sym
+texAst (Variable (Unique _)) = ""
+texAst (Lambda sym ast) = "\\lambda " ++ sym ++ " . " ++ texAst ast
+texAst (Application ast1 ast2) = texAst ast1 ++ " \\hspace{1mm}" ++ texAst ast2
+texAst (Constant (IntCst n)) = show n
+texAst (Constant (Constructor sym _)) = sym
+texAst (Constant (Primitive sym _)) = sym
 
 treeToTex' :: ProofTree -> String
 treeToTex' ptree =
@@ -363,40 +383,57 @@ treeToTex' ptree =
   "\\end{prooftree}\n"
 
 treeToTex :: ProofTree -> String
-treeToTex(Proof context _ typ "TAUT" _) =
+treeToTex (Proof context constAst typ "TAUT" _) =
   "\\AxiomC{ }\n" ++ -- this is where you call the other stuff
-  --texBeginRule "T-TAUT" ++
-  texConclusion 0 context typ
+  texBeginRule "T-TAUT" ++
+  texConclusion 0 context typ infStr
+  where
+    infStr = texAst constAst
 
-treeToTex(Proof context _ typ "ABS" premises) =
-  --texBeginRule "T-ABS" ++
-  joinOn " " (map treeToTex premises) ++ -- this is where you call the other stuff
-  texConclusion (length premises) context typ
 
-treeToTex(Proof context _ typ "APP" premises) =
-  --texBeginRule "T-APP" ++
-  joinOn " " (map treeToTex premises) ++ -- this is where you call the other stuff
-  texConclusion (length premises) context typ
+treeToTex (Proof context lambdaAst typ "ABS" premises) =
+  joinOn " " (map treeToTex premises) ++
+  texBeginRule "T-ABS" ++
+  texConclusion (length premises) context typ infStr
+  where
+    infStr = texAst lambdaAst
 
-treeToTex(Proof context _ typ "LET" premises) =
-  --texBeginRule "T-LET" ++
-  joinOn " " (map treeToTex premises) ++ -- this is where you call the other stuff
-  texConclusion (length premises) context typ
+treeToTex (Proof context appAst typ "APP" premises) =
+  joinOn " " (map treeToTex premises) ++
+  texBeginRule "T-APP" ++
+  texConclusion (length premises) context typ infStr
+  where
+    infStr = texAst appAst
+
+treeToTex (Proof context letAst typ "LET" premises) =
+  joinOn " " (map treeToTex premises) ++
+  texBeginRule "T-LET" ++
+  texConclusion (length premises) context typ infStr
+  where
+    infStr = texAst letAst
+
 
 treeToTex(Proof context _ typ shto premises) = error shto
 
 texInDocTree :: ProofTree -> String
 texInDocTree ptree =
-  "\\documentclass{article}\n" ++
+  "\\documentclass[10pt]{article}\n" ++
   "\\usepackage{syntax}\n" ++
   "\\usepackage{bussproofs}\n" ++
   "\\usepackage{amsmath}\n" ++
   "\\usepackage{amssymb}\n" ++
   "\\usepackage{amsthm}\n" ++
   "\\begin{document}\n" ++
+  "\\begin{center}\n" ++
   treeToTex' ptree ++
+  "\\end{center}\n" ++
   "\\end{document}\n"
 
+
+dropEnd :: Int -> [a] -> [a]
+dropEnd 0 as = as
+dropEnd _ [] = []
+dropEnd n as = dropEnd (n - 1) $ init as
 
 
 
