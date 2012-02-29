@@ -346,7 +346,8 @@ texConclusion n c t conc =
     premInf _ = "TrinaryInfC"
 
 texContext :: Context -> String
-texContext (Ctx _ _ env) =  joinOn ", " $ texBindings $ dropEnd 6 env
+texContext (Ctx _ _ env) =  
+  "\\{" ++ (joinOn ", " $ texBindings $ dropEnd 6 env) ++ "\\}"
   where
     texBindings :: Environment -> [String]
     texBindings [] = []
