@@ -33,17 +33,29 @@
 \end{frame}
 
 \begin{frame}{New Problems for Hindley Milner}
-HM(X) is no longer powerful enough to support the features present in modern day languages. Some of the features include
+HM(X) is not powerful enough to support the features present in modern day languages. Some of the features include
 \begin{itemize}
 \item GADTs
 \item Multi-parameter type classes
 \item Data constructors with existential types
 \end{itemize}
+Split into 2 slides
 Reason: HM(X) is unable to deal with local constraints and top-level axioms. We will see an example of this soon.
 
 Languages like GADTs are {\emph good} features. They make the language more expressive at the cost of some complexity.
 \end{frame}
 
+%%%%%%%%
+\begin{frame}{New Problems for Hindley Milner}
+  Reason: Type constraints are no longer restricted to structural equality ($\sim$). There are now
+  \begin{itemize}
+    \item Local constraints
+    \item Top-level axioms
+  \end{itemize}
+  Goal: Create a type system that supports these constraints without adding too much complexity.
+\end{frame}
+
+%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Modular Type Inference}
 One of the big problems that GADTs present is the loss of most principled types. Consider the following.
@@ -58,9 +70,10 @@ test T2     r = r
 What is the type prinicple type of function test?
 \end{frame}
 
+%%%%%%%%%
 \begin{frame}[fragile]
 \frametitle{Modular Type Inference}
-One of the big problems that GADTs present is the loss of most principled types. Consider the following.
+One of the big problems that GADTs present is the loss of principled types. Consider the following.
 \begin{lstlisting}
 data T a where
   T1 :: Int -> T Bool
@@ -71,14 +84,78 @@ test T2     r = r
 \end{lstlisting}
 The function test can be either
 \begin{itemize}
-\item $\forall \alpha.T\alpha \rightarrow \mbox{Bool} \rightarrow \mbox{Bool}$
-\item $\forall \alpha.T\alpha \rightarrow \alpha \rightarrow \alpha$
+\item $\forall \mbox{T} \alpha.\alpha \rightarrow \mbox{Bool} \rightarrow \mbox{Bool}$
+\item $\forall \mbox{T} \alpha.\alpha \rightarrow \alpha \rightarrow \alpha$
 \end{itemize}
-Since neither type is an instantiation of the other, the type of test cannot be inferred.
+Since neither type is an instantiation of the other, the type of test cannot be inferred. Should we require annotation on all functions with local constraints?
 \end{frame}
 
-\begin{frame}{Top-level Axioms}
+%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Modular Type Inference}
+One of the big problems that GADTs present is the loss of most principled types. Consider the following.
+\begin{lstlisting}
+data T a where
+  T1 :: Int -> T Bool
+  T2 :: T a
 
+test2 (T1 n) _ = n > 0
+test2 T2     r = not r
+\end{lstlisting}
+Still using GADTs, but the function not forces
+\begin{itemize}
+\item $\forall \mbox{T} \alpha.\alpha \rightarrow \mbox{Bool} \rightarrow \mbox{Bool}$
+\end{itemize}
+to be infered.
+\end{frame}
+
+
+%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Top-level Axioms}
+Consider the following
+\begin{lstlisting}
+class Foo a b where foo :: a -> b -> Int
+instance Foo Int b
+instance Foo a b => Foo [a] b
+
+g y = let h :: forall c. c -> Int
+          h x = foo y x
+  in h True
+\end{lstlisting}
+What is the type of g?
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Top-level Axioms}
+Consider the following
+\begin{lstlisting}
+class Foo a b where foo :: a -> b -> Int
+instance Foo Int b
+instance Foo a b => Foo [a] b
+
+g y = let h :: forall c. c -> Int
+          h x = foo y x
+  in h True
+\end{lstlisting}
+We can deduce that g may have the type $[\mbox{Int}] \rightarrow \mbox{Int}$.
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Top-level Axioms}
+Consider the following
+\begin{lstlisting}
+class Foo a b where foo :: a -> b -> Int
+instance Foo Int b
+instance Foo a b => Foo [a] b
+
+g y = let h :: forall c. c -> Int
+          h x = foo y x
+  in h True
+\end{lstlisting}
+We can deduce that g may have the type $[\mbox{Int}] \rightarrow \mbox{Int}$.
+
+Applying the axiom scheme given by Foo again, $[[\mbox{Int}]] \rightarrow \mbox{Int}$ is also a possible type for g.
 \end{frame}
 
 \begin{frame}{Constraints}
