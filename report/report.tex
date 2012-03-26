@@ -289,7 +289,8 @@ fr x y = let gr z = not x in ...
 \begin{itemize}
 \item $\Gamma \vdash\ gr: \forall \alpha.\alpha \rightarrow Bool$
 \item This type fails to capture any information about $\alpha_1$
-\item However, $\alpha_1$ has required type 
+\item Any application will type check
+\item However, $\alpha_1$ has required type and must be part application type checking
 \item A better type: $\Gamma \vdash\ gr: \forall \alpha. Bool \sim \alpha_1 \Rightarrow \alpha \rightarrow Bool$
 \end{itemize}
 \end{frame}
