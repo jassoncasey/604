@@ -3,7 +3,7 @@
 \usepackage{listings}
 \usetheme{default}
 
-\{Summarizing: OutsideIn(X): Modular Type Inference with Local Assumptions.}
+\title{Summarizing: OutsideIn(X): Modular Type Inference with Local Assumptions.}
 \subtitle{D. Vytiniotis, S. P. Jones, T. Schrijvers, M. Sulzmann}
 \author{Jasson Casey \& Michael Lopez}
 \date{April 26, 2012}
@@ -11,6 +11,25 @@
 \begin{document}
 \begin{frame}
 \titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Modular Type Inference}
+\begin{itemize}
+\item Infer type of function without regard to call sites
+\item Useful for any production language
+\item Separate compilation, large files
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Local Assumptions}
+\begin{itemize}
+\item Let introduces new types and constraints
+\item Pattern matching GADTs introduces new types and constraints
+\item Functions using GADTs can lack principle types
+\item Axioms schemes introduce infinite recursive types, having no principle types
+\end{itemize}
 \end{frame}
 
 \begin{frame}{New Problems for Hindley Milner}
@@ -52,8 +71,8 @@ test T2     r = r
 \end{lstlisting}
 The function test can be either
 \begin{itemize}
-\item $\forall \alpha.\alpha \rightarrow \mbox{Bool} \rightarrow \mbox{Bool}$
-\item $\forall \alpha.\alpha \rightarrow \alpha \rightarrow \alpha$
+\item $\forall \alpha.T\alpha \rightarrow \mbox{Bool} \rightarrow \mbox{Bool}$
+\item $\forall \alpha.T\alpha \rightarrow \alpha \rightarrow \alpha$
 \end{itemize}
 Since neither type is an instantiation of the other, the type of test cannot be inferred.
 \end{frame}

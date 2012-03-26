@@ -13,7 +13,8 @@ Introduce problem
   -- Type class example
 
   3. Real problems: need an elegent type system that can solve theses problems
-     Provided solution is a solver that to restricts let-bindings and force the user to annotate functions with no principle type.
+     Provided solution is a solver that to restricts let-bindings and force the
+     user to annotate functions with no principle type.
 
   4. General solution
      Adhoc solutions in previous work
