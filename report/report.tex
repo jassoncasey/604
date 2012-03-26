@@ -219,6 +219,35 @@ Applying the axiom scheme given by Foo again, $[[\mbox{Int}]] \rightarrow \mbox{
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]{Local Constraints from Let Bindings}
+\begin{verbatim}
+fr x y = let gr z = not x in ...
+\end{verbatim}
+
+\begin{prooftree}
+\def \fCenter{\ \vdash\ }
+\AxiomC{$not \in dom(\Gamma)$}
+\UnaryInfC{$\Gamma \fCenter\ not : Bool \rightarrow Bool$}
+\AxiomC{$\{x:\alpha_1\} \fCenter\ x : \alpha_1$}
+\BinaryInfC{$\Gamma,\{z:\alpha_3\} \fCenter\ not$ $x : Bool$}
+\UnaryInfC{$\{x:\alpha_1,y:\alpha_2\} \fCenter\ \lambda$ $z. not$ $x: \alpha_3 \rightarrow Bool$}
+\end{prooftree}
+
+\begin{itemize}
+\item $\Gamma \vdash\ gr: \forall \alpha.\alpha \rightarrow Bool$
+\item But what about the constraint: $\{Bool \sim \alpha_1\}$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Why Modular Inference Fails}
+\begin{itemize}
+\item $\Gamma \vdash\ gr: \forall \alpha.\alpha \rightarrow Bool$
+\item This type fails to capture any information about $\alpha_1$
+\item However, $\alpha_1$ has required type 
+\item A better type: $\Gamma \vdash\ gr: \forall \alpha. Bool \sim \alpha_1 \Rightarrow \alpha \rightarrow Bool$
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Constraint Logic}
 \begin{itemize}
 \item A language of types and terms
