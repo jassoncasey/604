@@ -8,6 +8,7 @@ import Parsing( Program(..), parse_program )
 import Ast( program )
 --import Evaluate ( evaluate )
 import Typing
+import ProofTree
 
 
 
@@ -17,7 +18,9 @@ main = do
   let (mode, filenames) = processArgs args
   case mode of
     Batch -> typeCheck filenames
-    Diagnostics -> testDiag filenames
+    AstDiag -> testDiag filenames
+    ProofTree -> typeCheckTree filenames
+    LatexProofTree -> texifyProofTrees filenames
     ArgError -> putStrLn "Error in arguments."
   return ()
 
@@ -29,7 +32,7 @@ typeCheck args = do
   return ()
 typeChecknPrint :: String -> IO()
 typeChecknPrint filename = do
-  putStrLn ("Processing " ++ filename ++ ":")
+  putStrLn ("Typechecking " ++ filename ++ ":")
   source <- readFile filename
   let tokens = lexString filename source
   let (Program parsedSource, err) = parse_program tokens
@@ -40,11 +43,11 @@ typeChecknPrint filename = do
       if isNothing ast
         then putStrLn "  Error extracting ast from source."
         else do
-          let ty = decltype $ fromJust ast
-          case ty of
-            Right ty' -> putStrLn $ printType ty'
-            Left typeErr -> putStrLn typeErr
+          let ty = typeTerm $ fromJust ast
+          putStrLn $ getStrType $ type_ ty
 
+typeCheckTree :: [String] -> IO()
+typeCheckTree args = putStrLn "Not implemented yet."
 
 -- print out information for diagnostics
 testDiag :: [String] -> IO ()
@@ -88,10 +91,40 @@ processArgs args' = case args' of
   where allSplFiles = all (isSuffixOf ".spl")
 
 
-data SplMode = Batch | Diagnostics | ArgError
+-- Tex the output
+texifyProofTrees :: [String] -> IO()
+texifyProofTrees args = do
+  _ <- forM args texifyProofTree
+  return ()
+
+texifyProofTree :: String -> IO()
+texifyProofTree filename = do
+  source <- readFile filename
+  let tokens = lexString filename source
+  let (Program parsedSource, err) = parse_program tokens
+  if (not.null) err
+    then putStrLn ("Error parsing file: " ++ filename ++ ".\n\n")
+    else do
+      let ast = program (Program parsedSource)
+      if isNothing ast
+        then putStrLn ("Error building ast in file: " ++ filename ++ ".\n\n")
+        else do
+          let ty = typeTerm $ fromJust ast
+          putStr $ texInDocTree ty
+
+
+
+data SplMode =
+    Batch
+  | AstDiag
+  | LatexProofTree
+  | ProofTree
+  | ArgError
 modeFromStr :: String -> SplMode
 modeFromStr cmd = case cmd of
   "" -> Batch
-  "d" -> Diagnostics
+  "ast" -> AstDiag
+  "tree" -> ProofTree
+  "tex" -> LatexProofTree
   _ -> ArgError
 
