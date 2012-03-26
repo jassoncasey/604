@@ -1,0 +1,36 @@
+Notes
+
+Top-level functions are generalized
+
+Introduce problem
+  1. HM(X) is good, simple
+     Lacking ability to support new features, GADTs, type classes, etc
+     Need a more robust type system that can infer types for these.
+     Problems local constraints and top-level axioms
+
+  2. Local type constraint example, GADT T and test
+
+  -- Type class example
+
+  3. Real problems: need an elegent type system that can solve theses problems
+     Provided solution is a solver that to restricts let-bindings and force the user to annotate functions with no principle type.
+
+  4. General solution
+     Adhoc solutions in previous work
+     need general methods (that solve familes of problems)
+     example test 2 that type checks correctly
+
+  -- constraints
+
+  -- constraint based type system
+
+  -- constraint logic
+
+  -- Logic in action - show the eq example
+     point is to convey how type constraints
+
+  -- over-all structure of rules
+     describe the modular aspect
+     describe the constraints
+     describe the 
+  

@@ -1,8 +1,9 @@
 \documentclass{beamer}
 \usepackage{bussproofs}
+\usepackage{listings}
 \usetheme{default}
 
-\title{Summarizing: OutsideIn(X): Modular Type Inference with Local Assumptions.}
+\{Summarizing: OutsideIn(X): Modular Type Inference with Local Assumptions.}
 \subtitle{D. Vytiniotis, S. P. Jones, T. Schrijvers, M. Sulzmann}
 \author{Jasson Casey \& Michael Lopez}
 \date{April 26, 2012}
@@ -12,7 +13,53 @@
 \titlepage
 \end{frame}
 
-\begin{frame}{Problems with HM System}
+\begin{frame}{New Problems for Hindley Milner}
+HM(X) is no longer powerful enough to support the features present in modern day languages. Some of the features include
+\begin{itemize}
+\item GADTs
+\item Multi-parameter type classes
+\item Data constructors with existential types
+\end{itemize}
+Reason: HM(X) is unable to deal with local constraints and top-level axioms. We will see an example of this soon.
+
+Languages like GADTs are {\emph good} features. They make the language more expressive at the cost of some complexity.
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Modular Type Inference}
+One of the big problems that GADTs present is the loss of most principled types. Consider the following.
+\begin{lstlisting}
+data T a where
+  T1 :: Int -> T Bool
+  T2 :: T a
+
+test (T1 n) _ = n >0
+test T2     r = r
+\end{lstlisting}
+What is the type prinicple type of function test?
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Modular Type Inference}
+One of the big problems that GADTs present is the loss of most principled types. Consider the following.
+\begin{lstlisting}
+data T a where
+  T1 :: Int -> T Bool
+  T2 :: T a
+
+test (T1 n) _ = n > 0
+test T2     r = r
+\end{lstlisting}
+The function test can be either
+\begin{itemize}
+\item $\forall \alpha.\alpha \rightarrow \mbox{Bool} \rightarrow \mbox{Bool}$
+\item $\forall \alpha.\alpha \rightarrow \alpha \rightarrow \alpha$
+\end{itemize}
+Since neither type is an instantiation of the other, the type of test cannot be inferred.
+\end{frame}
+
+\begin{frame}{Top-level Axioms}
+
 \end{frame}
 
 \begin{frame}{Constraints}
