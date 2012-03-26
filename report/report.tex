@@ -15,9 +15,6 @@
 \begin{frame}{Problems with HM System}
 \end{frame}
 
-\begin{frame}{Constraint based Type System}
-\end{frame}
-
 \begin{frame}{Constraints}
 \begin{itemize}
 \item Constraints are used to solve type inference
@@ -30,7 +27,7 @@
 \AxiomC{$\Gamma \fCenter\ t_1 : \alpha_1 \rightarrow \alpha_2$}
 \AxiomC{$\Gamma \fCenter\ t_2 : \alpha_3$}
 \AxiomC{$X=\{\alpha_1 \sim \alpha_3\}$}
-\TrinaryInfC{$ \Gamma \fCenter\ t_1$ $t_2 : $}
+\TrinaryInfC{$ \Gamma \fCenter\ t_1$ $t_2 : \alpha_2$}
 \end{prooftree}
 
 \begin{itemize}
@@ -40,12 +37,26 @@
 
 \end{frame}
 
+\begin{frame}{Constraint based Type System}
+\begin{itemize}
+\item Typeing Relation: Q, $\Gamma \vdash e : \tau$
+\item Q = constraint set
+\item $\Gamma=$ type environment
+\item $\tau=$ resulting type
+\end{itemize}
+
+\end{frame}
+
 \begin{frame}{Constraint Logic}
 \begin{itemize}
 \item A language of types and terms
 \item term: $f=\tau \sim \tau | f \wedge f$
-\item $\wedge:$ is commutative and associative
+\item Type equality, $\sim:$ is commutative and associative
+\item Conjunction, $\wedge:$ is commutative and associative
 \item Deductions: $\wedge_{introduction},$ $\wedge_{elimination}$
+\item Constrained type: $\forall \bar{a}. Q \Rightarrow \tau$
+\item $\bar{a}:$ a tuple of type variables
+\item Q: the set of type constraints
 \end{itemize}
 \end{frame}
 
