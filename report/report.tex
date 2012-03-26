@@ -18,4 +18,26 @@
 \begin{frame}{Constraint based Type System}
 \end{frame}
 
+\begin{frame}{Constraints}
+\begin{itemize}
+\item Constraints are used to solve type inference
+\item Sample constraint: X = $\{ \tau_1 \approx \tau_2\}$
+\end{itemize}
+
+\begin{prooftree}
+\def \fCenter{\ \vdash\ }
+\RightLabel{\textbf{App}}
+\AxiomC{$\Gamma \fCenter\ t_1 : \alpha_1 \rightarrow \alpha_2$}
+\AxiomC{$\Gamma \fCenter\ t_2 : \alpha_3$}
+\AxiomC{$X=\{\alpha_1 \approx \alpha_3\}$}
+\TrinaryInfC{$ \Gamma \fCenter\ t_1$ $t_2 : $}
+\end{prooftree}
+
+\begin{itemize}
+\item Type systems are parametric over constraints
+\item Examples: HM(X) and InsideOut(X)
+\end{itemize}
+
+\end{frame}
+
 \end{document}
