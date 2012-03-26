@@ -111,7 +111,22 @@ Since neither type is an instantiation of the other, the type of test cannot be 
 \item $\tau=$ resulting type
 \item Soundness of system depends on consistency of constraints
 \end{itemize}
+\end{frame}
 
+\begin{frame}{Constrained Types}
+\begin{itemize}
+\item $\mathcal{Q}$: top level constraint set
+\item $\mathcal{Q}=\{Eq$ $Int \Rightarrow Int \rightarrow Int \rightarrow Bool \}$
+\end{itemize}
+\begin{itemize}
+\item Q: the set of type constraints (flat level)
+\item Q=$\{\tau_1 \sim Int\}$
+\end{itemize}
+\begin{itemize}
+\item Constrained type: $\forall \bar{a}. Q \Rightarrow \tau$
+\item $\bar{a}:$ a tuple of type variables
+\item == : $\forall \alpha. Eq$ $\alpha \Rightarrow \alpha \rightarrow \alpha \rightarrow Bool$
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Constraint Logic}
@@ -124,29 +139,38 @@ Since neither type is an instantiation of the other, the type of test cannot be 
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Constrained Types}
+\begin{frame}{Type Inference Type Classes}
 \begin{itemize}
-\item $\mathcal{Q}$: top level constraint set
-\item Q: the set of type constraints (flat level)
-\item Constrained type: $\forall \bar{a}. Q \Rightarrow \tau$
-\item $\bar{a}:$ a tuple of type variables
+\item Generate constraints in pass 1
+\item $\Gamma \vdash t:\tau \rightsquigarrow Constraints$
 \end{itemize}
-\end{frame}
-
-\begin{frame}{Type Checking Type Classes}
 \begin{prooftree}
 \def \fCenter{\ \vdash\ }
+\scriptsize 1
 \RightLabel{VarCon}
-\AxiomC{}
-\AxiomC{}
-\BinaryInfC{$Q,\Gamma \fCenter\ == :$}
-\AxiomC{$Q,\Gamma \fCenter\ 1: Int$}
+\AxiomC{(==:$\forall \alpha .Eq \alpha \Rightarrow \alpha \rightarrow \alpha \rightarrow Bool) \in dom(\Gamma)$}
+\UnaryInfC{$\Gamma \fCenter\ == : \alpha_1 \rightarrow \alpha_1 \rightarrow Bool
+            \rightsquigarrow Eq \alpha_1$}
 \RightLabel{App}
-\BinaryInfC{$Q,\Gamma \fCenter\ == 1: $}
-\AxiomC{$Q,\Gamma \fCenter\ 2: Int$}
+\UnaryInfC{$\Gamma \fCenter\ == 1: \alpha_2 \rightsquigarrow Eq \alpha_1,
+            \alpha_1 \rightarrow \alpha_1 \rightarrow Bool \sim (Int \rightarrow \alpha_2)$}
 \RightLabel{App}
-\BinaryInfC{$Q,\Gamma \fCenter\ == 1$ $2 : $}
+\UnaryInfC{$\Gamma \fCenter\ == 1$ $2 : \alpha_3 \rightsquigarrow Eq \alpha_1, 
+            \alpha_1 \rightarrow \alpha_1 \rightarrow Bool \sim (Int \rightarrow \alpha_2), 
+            \alpha_2 \sim (Int \rightarrow \alpha_3)$}
 \end{prooftree}
+\end{frame}
+
+\begin{frame}{Type Inference with Type Classes}
+\begin{itemize}
+\item Solve constraints in pass 2
+\end{itemize}
+$\mathcal{Q}=\{Eq$ $Int \Rightarrow Int \rightarrow Int \rightarrow Bool \}$\\
+$Q_{given}=\emptyset$\\
+$Q_{wanted}=Eq \alpha_1, \alpha_1 \rightarrow \alpha_1 \rightarrow Bool \sim 
+            (Int \rightarrow \alpha_2), \alpha_2 \sim (Int \rightarrow \alpha_3)$\\
+$Q_{residual}=\emptyset$\\
+$\theta=\{\alpha_1=Int,\alpha_2=Int \rightarrow \alpha_3, \alpha_3=Bool\}$\\
 \end{frame}
 
 \end{document}
