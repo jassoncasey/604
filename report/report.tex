@@ -90,6 +90,7 @@ Since neither type is an instantiation of the other, the type of test cannot be 
 \item Q = constraint set
 \item $\Gamma=$ type environment
 \item $\tau=$ resulting type
+\item Soundness of system depends on consistency of constraints
 \end{itemize}
 
 \end{frame}
@@ -101,10 +102,32 @@ Since neither type is an instantiation of the other, the type of test cannot be 
 \item Type equality, $\sim:$ is commutative and associative
 \item Conjunction, $\wedge:$ is commutative and associative
 \item Deductions: $\wedge_{introduction},$ $\wedge_{elimination}$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Constrained Types}
+\begin{itemize}
+\item $\mathcal{Q}$: top level constraint set
+\item Q: the set of type constraints (flat level)
 \item Constrained type: $\forall \bar{a}. Q \Rightarrow \tau$
 \item $\bar{a}:$ a tuple of type variables
-\item Q: the set of type constraints
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Type Checking Type Classes}
+\begin{prooftree}
+\def \fCenter{\ \vdash\ }
+\RightLabel{VarCon}
+\AxiomC{}
+\AxiomC{}
+\BinaryInfC{$Q,\Gamma \fCenter\ == :$}
+\AxiomC{$Q,\Gamma \fCenter\ 1: Int$}
+\RightLabel{App}
+\BinaryInfC{$Q,\Gamma \fCenter\ == 1: $}
+\AxiomC{$Q,\Gamma \fCenter\ 2: Int$}
+\RightLabel{App}
+\BinaryInfC{$Q,\Gamma \fCenter\ == 1$ $2 : $}
+\end{prooftree}
 \end{frame}
 
 \end{document}
