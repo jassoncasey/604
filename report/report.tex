@@ -333,7 +333,7 @@ instance Foo a b => Foo [a] b
 \end{enumerate}
 \end{frame}
 
-\begin{frame}{Type Inference - phase 1}
+\begin{frame}{Type Inference \& Unification}
 \begin{itemize}
 \item $\mathcal{Q};\Gamma \triangleright prog$
 \item $\Gamma \triangleright t : \tau \rightsquigarrow C$
@@ -342,7 +342,7 @@ instance Foo a b => Foo [a] b
 
 \begin{prooftree}
 \scriptsize
-\RightLabel{Bind}
+\RightLabel{$Bind_{top level}$}
 \AxiomC{$\Gamma \triangleright t : \tau \rightsquigarrow C$}
 \AxiomC{...}
 \BinaryInfC{$\mathcal{Q};\Gamma \triangleright f=t,prog$}
@@ -350,7 +350,7 @@ instance Foo a b => Foo [a] b
 
 \end{frame}
 
-\begin{frame}{Unfication - phase 2}
+\begin{frame}{Inference \& Unification}
 \begin{itemize}
 \item $\mathcal{Q};Q_{given};\bar{\alpha_{tch}} \triangleright^{unify} C_{wanted} \rightsquigarrow Q_{residual};\theta$
 \item $\mathcal{Q}$ - global knowledge
@@ -358,7 +358,7 @@ instance Foo a b => Foo [a] b
 \end{itemize}
 \begin{prooftree}
 \scriptsize
-\RightLabel{Bind}
+\RightLabel{$Bind_{top level}$}
 \AxiomC{...}
 \AxiomC{$\mathcal{Q};\epsilon;fuv(\tau,C)\triangleright^{unify} C \rightsquigarrow Q;\theta$}
 \BinaryInfC{$\mathcal{Q};\Gamma \triangleright f=t,prog$}
@@ -366,7 +366,7 @@ instance Foo a b => Foo [a] b
 
 \begin{prooftree}
 \scriptsize
-\RightLabel{Bind}
+\RightLabel{$Bind_{top level}$}
 \AxiomC{$\bar{a}$ fresh}
 \AxiomC{$\bar{\alpha} =fuv(\theta \tau,Q)$}
 \AxiomC{$\mathcal{Q};\Gamma,(f:\forall\bar{a}.[\bar{\alpha \mapsto a}](Q \Rightarrow \theta \tau)) \triangleright prog$}
@@ -375,13 +375,34 @@ instance Foo a b => Foo [a] b
 
 \end{frame}
 
-\begin{frame}{Type Checking - phase 3}
+\begin{frame}{Inference \& Unification}
 \begin{itemize}
-\item $Q;\Gamma \vdash t : \tau$
+\item let expects type annotation
+\item at least one constraint or quantified type
 \end{itemize}
+
+\begin{prooftree}
+\scriptsize
+\RightLabel{$GLetA_{flat level}$}
+\AxiomC{$\sigma_1 =\forall \bar{a}.Q_1 \Rightarrow \tau_1$}
+\AxiomC{$Q_1 \neq \epsilon$ or $\bar{a} \neq \epsilon$}
+\AxiomC{$\Gamma \triangleright e_1 : \tau \rightsquigarrow C$}
+\TrinaryInfC{$\Gamma \triangleright$ let x = $e_1 :: \sigma_1$ in $e_2 : \tau_2 \rightsquigarrow C_1 \wedge C_2$}
+\end{prooftree}
+
 \begin{itemize}
-\item
+\item all local type variables are quantified
+\item Local constraints are predicated on type constraints
 \end{itemize}
+
+\begin{prooftree}
+\scriptsize
+\AxiomC{$\bar{\beta} = fuv(\tau,C)-fuv(\Gamma)$}
+\AxiomC{$C_1=\exists \bar{\beta}.(Q_1 \supset C \wedge \tau \sim \tau_1)$}
+\AxiomC{$\Gamma,(x:\sigma_1) \triangleright e_2 : \tau_2 \rightsquigarrow C_2$}
+\TrinaryInfC{$\Gamma \triangleright$ let x = $e_1 :: \sigma_1$ in $e_2 : \tau_2 \rightsquigarrow C_1 \wedge C_2$}
+\end{prooftree}
+
 \end{frame}
 
 \begin{frame}{}
