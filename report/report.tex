@@ -225,7 +225,7 @@ Applying the axiom scheme given by Foo again, $[[\mbox{Int}]] \rightarrow \mbox{
 \end{itemize}
 \begin{prooftree}
 \def \fCenter{\ \vdash\ }
-\scriptsize 1
+\scriptsize 
 \RightLabel{VarCon}
 \AxiomC{(==:$\forall \alpha .Eq \alpha \Rightarrow \alpha \rightarrow \alpha \rightarrow Bool) \in dom(\Gamma)$}
 \UnaryInfC{$\Gamma \fCenter\ == : \alpha_1 \rightarrow \alpha_1 \rightarrow Bool
@@ -325,27 +325,68 @@ instance Foo a b => Foo [a] b
 \end{itemize}
 \end{frame}
 
-\begin{frame}{OutSideIn - in 3 phases}
+\begin{frame}{OutsideIn - in 3 phases}
 \begin{enumerate}
-\item $\Gamma \vdash t : \tau \rightsquigarrow C$
-   \begin{itemize}
    \item Infer types and gather constraints
-   \end{itemize}
-\item $\mathcal{Q};Q_{given};\bar{\alpha_{tch}} \triangleright^{unify} C_{wanted} \rightsquigarrow Q_{residual};\theta$
-   \begin{itemize}
    \item Unify gathered constraints
-   \end{itemize}
-\item $Q;\Gamma \vdash t : \tau$
-   \begin{itemize}
    \item Type check against learned types
-   \end{itemize}
 \end{enumerate}
 \end{frame}
 
-\begin{frame}{Stratify Program Knowledge}
+\begin{frame}{Type Inference - phase 1}
 \begin{itemize}
+\item $\mathcal{Q};\Gamma \triangleright prog$
+\item $\Gamma \triangleright t : \tau \rightsquigarrow C$
+\item $\mathcal{Q}$ - global knowledge
+\end{itemize}
+
+\begin{prooftree}
+\scriptsize
+\RightLabel{Bind}
+\AxiomC{$\Gamma \triangleright t : \tau \rightsquigarrow C$}
+\AxiomC{...}
+\BinaryInfC{$\mathcal{Q};\Gamma \triangleright f=t,prog$}
+\end{prooftree}
+
+\end{frame}
+
+\begin{frame}{Unfication - phase 2}
+\begin{itemize}
+\item $\mathcal{Q};Q_{given};\bar{\alpha_{tch}} \triangleright^{unify} C_{wanted} \rightsquigarrow Q_{residual};\theta$
 \item $\mathcal{Q}$ - global knowledge
 \item $Q$ - local knowledge
+\end{itemize}
+\begin{prooftree}
+\scriptsize
+\RightLabel{Bind}
+\AxiomC{...}
+\AxiomC{$\mathcal{Q};\epsilon;fuv(\tau,C)\triangleright^{unify} C \rightsquigarrow Q;\theta$}
+\BinaryInfC{$\mathcal{Q};\Gamma \triangleright f=t,prog$}
+\end{prooftree}
+
+\begin{prooftree}
+\scriptsize
+\RightLabel{Bind}
+\AxiomC{$\bar{a}$ fresh}
+\AxiomC{$\bar{\alpha} =fuv(\theta \tau,Q)$}
+\AxiomC{$\mathcal{Q};\Gamma,(f:\forall\bar{a}.[\bar{\alpha \mapsto a}](Q \Rightarrow \theta \tau)) \triangleright prog$}
+\TrinaryInfC{$\mathcal{Q};\Gamma \triangleright f=t,prog$}
+\end{prooftree}
+
+\end{frame}
+
+\begin{frame}{Type Checking - phase 3}
+\begin{itemize}
+\item $Q;\Gamma \vdash t : \tau$
+\end{itemize}
+\begin{itemize}
+\item
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+\begin{itemize}
+\item
 \end{itemize}
 \end{frame}
 
