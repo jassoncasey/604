@@ -360,7 +360,23 @@ instance Foo a b => Foo [a] b
 \begin{frame}
 \frametitle{Soundness and Completeness}
 \begin{itemize}
-\item Soundness - if we can infer the type of an expression, then we can type check
+\item Soundness - If the type of an expression can be inferred, then it can be type checked.
+\item Completeness - If the type of an expression can be type checked, then it can be inferred.
 \end{itemize}
+We want OutsideIn to be sound. And it is.
+
+Completeness would be nice, too. But it isn't.
+\end{frame}
+
+\begin{frame}
+\frametitle{Soundness and Completeness}
+\begin{itemize}
+\item Soundness - If the type of an expression can be inferred, then it can be type checked.
+\item Completeness - If the type of an expression can be type checked, then it can be inferred.
+\end{itemize}
+We want OutsideIn to be sound. And it is.
+
+Completeness would be nice, too. But it isn't.
+\end{frame}
 
 \end{document}
