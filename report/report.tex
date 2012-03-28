@@ -378,6 +378,8 @@ instance Foo a b => Foo [a] b
 
 \end{frame}
 
+
+
 \begin{frame}{Inference \& Unification}
 \begin{itemize}
 \item let expects type annotation
@@ -407,58 +409,11 @@ instance Foo a b => Foo [a] b
 \end{prooftree}
 \end{frame}
 
-\begin{frame}
-\frametitle{Soundness and Completeness}
-\begin{itemize}
-\item Soundness - If the type of an expression can be inferred, then it can be type checked.
-\item Completeness - If the type of an expression can be type checked, then it can be inferred.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Sound \& Complete}
-\begin{itemize}
-\item Shorthand
-   \begin{itemize}
-   \item $\Gamma \vdash t : \tau$ - type checking
-   \item $\Gamma \vdash t \uparrow \tau$ - type inference
-   \end{itemize}
-\item Soundness
-   \begin{itemize}
-   \item if $\Gamma \vdash t \uparrow \tau$ then $\Gamma \vdash t : \tau$
-   \end{itemize}
-\item Completeness
-   \begin{itemize}
-   \item if $\Gamma \vdash t : \tau$ then $\Gamma \vdash t \uparrow \tau$
-   \end{itemize}
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Soundness \& Completeness of OutsideIn}
-\begin{itemize}
-   \item OutsideIn is sound
-      \begin{itemize}
-         \item for all possible programs where inference produces a type, that same program will type check
-      \end{itemize}
-   \item OutsideIn is incomplete
-      \begin{itemize}
-         \item inference will fail to produce a type for some valid programs
-      \end{itemize}
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Lost bits}
-Many ideas and justification details are in the paper ...
-\begin{itemize}
-\item Complete rules of the OutsideIn system 
-\item Proofs of soundness for type checking or inference
-\item Logic solver, its soundness, and decidability of termination 
-\end{itemize}
-\end{frame}
-
 \begin{frame}[fragile]
 \frametitle{Inferring a Case}
+
+Let's walk through an example pattern matching a GADT.
+
 \Fontvi
 \begin{columns}[l]
   \column{1.3in}
@@ -469,6 +424,8 @@ data T a where
 
 isT1 (T1 _) = True
 isT1 T2 = False
+
+isT1 (T1 3)
 \end{lstlisting}
 
 \column{2.1in}
@@ -543,6 +500,7 @@ $\mbox{case } x \mbox{ of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T
 
 \begin{frame}[fragile]
 \frametitle{Inferring a Case: Deriving the type of case}
+
 \Fontv
 
 \begin{prooftree}
@@ -570,16 +528,97 @@ $\mbox{case } x \mbox{ of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T
 
 \begin{prooftree}
 \def \fCenter{\ \vdash\ }
-\AxiomC{$\Gamma \vdash \mbox{case T1}... : \tau \rightsquigarrow  C$}
+\AxiomC{$\Gamma \vdash \mbox{case x of }... : \tau \rightsquigarrow  C$}
 
 \AxiomC{$\mathcal{Q}; fuv(\tau, C) \vdash^{solv} C \rightsquigarrow \theta$}
 
 \AxiomC{$\mathcal{Q}; \Gamma,(\mbox{ isT1}:\theta \tau) \vdash prog$}
 
 \RightLabel{\textbf{Bind}}
-\TrinaryInfC{$\mathcal{Q};\Gamma \vdash \mbox{ isT1} = \mbox{case T1 3 of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T2 } \rightarrow \mbox{ False } \}, prog$}
+\TrinaryInfC{$\mathcal{Q};\Gamma \vdash \mbox{ isT1} = \mbox{case x of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T2 } \rightarrow \mbox{ False } \}, prog$}
 \end{prooftree}
 
 \end{frame}
+
+\begin{frame}[fragile]
+\frametitle{The let example}
+Recall the let example fr.
+
+\Fontv
+\begin{columns}[l]
+  \column{1.3in}
+  \begin{lstlisting}
+fr :: a -> T a -> Bool
+fr x y = let
+    gr z = not x
+  in
+  case y of
+    T1 _ -> gr ()
+    T2   -> True
+\end{lstlisting}
+
+\column{2.1in}
+$\mbox{T1} : \forall a. (a \sim \mbox{Bool}) \Rightarrow \mbox{Int} \rightarrow \mbox{ T a}$
+
+$\mbox{T2} : \forall a. \mbox{ T a}$
+
+\vspace{3 mm}
+
+$\mbox{case } x \mbox{ of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T2 } \rightarrow \mbox{ False } \}$
+\end{columns}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Soundness and Completeness}
+\begin{itemize}
+\item Soundness - If the type of an expression can be inferred, then it can be type checked.
+\item Completeness - If the type of an expression can be type checked, then it can be inferred.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Sound \& Complete}
+\begin{itemize}
+\item Shorthand
+   \begin{itemize}
+   \item $\Gamma \vdash t : \tau$ - type checking
+   \item $\Gamma \vdash t \uparrow \tau$ - type inference
+   \end{itemize}
+\item Soundness
+   \begin{itemize}
+   \item if $\Gamma \vdash t \uparrow \tau$ then $\Gamma \vdash t : \tau$
+   \end{itemize}
+\item Completeness
+   \begin{itemize}
+   \item if $\Gamma \vdash t : \tau$ then $\Gamma \vdash t \uparrow \tau$
+   \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Soundness \& Completeness of OutsideIn}
+\begin{itemize}
+   \item OutsideIn is sound
+      \begin{itemize}
+         \item for all possible programs where inference produces a type, that same program will type check
+      \end{itemize}
+   \item OutsideIn is incomplete
+      \begin{itemize}
+         \item inference will fail to produce a type for some valid programs
+      \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Lost bits}
+Many ideas and justification details are in the paper ...
+\begin{itemize}
+\item Complete rules of the OutsideIn system 
+\item Proofs of soundness for type checking or inference
+\item Logic solver, its soundness, and decidability of termination 
+\end{itemize}
+\end{frame}
+
+
 
 \end{document}
