@@ -295,11 +295,25 @@ fr x y = let gr z = not x in ...
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Source of Problems}
+\begin{frame}[fragile]
+\frametitle{Source of Problems}
 \begin{itemize}
-\item GADT
-\item Type Class
-\item Axioms
+\item GADTs - Type constructors with refined type
+\begin{itemize}
+\item \begin{lstlisting}
+T1 :: (a ~ Bool) => Int -> T a
+\end{lstlisting}
+\end{itemize}
+\item Type-classes - Use of type class functions
+\begin{itemize}
+\item $\forall \alpha . \mbox{Eq} \alpha \Rightarrow \alpha \rightarrow \alpha \rightarrow \mbox{Bool}$
+\end{itemize}
+\item Axioms - infinitely many derivable 
+\begin{itemize}
+\item \begin{lstlisting} instance Foo Int b
+instance Foo a b => Foo [a] b
+\end{lstlisting}
+\end{itemize}
 \end{itemize}
 \end{frame}
 
