@@ -255,13 +255,13 @@ Validate = $[\alpha_1 \mapsto Int]\{Eq \alpha_1\} \in \mathcal{Q}$
 
 \begin{frame}{Locally Constrained Types}
 \begin{itemize}
-\item Where do local constaints come from?
-\item $\forall \bar{a}. Q \Rightarrow \tau$
+\item Where do local assumptions come from?
 \end{itemize}
 
 \begin{itemize}
 \item Let bindings
 \item Pattern match of data constructors
+\item Local type variables that may have non-local dependencies
 \end{itemize}
 \end{frame}
 
@@ -291,8 +291,11 @@ fr x y = let gr z = not x in ...
 \item This type fails to capture any information about $\alpha_1$
 \item Any application will type check
 \item However, $\alpha_1$ has required type and must be part application type checking
-\item A better type: $\Gamma \vdash\ gr: \forall \alpha. Bool \sim \alpha_1 \Rightarrow \alpha \rightarrow Bool$
+\item A better type: $\Gamma \vdash\ gr: \forall \alpha. Bool \sim \alpha \Rightarrow \alpha \rightarrow Bool$
 \end{itemize}
+\end{frame}
+
+\begin{frame}{}
 \end{frame}
 
 \end{document}
