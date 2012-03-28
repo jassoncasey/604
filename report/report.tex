@@ -303,6 +303,27 @@ fr x y = let gr z = not x in ...
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Solution Objectives}
+\begin{itemize}
+\item HM type inference cannot handle constraints
+\item Constraints must be part of type inference and checking
+\item Quantification is desirable but can cause problems
+\end{itemize}
+\end{frame}
 
+\begin{frame}{OutSideIn X - in 3 phases}
+\begin{itemize}
+\item Infer types and gather constraints
+\item Unify gathered constraints
+\item Type check against learned types
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Stratify Program Knowledge}
+\begin{itemize}
+\item $\mathcal{Q}$ - global knowledge
+\item $Q$ - local knowledge
+\end{itemize}
+\end{frame}
 
 \end{document}
