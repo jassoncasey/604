@@ -402,13 +402,6 @@ instance Foo a b => Foo [a] b
 \AxiomC{$\Gamma,(x:\sigma_1) \triangleright e_2 : \tau_2 \rightsquigarrow C_2$}
 \TrinaryInfC{$\Gamma \triangleright$ let x = $e_1 :: \sigma_1$ in $e_2 : \tau_2 \rightsquigarrow C_1 \wedge C_2$}
 \end{prooftree}
-
-\end{frame}
-
-\begin{frame}{}
-\begin{itemize}
-\item
-\end{itemize}
 \end{frame}
 
 \begin{frame}
@@ -417,20 +410,47 @@ instance Foo a b => Foo [a] b
 \item Soundness - If the type of an expression can be inferred, then it can be type checked.
 \item Completeness - If the type of an expression can be type checked, then it can be inferred.
 \end{itemize}
-We want OutsideIn to be sound. And it is.
+\end{frame}
 
-Completeness would be nice, too. But it isn't.
+\begin{frame}{Sound \& Complete}
+\begin{itemize}
+\item Shorthand
+   \begin{itemize}
+   \item $\Gamma \vdash t : \tau$ - type checking
+   \item $\Gamma \vdash t \uparrow \tau$ - type inference
+   \end{itemize}
+\item Soundness
+   \begin{itemize}
+   \item if $\Gamma \vdash t \uparrow \tau$ then $\Gamma \vdash t : \tau$
+   \end{itemize}
+\item Completeness
+   \begin{itemize}
+   \item if $\Gamma \vdash t : \tau$ then $\Gamma \vdash t \uparrow \tau$
+   \end{itemize}
+\end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Soundness and Completeness}
+\frametitle{Soundness \& Completeness of OutsideIn}
 \begin{itemize}
-\item Soundness - If the type of an expression can be inferred, then it can be type checked.
-\item Completeness - If the type of an expression can be type checked, then it can be inferred.
+   \item OutsideIn is sound
+      \begin{itemize}
+         \item for all possible programs where inference produces a type, that same program will type check
+      \end{itemize}
+   \item OutsideIn is incomplete
+      \begin{itemize}
+         \item inference will fail to produce a type for some valid programs
+      \end{itemize}
 \end{itemize}
-We want OutsideIn to be sound. And it is.
+\end{frame}
 
-Completeness would be nice, too. But it isn't.
+\begin{frame}{Lost bits}
+Many ideas and justification details are in the paper ...
+\begin{itemize}
+\item Complete rules of the OutsideIn system
+\item Proofs of soundness for type checking or inference
+\item Logic solver, its soundness, and decidability of termination
+\end{itemize}
 \end{frame}
 
 \end{document}
