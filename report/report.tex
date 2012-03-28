@@ -317,6 +317,36 @@ instance Foo a b => Foo [a] b
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Solution Objectives}
+\begin{itemize}
+\item HM type inference cannot handle constraints
+\item Constraints must be part of type inference and checking
+\item Quantification is desirable but can cause problems
+\end{itemize}
+\end{frame}
 
+\begin{frame}{OutSideIn - in 3 phases}
+\begin{enumerate}
+\item $\Gamma \vdash t : \tau \rightsquigarrow C$
+   \begin{itemize}
+   \item Infer types and gather constraints
+   \end{itemize}
+\item stuff
+   \begin{itemize}
+   \item Unify gathered constraints
+   \end{itemize}
+\item $Q;\Gamma \vdash t : \tau$
+   \begin{itemize}
+   \item Type check against learned types
+   \end{itemize}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Stratify Program Knowledge}
+\begin{itemize}
+\item $\mathcal{Q}$ - global knowledge
+\item $Q$ - local knowledge
+\end{itemize}
+\end{frame}
 
 \end{document}
