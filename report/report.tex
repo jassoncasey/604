@@ -3,6 +3,9 @@
 \usepackage{listings}
 \usetheme{default}
 
+\newcommand\Fontvi{\fontsize{8}{7.2}\selectfont}
+\newcommand\Fontv{\fontsize{6}{7.2}\selectfont}
+
 \title{Summarizing: OutsideIn(X): Modular Type Inference with Local Assumptions.}
 \subtitle{D. Vytiniotis, S. P. Jones, T. Schrijvers, M. Sulzmann}
 \author{Jasson Casey \& Michael Lopez}
@@ -444,13 +447,130 @@ instance Foo a b => Foo [a] b
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Lost bits}
-Many ideas and justification details are in the paper ...
-\begin{itemize}
-\item Complete rules of the OutsideIn system
-\item Proofs of soundness for type checking or inference
-\item Logic solver, its soundness, and decidability of termination
-\end{itemize}
+
+\begin{frame}[fragile]
+\frametitle{Inferring a Case}
+\Fontvi
+\begin{columns}[l]
+  \column{1.3in}
+  \begin{lstlisting}
+data T a where
+  T1 :: Int -> T Bool
+  T2 :: T a
+
+isT1 (T1 _) = True
+isT1 T2 = False
+\end{lstlisting}
+
+\column{2.1in}
+$\mbox{T1} : \forall a. (a \sim \mbox{Bool}) \Rightarrow \mbox{Int} \rightarrow \mbox{ T a}$
+
+$\mbox{T2} : \forall a. \mbox{ T a}$
+
+\vspace{3 mm}
+
+$\mbox{case } x \mbox{ of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T2 } \rightarrow \mbox{ False } \}$
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Inferring a Case: Case Rule}
+\Fontv
+
+\begin{prooftree}
+\def \fCenter{\ \vdash\ }
+\RightLabel{\textbf{Case}}
+\AxiomC{[infer type of expression]}
+\AxiomC{[T1 $\in \Gamma$ and infer expression]}
+\AxiomC{[T2 $\in \Gamma$ and infer expression]}
+\TrinaryInfC{$\Gamma \vdash \mbox{case T1 3 of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T2 } \rightarrow \mbox{ False } \} : \tau \rightsquigarrow C$}
+\end{prooftree}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Inferring a Case: Deriving case expression}
+\Fontv
+
+\begin{prooftree}
+\def \fCenter{\ \vdash\ }
+\AxiomC{$\mbox{ T1 } : \forall a. (a \sim \mbox{Bool}) \Rightarrow \mbox{Int} \rightarrow \mbox{ T a} \in \Gamma$}
+\RightLabel{\textbf{VarCon}}
+\UnaryInfC{$\Gamma \vdash \mbox{ T1 } : \mbox{ Int } \rightarrow \mbox{T }\alpha_1 \rightsquigarrow (\alpha_1 \sim \mbox{Bool})$}
+
+
+\AxiomC{$10 : \mbox{ Int } \in \Gamma$}
+\RightLabel{\textbf{App}}
+\BinaryInfC{$\Gamma \vdash \mbox{ T1 3 } : \mbox{ T Bool } \rightsquigarrow (\alpha_1 \sim \mbox{Bool})$}
+\AxiomC{[case T1]}
+\AxiomC{[case T2]}
+\RightLabel{\textbf{Case}}
+\TrinaryInfC{$\Gamma \vdash \mbox{case T1 3 of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T2 } \rightarrow \mbox{ False } \} : \tau \rightsquigarrow (\alpha_1 \sim \mbox{Bool})$}
+\end{prooftree}
+
+\end{frame}
+
+%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Inferring a Case: Deriving branch}
+\Fontv
+
+\begin{prooftree}
+\def \fCenter{\ \vdash\ }
+\AxiomC{$...$}
+\UnaryInfC{$\Gamma \vdash \mbox{ T1 3 } : \mbox{ T Bool } \rightsquigarrow (\alpha_1 \sim \mbox{Bool})$}
+
+\AxiomC{$\mbox{ T1 } : \mbox{ Int } \rightarrow \mbox{T Bool} \in \Gamma$}
+
+\AxiomC{$\mbox{ True} : Bool \in \Gamma$}
+\RightLabel{\bf VarCon}
+\UnaryInfC{$\Gamma, (n : \gamma) \vdash \mbox{ True} : Bool \rightsquigarrow \emptyset$}
+
+\RightLabel{\textbf{Case}}
+\TrinaryInfC{$\Gamma \vdash \mbox{case T1 3 of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T2 } \rightarrow \mbox{ False } \} : \tau \rightsquigarrow (\alpha_1 \sim \mbox{Bool})$}
+\end{prooftree}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Inferring a Case: Deriving the type of case}
+\Fontv
+
+\begin{prooftree}
+\def \fCenter{\ \vdash\ }
+\AxiomC{$...$}
+\UnaryInfC{$\Gamma \vdash \mbox{ T1 3 } : \mbox{ T Bool } \rightsquigarrow (\alpha_1 \sim \mbox{Bool})$}
+
+\AxiomC{$\mbox{ T1 } : \mbox{ Int } \rightarrow \mbox{T Bool} \in \Gamma$}
+
+\AxiomC{$\mbox{ True} : Bool \in \Gamma$}
+\UnaryInfC{$\Gamma, (n : \gamma) \vdash \mbox{ True} : Bool \rightsquigarrow \emptyset$}
+
+\AxiomC{$\mbox{ False} : Bool \in \Gamma$}
+\UnaryInfC{$\Gamma \vdash \mbox{ False} : Bool \rightsquigarrow \emptyset$}
+
+\RightLabel{\textbf{Case}}
+\TrinaryInfC{$\Gamma \vdash \mbox{case T1 3 of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T2 } \rightarrow \mbox{ False } \} : \beta \rightsquigarrow (\alpha_1 \sim \mbox{Bool}) \wedge (\beta \sim \mbox{Bool})$}
+\end{prooftree}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Binding to Top-level}
+\Fontv
+
+\begin{prooftree}
+\def \fCenter{\ \vdash\ }
+\AxiomC{$\Gamma \vdash \mbox{case T1}... : \tau \rightsquigarrow  C$}
+
+\AxiomC{$\mathcal{Q}; fuv(\tau, C) \vdash^{solv} C \rightsquigarrow \theta$}
+
+\AxiomC{$\mathcal{Q}; \Gamma,(\mbox{ isT1}:\theta \tau) \vdash prog$}
+
+\RightLabel{\textbf{Bind}}
+\TrinaryInfC{$\mathcal{Q};\Gamma \vdash \mbox{ isT1} = \mbox{case T1 3 of } \{ \mbox{ T1 } n \rightarrow \mbox{ True }; \mbox{ T2 } \rightarrow \mbox{ False } \}, prog$}
+\end{prooftree}
+
 \end{frame}
 
 \end{document}
