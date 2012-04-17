@@ -69,6 +69,10 @@ pdu Packet
    opcode=uint 16          -- type of packet
    payload=Payload opcode  -- body depends on type
 
+-- Packet Handling Code --
+
+-- Statically registered socket handling function
+-- Only called for specific socket and recieve packet type
 recv :: Socket(UDP, */*, */69) -> Packet -> Unit
 recv skt pkt =
    case pkt.payload of
@@ -76,16 +80,17 @@ recv skt pkt =
       WRQ -> handle_wrq skt pkt.payload
       _ -> log skt pkt
 
+-- simple house keeping for rrq's
 handle_rrq :: Socket -> RRQ -> Maybe
 handle_rrq skt ptk =
    if FS.exists pkt.filename
       then init_rrq_sm conn file
       else Packet { payload=notFnd }
    
+-- simple house keeping for wrq's
 handle_wrq :: Socket -> WRQ -> Unit
 handle_wrq skt ptk = 
    if FS.hasSpace
-      then init_wrq_sm ( FS.open pkt.filename "w" )
+      then init_wrq_sm conn ( FS.open pkt.filename "w" )
+      else Packet { payload = dskFul }
 
-init_rrq skt pkt =
-   socket(udp, skt.peer.ip, skt.peer.port, skt.local.ip, *)
