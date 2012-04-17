@@ -1,0 +1,91 @@
+-- A test implementation of IETF RFC 1350
+
+-- Read Request (RRQ) 
+pdu RRQ
+   filename=[ascii] nul    -- indicates the file to read
+   mode=[ascii] nul        -- indicates the mode of transfer 
+
+-- Write Request (WRQ)
+alias WRQ RRQ              -- identical to RRQ type
+
+-- Data block of a transfer
+pdu DATA
+   blockid=uint 16         -- specific transfer block id
+   data=[uint 8] 512       -- actual data being transfered
+
+-- Data block End of File (EOF)
+pdu DATA_EOF
+   blockid=uint 16         -- specific transfer block id
+   data=[uint 8] <512      -- bounding length for data
+
+-- Acknowledgement for Data blk
+pdu ACK
+   blockid=uint 16         -- block id being acknowledged
+
+-- Error resposne
+pdu ERROR
+   errCode= uint 16        -- error code
+   errString=[ascii] nul   -- error description
+
+-- helper functions for defined error messages
+notDef = ERROR { 
+            errorCode = 0, 
+            errString = "Not defined, see error message (if any)." }
+notFnd = ERROR { 
+            errorCode = 6,
+            errString = "" }
+accVio = ERROR { 
+            errorCode = 1,
+            errString = "File not found." }
+dskFul = ERROR { 
+            errorCode = 2,
+            errString = "Access violation." }
+IllOpr = ERROR { 
+            errorCode = 3,
+            errString = "Disk full or allocation exceeded." }
+UnknId = ERROR { 
+            errorCode = 4,
+            errString = "Illegal TFTP operation." }
+FilExs = ERROR { 
+            errorCode = 5,
+            errString = "Unknown transfer ID." }
+notFnd = ERROR { 
+            errorCode = 6,
+            errString = "File already exists." }
+NoUser = ERROR { 
+            errorCode = 7,
+            errString = "No such user." }
+
+-- TFTP Payload Types
+enum Payload
+   1 : RRQ
+   2 : WRQ
+   3 : DATA | DATA_EOF     -- ith data block, or last data block
+   4 : ACK
+   5 : ERROR
+
+-- TFTP Packet
+pdu Packet
+   opcode=uint 16          -- type of packet
+   payload=Payload opcode  -- body depends on type
+
+recv :: Socket(UDP, */*, */69) -> Packet -> Unit
+recv skt pkt =
+   case pkt.payload of
+      RRQ -> handle_rrq skt pkt.payload
+      WRQ -> handle_wrq skt pkt.payload
+      _ -> log skt pkt
+
+handle_rrq :: Socket -> RRQ -> Maybe
+handle_rrq skt ptk =
+   if FS.exists pkt.filename
+      then init_rrq_sm conn file
+      else Packet { payload=notFnd }
+   
+handle_wrq :: Socket -> WRQ -> Unit
+handle_wrq skt ptk = 
+   if FS.hasSpace
+      then init_wrq_sm ( FS.open pkt.filename "w" )
+
+init_rrq skt pkt =
+   socket(udp, skt.peer.ip, skt.peer.port, skt.local.ip, *)

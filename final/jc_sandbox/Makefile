@@ -4,7 +4,7 @@ LIBS=-package haskell98 -package containers
 
 TARGET=splc
 
-SRC=
+SRC=Eval.hs
 
 $(TARGETS): $(SRC:%.hs=%.o) $(TARGETS:%=%.o)
 	@echo "Building target: $(TARGETS)"
