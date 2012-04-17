@@ -2,8 +2,8 @@
 
 -- Read Request (RRQ) 
 pdu RRQ
-   filename=[ascii] nul    -- indicates the file to read
-   mode=[ascii] nul        -- indicates the mode of transfer 
+   filename = [ascii] nul    -- indicates the file to read
+   mode = [ascii] nul        -- indicates the mode of transfer 
 
 -- Write Request (WRQ)
 alias WRQ RRQ              -- identical to RRQ type
@@ -13,22 +13,22 @@ maxBlkSz = 512
 
 -- Data block of a transfer
 pdu DATA
-   blockid=uint 16         -- specific transfer block id
-   data=[uint 8] maxBlkSz  -- actual data being transfered
+   blockid = uint 16         -- specific transfer block id
+   data = [uint 8] maxBlkSz  -- actual data being transfered
 
 -- Data block End of File (EOF)
 pdu DATA_EOF
-   blockid=uint 16         -- specific transfer block id
-   data=[uint 8] <maxBlkSz -- bounding length for data
+   blockid = uint 16         -- specific transfer block id
+   data = [uint 8] <maxBlkSz -- bounding length for data
 
 -- Acknowledgement for Data blk
 pdu ACK
-   blockid=uint 16         -- block id being acknowledged
+   blockid = uint 16         -- block id being acknowledged
 
 -- Error resposne
 pdu ERROR
-   errCode= uint 16        -- error code
-   errString=[ascii] nul   -- error description
+   errCode = uint 16        -- error code
+   errString = [ascii] nul   -- error description
 
 -- helper functions for defined error messages
 notDef = ERROR { 
@@ -101,10 +101,22 @@ handle_wrq skt ptk =
 blks :: Nat -> Nat
 blks sz = sz / maxBlkSz + sz % maxBlkSz
 
-rrq_sm :: State 0 -> Socket -> File -> State t
-rrq_sm 
+-- block id and offset computation
+offset :: Nat -> Nat -> Nat
+offset idx max = idx * max
 
-file.size / 512
-blks = file.size / 512 + file.size % 512
+-- build a DATA packet
+data :: Nat -> File -> Socket -> Packet
+data idx file sk =
+   Packet { payload = DATA 
+            {  blockid = idx, 
+               data = ( read file (offset idx) maxBlkSz) } }
+
+-- build an ACK packet
+ack :: Nat -> Packet
+ack idx = Packet { payload = ACK { blockid = idx } }
+
+rrq_sm :: State 0 -> Socket -> File -> State t
+rrq_sm st sk file =
 
 rrq_sm :: State 1 -> Socket -> File -> State t
