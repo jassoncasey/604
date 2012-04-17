@@ -8,15 +8,18 @@ pdu RRQ
 -- Write Request (WRQ)
 alias WRQ RRQ              -- identical to RRQ type
 
+-- Transfer blocks may not be larger than 512 bytes
+maxBlkSz = 512
+
 -- Data block of a transfer
 pdu DATA
    blockid=uint 16         -- specific transfer block id
-   data=[uint 8] 512       -- actual data being transfered
+   data=[uint 8] maxBlkSz  -- actual data being transfered
 
 -- Data block End of File (EOF)
 pdu DATA_EOF
    blockid=uint 16         -- specific transfer block id
-   data=[uint 8] <512      -- bounding length for data
+   data=[uint 8] <maxBlkSz -- bounding length for data
 
 -- Acknowledgement for Data blk
 pdu ACK
@@ -94,3 +97,14 @@ handle_wrq skt ptk =
       then init_wrq_sm conn ( FS.open pkt.filename "w" )
       else Packet { payload = dskFul }
 
+-- compute the number of blocks necessary for transfer
+blks :: Nat -> Nat
+blks sz = sz / maxBlkSz + sz % maxBlkSz
+
+rrq_sm :: State 0 -> Socket -> File -> State t
+rrq_sm 
+
+file.size / 512
+blks = file.size / 512 + file.size % 512
+
+rrq_sm :: State 1 -> Socket -> File -> State t
