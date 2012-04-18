@@ -1,4 +1,7 @@
 module Reductions (
+   Variable,
+   Term,
+
 ) where
 
 import qualified Data.Set as Set
@@ -102,7 +105,23 @@ apply N x t@(Abs x' P) =
 apply N x (App P Q) =                           -- [N/x] P Q = [N/x] P [N/x] Q
    App ( apply N x P ) ( apply N x Q )
 
--- call by name reduction
+-- call by name reduction (cbn)
+--
+--                 x -> x
+--
+--           \x.e ----cbn----> \x.e
+--
+--  e1 ----cbn----> \x.e    e[e2/x] ----cbn----> e'
+-- ---------------------------------------------------
+--          ( e1 e2 ) ----cbn----> e'
+--
+--      e1 ----cbn----> e1' != \x.e    
+-- --------------------------------------
+--     ( e1 e2 ) ----cbn----> ( e1' e2 )
+--
+--
+cbv :: Term -> Term
+cbv Var x = Var x
 cbn :: Term -> Term
 cbn Var x = Var x
 cbn Abs x e = Abs x e
@@ -111,7 +130,25 @@ cbn App e1 e2 =
       Abs x e -> cbn ( apply e2 x e )
       e1' -> App e1' e2
 
--- normal order reduction
+-- normal order reduction (no)
+--
+--                                x -> x
+--
+--                           e ----no----> e'
+--                      -------------------------
+--                        \x.e ----no----> \x.e'
+--
+--               e1 ----cbn----> \x.e    e[e2/x] ----no----> e'
+--             -------------------------------------------------
+--                       ( e1 e2 ) ----no----> e'
+--
+--   e1 ----cbn----> e1' != \x.e    e1' ----no----> e1'' e2 ----no----> e2'
+--  ------------------------------------------------------------------------
+--                   ( e1 e2 ) ----no----> ( e1'' e2' )
+--
+--
+cbv :: Term -> Term
+cbv Var x = Var x
 no :: Term -> Term
 no Var x = Var x
 no Abs x e = Abs x (no e)
@@ -120,7 +157,21 @@ no App e1 e2 =
       Abs x e -> no (apply e2 x e)
       e1' -> App (no e1') (no e2)
 
--- call by value reduction
+-- call by value reduction (cbv)
+--
+--                                x -> x
+--
+--                        \x.e ----cbv----> \x.e
+--
+--    e1 ----cbv----> \x.e    e2 ----cbv----> e2'  e[e2'/x] ----cbv----> e'
+--  -------------------------------------------------------------------------
+--                      ( e1 e2 ) ----cbv----> e'
+--
+--           e1 ----cbv----> e1' != \x.e    e2 ----cbv----> e2'
+--          ----------------------------------------------------
+--                   ( e1 e2 ) ----cbv----> ( e1' e2' )
+--
+--
 cbv :: Term -> Term
 cbv Var x = Var x
 cbv Abs x e = Abs x e
@@ -129,7 +180,23 @@ cbv App e1 e2 =
       Abs x e -> cbv ( apply ( cbv e2 ) x e ) 
       e1' -> App ( e1' ( cbv e2 ) )
 
--- applicative order reduction
+-- applicative order reduction (ao)
+--
+--                               x -> x
+--
+--                           e ----ao----> e'
+--                        -----------------------
+--                            \x.e ---> \x.e'
+--
+--    e1 ----ao----> \x.e    e2 ----ao----> e2'  e[e2'/x] ----ao----> e'
+--  -------------------------------------------------------------------------
+--                      ( e1 e2 ) ----ao----> e'
+--
+--             e1 ----ao----> e1' != \x.e    e2 ----ao----> e2'
+--          ----------------------------------------------------
+--                      ( e1 e2 ) ----ao----> ( e1' e2' )
+--
+--
 ao :: Term -> Term
 ao Var x = Var x
 ao Abs x e = Abs x (ao e)
@@ -138,7 +205,23 @@ ao App e1 e2 =
       Abs x e -> ao ( apply ( ao e2 ) x e ) 
       e1' -> App ( e1' ( ao e2 ) )
 
--- hybrid applicative order reduction
+-- hybrid applicative order reduction (hao)
+--
+--                               x -> x
+--
+--                           e ----hno----> e'
+--                        -----------------------
+--                            \x.e ---> \x.e'
+--
+--    e1 ----cbv----> \x.e    e2 ----hao----> e2'  e[e2'/x] ----hao----> e'
+--  -------------------------------------------------------------------------
+--                      ( e1 e2 ) ----hao----> e'
+--
+--   e1 ----cbv----> e1' != \x.e    e1' ----hao----> e1'' e2 ----hao----> e2'
+-- ----------------------------------------------------------------------------
+--                      ( e1 e2 ) ----hao----> ( e1'' e2' )
+--
+--
 hao :: Term -> Term
 hao Var x = Var x
 hao Abs x e = Abx x (hao e)
@@ -147,7 +230,23 @@ hao App e1 e2 =
       Abs x e -> hao ( apply ( hao e2 ) x e )
       e1' -> App ( hao e1 ) ( hao e2 )
 
--- head spine reduction
+-- head spine reduction (hs)
+--
+--                   x -> x
+--
+--                e ----hs----> e'
+--            -----------------------
+--                \x.e ---> \x.e'
+--
+--   e1 ----hs----> \x.e    e[e2/x] ----hs----> e'
+-- -------------------------------------------------
+--             ( e1 e2 ) ----hno----> e'
+--
+--             e1 ----hs----> e1' != \x.e    
+--       -------------------------------------
+--          ( e1 e2 ) ----hs----> ( e1' e2)
+--
+--
 hs :: Term -> Term
 hs Var x = Var x
 hs Abs x e = Abs x ( hs e )
@@ -156,7 +255,23 @@ hs App e1 e2 =
       Abs x e -> he ( apply e2 x e )
       e1' -> App e1' e2
 
--- hybrid normal order reduction
+-- hybrid normal order reduction (hno)
+--
+--                                     x -> x
+--
+--                                e ----hno----> e'
+--                            -----------------------
+--                                 \x.e ---> \x.e'
+--
+--                  e1 ----hs----> \x.e    e[e2/x] ----hno----> e'
+--                -------------------------------------------------
+--                            ( e1 e2 ) ----hno----> e'
+--
+--   e1 ----hs----> e1' != \x.e    e1' ----hno----> e1'' e2 ----hno----> e2'
+-- ----------------------------------------------------------------------------
+--                      ( e1 e2 ) ----hno----> ( e1'' e2' )
+--
+--
 hno :: Term -> Term
 hno Var x = Var x
 hno Abs x e = Abs x ( hno e )
