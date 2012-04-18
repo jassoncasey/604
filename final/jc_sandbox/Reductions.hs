@@ -1,7 +1,13 @@
 module Reductions (
    Variable,
    Term,
-
+   callByName,
+   normalOrder,
+   callByValue,
+   applicativeOrder,
+   hybridApplicativeOrder,
+   headSpine,
+   hybridNormalOrder
 ) where
 
 import qualified Data.Set as Set
@@ -120,8 +126,6 @@ apply N x (App P Q) =                           -- [N/x] P Q = [N/x] P [N/x] Q
 --     ( e1 e2 ) ----cbn----> ( e1' e2 )
 --
 --
-cbv :: Term -> Term
-cbv Var x = Var x
 cbn :: Term -> Term
 cbn Var x = Var x
 cbn Abs x e = Abs x e
@@ -129,6 +133,7 @@ cbn App e1 e2 =
    case cbn e1 of
       Abs x e -> cbn ( apply e2 x e )
       e1' -> App e1' e2
+callByName = cbn
 
 -- normal order reduction (no)
 --
@@ -147,8 +152,6 @@ cbn App e1 e2 =
 --                   ( e1 e2 ) ----no----> ( e1'' e2' )
 --
 --
-cbv :: Term -> Term
-cbv Var x = Var x
 no :: Term -> Term
 no Var x = Var x
 no Abs x e = Abs x (no e)
@@ -156,6 +159,7 @@ no App e1 e2 =
    case cbn e1 of
       Abs x e -> no (apply e2 x e)
       e1' -> App (no e1') (no e2)
+normalOrder = no
 
 -- call by value reduction (cbv)
 --
@@ -179,6 +183,7 @@ cbv App e1 e2 =
    case cbv e1 of
       Abs x e -> cbv ( apply ( cbv e2 ) x e ) 
       e1' -> App ( e1' ( cbv e2 ) )
+callByValue = cbv
 
 -- applicative order reduction (ao)
 --
@@ -204,6 +209,7 @@ ao App e1 e2 =
    case ao e1 of
       Abs x e -> ao ( apply ( ao e2 ) x e ) 
       e1' -> App ( e1' ( ao e2 ) )
+applicativeOrder = ao
 
 -- hybrid applicative order reduction (hao)
 --
@@ -229,6 +235,7 @@ hao App e1 e2 =
    case cbv e1 of
       Abs x e -> hao ( apply ( hao e2 ) x e )
       e1' -> App ( hao e1 ) ( hao e2 )
+hybridApplicativeOrder = hao
 
 -- head spine reduction (hs)
 --
@@ -254,6 +261,7 @@ hs App e1 e2 =
    case hs e1 of
       Abs x e -> he ( apply e2 x e )
       e1' -> App e1' e2
+headSpine = hs
 
 -- hybrid normal order reduction (hno)
 --
@@ -279,3 +287,4 @@ hno App e1 e2 =
    case hs e1 of 
       Abs x e -> hno ( apply e2 x e )
       e1' -> App ( hno e1' ) ( hno e2 )
+hybridNormalOrder = hno
