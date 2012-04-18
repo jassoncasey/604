@@ -1,0 +1,151 @@
+Packet Grammar
+
+program:
+  empty
+  function
+
+
+function:
+  annotation function-definition
+  function-definition
+
+function-definition:
+  identifier parameter-list "=" function-body
+
+function-body:
+  let-clause body
+  body
+
+body:
+  case-expression
+  expression
+
+case-expression:
+  "case" identifier "of" "{" cases-list "}"
+
+cases-list:
+  case-statement
+  cases-statements ";" case-statement
+
+
+
+
+===========expressions===============
+
+expression:
+  "if" conditional-expression "then" expression "else" expression
+
+conditional-expression:
+  conditional-expression "and" neg-expression
+  conditional-expression "or"  neg-expression
+
+neg-expression:
+  "not" relational-expr
+  relational-expr
+
+relational-expr:
+  relational-expr "<" additive-expr
+  relational-expr ">" additive-expr
+  relational-expr "<=" additive-expr
+  relational-expr "<=" additive-expr
+
+additive-expr:
+  additive-expr "+" multiplicative-expr
+  additive-expr "-" multiplicative-expr
+
+negative-expr:
+  "-" multiplicative-expr
+  multiplicative-expr
+
+multiplicative-expr:
+  multiplicative-expr "*" applicative-expr
+
+applicative-expr:
+  primary
+  Application primary
+
+primary:
+  identifier
+  literal
+  (expression)
+
+=======end expressions===============
+
+annotation:
+  identifier "::" type
+
+type:
+  simple-type
+  [type]
+  type -> type
+  (type)
+
+simple-type
+  Bool
+  Int
+  Char
+  identifier
+
+
+typesig-map:
+  typesig "->" typesig-map
+  typesig
+
+typesig:
+  (typesig-map)
+  [typesig-map]
+  simple-type
+
+simple-type:
+  "Int"
+  "Bool"
+  "Char"
+  identifier
+
+
+
+data-identifier:
+  uppercase-character + identifier
+
+symbols:
+ A-Z a-z 0 1 2 3 4 5 6 7 8 9 : ( ) [ ] - >
+
+application:
+  expression
+
+expression:
+  expression "and" neg-expression
+  expression "or"  neg-expression
+
+neg-expression:
+  "not" relational-expr
+  relational-expr
+
+relational-expr:
+  relational-expr "<" additive-expr
+  relational-expr ">" additive-expr
+  relational-expr "<=" additive-expr
+  relational-expr "<=" additive-expr
+
+additive-expr:
+  additive-expr "+" multiplicative-expr
+  additive-expr "-" multiplicative-expr
+
+negative-expr:
+  "-" multiplicative-expr
+  multiplicative-expr
+
+multiplicative-expr:
+  multiplicative-expr "*" applicative-expr
+
+applicative-expr:
+  primary
+  Application primary
+
+primary:
+  identifier
+  literal
+  (expression)
+
+
+Application (Application (Identifier f) (Identifier a)) (Identifier b)
