@@ -11,6 +11,7 @@ module Reductions (
 ) where
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- constand structure
 data Constant =
@@ -31,6 +32,38 @@ data Term =
    | Abs Variable Term
    | App Term Term
    deriving ( Eq, Show )
+
+allCons :: [Term] -> Bool
+allCons terms = 
+   where allCons' (term:terms) = 
+            case term of 
+               Cons _ -> allCons terms
+               _ -> false
+         allCons' [] = true
+
+-- couple of type synonyms for delta function maps
+type DeltaFunc = [Term] -> String
+type DeltaMap  = Map String DeltaFunc
+
+-- actual delta computations
+delta_compute :: DeltaMap -> String -> [Term] -> Term
+-- handle non-literals
+delta_compute deltas name terms = 
+   case fucntion of
+      Just func -> if allCons terms
+                     then Cons (Prim (function terms) 0 [])
+                     else Cons (Prim name 0 terms)
+      Nothing -> Cons (Prim name 0 terms)
+   where function = lookup name deltas 
+-- handle literals
+delta_compute deltas name [] = Cons (Prim name 0 [])
+
+-- delta function rules ... primary guards
+delta :: ( Term -> Term ) -> DeltaMap -> Constant -> Term
+delta eval ( Prim name airity terms )
+   airity == 0 | = delta_compute deltas name (map eval terms)
+   _ | = Prim name airity (map eval terms)
+delta _ c = Cons c
 
 -- return the set of free variables
 freeVars :: Term -> Set Variable
