@@ -15,8 +15,8 @@ import qualified Data.Map as Map
 
 -- constand structure
 data Constant =
-                              -- Prim <name> <airity> <internalized terms>
-   Prim String Int [Term]     -- value constant or delta function
+   Literal String                 -- literal
+   | Delta String Int [Term]      -- delta function
    deriving ( Eq, Show, Ord )
 
 -- variable structure
@@ -27,7 +27,8 @@ data Variable =
 
 -- term structure
 data Term =
-   Cons Constant
+   Error
+   | Cons Constant
    | Var Variable
    | Abs Variable Term
    | App Term Term
