@@ -57,9 +57,10 @@ data Types =
   | Record deriving (Eq, Show)
 
 keywords = [
-  "Int","Char","Bool",    -- built-in types
+  "Nat","Char","Bool",    -- built-in types
   "True", "False",        -- built-in literals
-  "if", "then", "else"    -- built-in if-then-else support
+  "if", "then", "else",   -- built-in if-then-else support
+  "data", "pdu"           -- Data declarators
   ]
 
 operators = [
@@ -67,7 +68,7 @@ operators = [
   "*","/","%","+","-",          -- Arithmetic
   "<",">","<=",">=","==","!=",  -- Relational
   "not","or","and",             -- Logical
-  ";"
+  ";", ","                      -- Delimiters
   ]
 
 languageDef =
@@ -76,8 +77,8 @@ languageDef =
   , commentEnd   = "-}"
   , identStart   = lower
   , identLetter  = alphaNum
-  , opStart  = oneOf "-:oan><%/*+=!;"
-  , opLetter = oneOf "-:oan><%/*+=!;"
+  , opStart  = oneOf "-:oan><%/*+=!;,"
+  , opLetter = oneOf "-:oan><%/*+=!;,"
   , reservedOpNames = operators
   , reservedNames   = keywords
 }
@@ -90,12 +91,61 @@ TokenParser {
 , semiSep1   = m_semiSep1
 , whiteSpace = m_whiteSpace
 , brackets   = m_brackets
+, braces     = m_braces
 , natural    = m_natural   } = makeTokenParser languageDef
 
 
+data UserDataStructure =
+    PDUType [(String,Types)]       -- A name and a list of fields
+  | ADTType [(String,Maybe Types)] -- A name and a list of constructors
+  deriving (Eq, Show)
+
+type UserType = (String, UserDataStructure)
+
+data Declaration = TypeDecl UserType | FuncDecl TopLevelFunc
 
 -- Top-Level parser
+-- Accepts a list of identifiers that have already been used
+-- FIXME - add to list of names
 {-============================================================================-}
+{-parseUnit :: [String] -> Parser [Declaration]
+parseUnit usedNames = (do
+    typ <- dataType usedNames
+    rest <- parse ((getNamesFromUserType typ) ++ usedNames)
+    return ((TypeDecl typ):rest)
+  ) <|> (do
+    fn <- function usedNames
+    rest <- parse
+    return ((FuncDecl fn):rest)
+  ) <|> return []
+  <?> "translation unit"-}
+
+parseUnit :: [String] -> Parser [Declaration]
+parseUnit usedNames = do
+  declarations <- parseIt usedNames
+  eof
+  return declarations
+
+--FIXME Add support for 
+parseIt :: [String] -> Parser [Declaration]
+parseIt usedNames = (do
+    first <- parseDeclaration usedNames -- FIXME Inlcude names just parsed
+    rest <- parseIt ((getNamesFromUserType first) ++ usedNames)
+    return (first:rest))
+  <|> return []
+  <?> "translation unit"
+
+parseDeclaration :: [String] -> Parser Declaration
+parseDeclaration usedNames = (do
+    decl <- dataType usedNames
+    return $ TypeDecl decl)
+  <|> (do
+    decl <- function usedNames
+    return $ FuncDecl decl)
+  <?> "translation unit"
+
+--parseRest :: [String] -> Parser [Declaration]
+--parseRest usedNames
 
 
 
@@ -105,9 +155,118 @@ TokenParser {
 
 
 -- Data type parser
+{-
+  The data type parser is a bit more complex than the function parser. The data
+  type parser must pass back two things:
+    1. a new type definition, and
+    2. a list of constructors.
+  A type definition is a type name and record layout (if record).
+  -- FIXME make data type names unique!
+-}
 {-============================================================================-}
 
+dataType :: [String] -> Parser UserType
+dataType usedNames =
+      pdu usedNames
+  <|> adt usedNames
+  <?> "data type declaration"
 
+pdu :: [String] -> Parser UserType
+pdu usedNames = (do
+    m_reserved "pdu"
+    name <-  datatype
+    if elem name usedNames
+      then fail $ "Redeclaration of \"" ++ name ++ "\""
+      else do
+        members <- m_braces fieldSequence
+        if null members
+          then fail "Empty pdu declaration"
+          else return $ (name, PDUType members)
+  ) <?> "pdu type"
+
+fieldSequence :: Parser [(String, Types)]
+fieldSequence = (do
+    first <- field
+    rest  <- fieldSequenceTail
+    return (first:rest)
+  ) <|> (return [])
+  <?> "fields"
+
+fieldSequenceTail :: Parser [(String, Types)]
+fieldSequenceTail = (do
+    m_reserved ","
+    fieldSequence
+  ) <|> return []
+  <?> "fields"
+
+field :: Parser (String, Types)
+field = (do
+    name <- m_identifier
+    m_reservedOp "="
+    typ <- typeExpr
+    return (name, typ)
+  ) <?> "field"
+
+adt :: [String] -> Parser UserType
+adt usedNames = (do
+    m_reserved "data"
+    name <- datatype
+    if elem name usedNames
+      then fail $ "Redeclaration of \"" ++ name ++ "\""
+      else do
+        m_reservedOp "="
+        constructors <- m_braces constructorSequence
+        return $ (name, ADTType constructors)
+  ) <?> "adt"
+
+constructorSequence :: Parser [(String, Maybe Types)]
+constructorSequence = (do
+    first <- constructor
+    rest  <- constructorSequenceTail
+    return (first:rest)
+  ) <|> return []
+  <?> "constructors"
+
+constructorSequenceTail :: Parser [(String, Maybe Types)]
+constructorSequenceTail = (do
+    m_reserved "|"
+    constructorSequence
+  ) <|> return []
+  <?> "constructors"
+
+constructor :: Parser (String, Maybe Types)
+constructor = (do
+    name <- datatype
+    typ <- typePack
+    if null typ
+      then return (name, Nothing)
+      else return (name, Just $ makeTypeFromList typ)
+  )
+  <?> "value constructor"
+
+typePack :: Parser [Types]
+typePack = (do
+    first <- typeExpr
+    rest <- typePackTail
+    return (first:rest)
+  )
+  <|> return []
+  <?> "type pack"
+
+typePackTail :: Parser [Types]
+typePackTail = (do
+    m_reserved ","
+    typePack
+  )
+  <|> return []
+  <?> "type pack"
+
+datatype :: Parser String
+datatype = (do
+  first <- upper
+  rest <- m_identifier
+  return (first:rest))
+  <?> "data/constructor type name"
 
 {-============================================================================-}
 
@@ -118,12 +277,18 @@ TokenParser {
 {-============================================================================-}
 
 -- FIXME Place better requirements on 
-function :: Parser TopLevelFunc
-function = (do
-    (_, typeSig) <- functionType
-    m_reservedOp ";"
-    (name, params, body) <- functionDefinition
-    return (name, typeSig, params, body))
+function :: [String] -> Parser TopLevelFunc
+function usedNames = (do
+    (name', typeSig) <- functionType
+    if elem name' usedNames
+      then fail $ "Redeclaration of \"" ++ name' ++ "\""
+      else do
+        m_reservedOp ";"
+        (name, params, body) <- functionDefinition
+        if name' == name
+          then return (name, typeSig, params, body)
+          else fail "annotation and definition must have the same name"
+  )
   <?> "function"
 
 --functionType
@@ -273,6 +438,28 @@ cleanDQ (a:str)    = a : (cleanDQ str)
 
 
 testParser :: String -> String
-testParser input = case parse function "steve" input of
+testParser input = case parse expression "steve" input of
   Left err  -> "No match: " ++ show err
   Right val -> "Found value: " ++ show val
+
+-- takes a list of types and turns it into a function type
+makeTypeFromList :: [Types] -> Types
+makeTypeFromList [] = error "Trying to convert an empty list into a type"
+makeTypeFromList [x] = x
+makeTypeFromList (x:xs) = Func x $ makeTypeFromList xs
+
+-- Extracts all names from a type so that we can ensure that a user doesn't use
+-- the same name twice
+getNamesFromUserType :: UserType -> [String]
+getNamesFromUserType (name, userType) = (name : memberNames)
+  where memberNames = wertfgh userType
+
+wertfgh :: UserDataStructure -> [String]
+wertfgh a = case a of
+  PDUType fields       -> lunzip fields
+  ADTType constructors -> lunzip constructors
+
+lunzip :: [(a,b)] -> [a]
+lunzip [] = []
+lunzip [(x,_)] = [x]
+lunzip ((x,_):x_s) = x : (lunzip x_s)

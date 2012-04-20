@@ -41,7 +41,8 @@ argsToAbs (x:xs) t = Abs x $ argsToAbs xs t
 -- Convert a Parse tree to an AST
 fromPTreeToAst :: P.PTree -> Ast
 fromPTreeToAst (P.Identifier str) = Iden str
-fromPTreeToAst (P.Application t1 t2) = App (fromPTreeToAst t1) (fromPTreeToAst t2)
+fromPTreeToAst (P.Application t1 t2) =
+  App (fromPTreeToAst t1) (fromPTreeToAst t2)
 fromPTreeToAst (P.IfThenElse t1 t2 t3) =
   If (fromPTreeToAst t1) (fromPTreeToAst t2) (fromPTreeToAst t3)
 fromPTreeToAst (P.Literal c) = Lit c
