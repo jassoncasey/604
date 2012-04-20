@@ -12,8 +12,10 @@ data Type =
     SNat
   | SBool
   | SChar
+  | TVar String
   | Pdu String
   | Adt String
+  | List Type
   | Func Type Type
   deriving (Show,Eq)
 
@@ -29,7 +31,7 @@ data PTree =
 
 data Constant = 
    LitBool Bool
- | LitNat  Int
+ | LitNat  Integer
  | LitChar Char
  deriving (Eq, Show)
 

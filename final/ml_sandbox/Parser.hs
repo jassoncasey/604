@@ -13,48 +13,14 @@ module Steve.Parser where
   definition. Inside the function body, the expression parser may be called.
 -}
 
+import Steve.Internal
+
 import Text.Parsec
 import Text.Parsec.String
 import Text.Parsec.Expr
 import Text.Parsec.Token
 import Text.Parsec.Language
 
--- Parse tree structure
-data PTree =
-    Identifier String
-  | Function String Types [String] PTree
-  | Application PTree PTree
-  | IfThenElse PTree PTree PTree
-  | Binary BinOp PTree PTree
-  | Unary UnOp PTree
-  | Literal Constant deriving (Eq, Show)
-
-data Constant = 
-   LitBool Bool
- | LitInt Integer deriving (Eq, Show)
-
--- Binary Operators
-data BinOp =
-    Plus | Minus | Multi | Div | Mod                    -- Arithmetic
-  | LessThan | LessThanEq | GreaterThan | GreaterThanEq -- Ordering
-  | Equal | NotEqual                                    -- Equality
-  | Or | And deriving (Eq, Show)                        -- Logical
-
--- Unary Operators
-data UnOp = Not | Negate deriving (Eq, Show)
-
-type TopLevelFunc = (String, Types, [String], PTree)
-
--- Types
-data Types =
-    TypeVar String
-  | TNat
-  | TBool
-  | TChar
-  | Func Types Types
-  | List Types
-  | Inductive
-  | Record deriving (Eq, Show)
 
 keywords = [
   "Nat","Char","Bool",    -- built-in types
@@ -96,8 +62,8 @@ TokenParser {
 
 
 data UserDataStructure =
-    PDUType [(String,Types)]       -- A name and a list of fields
-  | ADTType [(String,Maybe Types)] -- A name and a list of constructors
+    PDUType [(String,Type)]       -- A name and a list of fields
+  | ADTType [(String,Maybe Type)] -- A name and a list of constructors
   deriving (Eq, Show)
 
 type UserType = (String, UserDataStructure)
@@ -130,7 +96,7 @@ parseUnit usedNames = do
 parseIt :: [String] -> Parser [Declaration]
 parseIt usedNames = (do
     first <- parseDeclaration usedNames -- FIXME Inlcude names just parsed
-    rest <- parseIt ((getNamesFromUserType first) ++ usedNames)
+    rest <- parseIt ((getNamesFromDeclaration first) ++ usedNames)
     return (first:rest))
   <|> return []
   <?> "translation unit"
@@ -184,7 +150,7 @@ pdu usedNames = (do
           else return $ (name, PDUType members)
   ) <?> "pdu type"
 
-fieldSequence :: Parser [(String, Types)]
+fieldSequence :: Parser [(String, Type)]
 fieldSequence = (do
     first <- field
     rest  <- fieldSequenceTail
@@ -192,14 +158,14 @@ fieldSequence = (do
   ) <|> (return [])
   <?> "fields"
 
-fieldSequenceTail :: Parser [(String, Types)]
+fieldSequenceTail :: Parser [(String, Type)]
 fieldSequenceTail = (do
     m_reserved ","
     fieldSequence
   ) <|> return []
   <?> "fields"
 
-field :: Parser (String, Types)
+field :: Parser (String, Type)
 field = (do
     name <- m_identifier
     m_reservedOp "="
@@ -219,7 +185,7 @@ adt usedNames = (do
         return $ (name, ADTType constructors)
   ) <?> "adt"
 
-constructorSequence :: Parser [(String, Maybe Types)]
+constructorSequence :: Parser [(String, Maybe Type)]
 constructorSequence = (do
     first <- constructor
     rest  <- constructorSequenceTail
@@ -227,14 +193,14 @@ constructorSequence = (do
   ) <|> return []
   <?> "constructors"
 
-constructorSequenceTail :: Parser [(String, Maybe Types)]
+constructorSequenceTail :: Parser [(String, Maybe Type)]
 constructorSequenceTail = (do
     m_reserved "|"
     constructorSequence
   ) <|> return []
   <?> "constructors"
 
-constructor :: Parser (String, Maybe Types)
+constructor :: Parser (String, Maybe Type)
 constructor = (do
     name <- datatype
     typ <- typePack
@@ -244,7 +210,7 @@ constructor = (do
   )
   <?> "value constructor"
 
-typePack :: Parser [Types]
+typePack :: Parser [Type]
 typePack = (do
     first <- typeExpr
     rest <- typePackTail
@@ -253,7 +219,7 @@ typePack = (do
   <|> return []
   <?> "type pack"
 
-typePackTail :: Parser [Types]
+typePackTail :: Parser [Type]
 typePackTail = (do
     m_reserved ","
     typePack
@@ -293,7 +259,7 @@ function usedNames = (do
 
 --functionType
 -- returns the name of the function and the type expression annotating it
-functionType :: Parser (String,Types)
+functionType :: Parser (String,Type)
 functionType = (do
     name <- m_identifier
     m_reservedOp "::"
@@ -303,20 +269,20 @@ functionType = (do
 
 -- Parse a type expression
 -- FIXME this must take a dictionary of known types
-typeExpr :: Parser Types
+typeExpr :: Parser Type
 typeExpr = buildExpressionParser ops typeTerm <?> "type expression"
   where ops = [[ Infix ( m_reservedOp "->" >> return Func) AssocRight ]] 
 
-typeTerm :: Parser Types
+typeTerm :: Parser Type
 typeTerm = m_parens typeExpr
   <|> listType
-  <|> fmap TypeVar m_identifier
-  <|> (m_reserved "Nat"  >> return TNat)
-  <|> (m_reserved "Bool" >> return TBool)
-  <|> (m_reserved "Char" >> return TChar)
+  <|> fmap TVar m_identifier
+  <|> (m_reserved "Nat"  >> return SNat)
+  <|> (m_reserved "Bool" >> return SBool)
+  <|> (m_reserved "Char" >> return SChar)
   <?> "type term"
 
-listType :: Parser Types
+listType :: Parser Type
 listType = do
   inner <- m_brackets typeExpr
   return $ List inner
@@ -381,7 +347,7 @@ primary = fmap Identifier m_identifier
   <?> "primary expression"
 
 literal :: Parser PTree
-literal = fmap (\x -> (Literal (LitInt x))) m_natural
+literal = fmap (\x -> (Literal (LitNat x))) m_natural
   <|> (m_reserved "True" >> return (Literal (LitBool True)))
   <|> (m_reserved "False" >> return (Literal (LitBool False)))
   <?> "literal"
@@ -443,16 +409,17 @@ testParser input = case parse expression "steve" input of
   Right val -> "Found value: " ++ show val
 
 -- takes a list of types and turns it into a function type
-makeTypeFromList :: [Types] -> Types
+makeTypeFromList :: [Type] -> Type
 makeTypeFromList [] = error "Trying to convert an empty list into a type"
 makeTypeFromList [x] = x
 makeTypeFromList (x:xs) = Func x $ makeTypeFromList xs
 
 -- Extracts all names from a type so that we can ensure that a user doesn't use
 -- the same name twice
-getNamesFromUserType :: UserType -> [String]
-getNamesFromUserType (name, userType) = (name : memberNames)
+getNamesFromDeclaration :: Declaration -> [String]
+getNamesFromDeclaration (TypeDecl (name, userType)) = (name : memberNames)
   where memberNames = wertfgh userType
+getNamesFromDeclaration (FuncDecl (name,_,_,_)) = [name]
 
 wertfgh :: UserDataStructure -> [String]
 wertfgh a = case a of
