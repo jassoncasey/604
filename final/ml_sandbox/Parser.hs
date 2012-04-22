@@ -22,6 +22,8 @@ import Text.Parsec.Token
 import Text.Parsec.Language
 
 
+
+
 keywords = [
   "Nat","Char","Bool",    -- built-in types
   "True", "False",        -- built-in literals
@@ -61,30 +63,11 @@ TokenParser {
 , natural    = m_natural   } = makeTokenParser languageDef
 
 
-data UserDataStructure =
-    PDUType [(String,Type)]       -- A name and a list of fields
-  | ADTType [(String,Maybe Type)] -- A name and a list of constructors
-  deriving (Eq, Show)
-
-type UserType = (String, UserDataStructure)
-
-data Declaration = TypeDecl UserType | FuncDecl TopLevelFunc
 
 -- Top-Level parser
 -- Accepts a list of identifiers that have already been used
--- FIXME - add to list of names
+-- FIXME Must return list of used names. Otherwise, we can only use parse once.
 {-============================================================================-}
-{-parseUnit :: [String] -> Parser [Declaration]
-parseUnit usedNames = (do
-    typ <- dataType usedNames
-    rest <- parse ((getNamesFromUserType typ) ++ usedNames)
-    return ((TypeDecl typ):rest)
-  ) <|> (do
-    fn <- function usedNames
-    rest <- parse
-    return ((FuncDecl fn):rest)
-  ) <|> return []
-  <?> "translation unit"-}
 
 parseUnit :: [String] -> Parser [Declaration]
 parseUnit usedNames = do
@@ -92,10 +75,9 @@ parseUnit usedNames = do
   eof
   return declarations
 
---FIXME Add support for 
 parseIt :: [String] -> Parser [Declaration]
 parseIt usedNames = (do
-    first <- parseDeclaration usedNames -- FIXME Inlcude names just parsed
+    first <- parseDeclaration usedNames
     rest <- parseIt ((getNamesFromDeclaration first) ++ usedNames)
     return (first:rest))
   <|> return []
@@ -109,11 +91,6 @@ parseDeclaration usedNames = (do
     decl <- function usedNames
     return $ FuncDecl decl)
   <?> "translation unit"
-
---parseRest :: [String] -> Parser [Declaration]
---parseRest usedNames
-
-
 
 {-============================================================================-}
 
@@ -251,6 +228,7 @@ function usedNames = (do
       else do
         m_reservedOp ";"
         (name, params, body) <- functionDefinition
+        m_reservedOp ";"
         if name' == name
           then return (name, typeSig, params, body)
           else fail "annotation and definition must have the same name"
@@ -404,7 +382,7 @@ cleanDQ (a:str)    = a : (cleanDQ str)
 
 
 testParser :: String -> String
-testParser input = case parse expression "steve" input of
+testParser input = case parse (parseUnit ["cow"]) "steve" input of
   Left err  -> "No match: " ++ show err
   Right val -> "Found value: " ++ show val
 
@@ -429,4 +407,9 @@ wertfgh a = case a of
 lunzip :: [(a,b)] -> [a]
 lunzip [] = []
 lunzip [(x,_)] = [x]
-lunzip ((x,_):x_s) = x : (lunzip x_s)
+lunzip ((x,_):xys) = x : (lunzip xys)
+
+runzip :: [(a,b)] -> [b]
+runzip [] = []
+runzip [(_,y)] = [y]
+runzip ((_,y):xys) = y : (runzip xys)
