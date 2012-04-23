@@ -1,0 +1,9 @@
+
+
+data Breakfast = { Bacon Nat | Eggs Char, Nat | Ham }
+
+inc :: Nat -> Nat;
+inc k = k + 1;
+
+square :: Nat -> Nat;
+square a = a * a;

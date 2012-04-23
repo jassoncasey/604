@@ -13,8 +13,7 @@ data Type =
   | SBool
   | SChar
   | TVar String
-  | Pdu String
-  | Adt String
+  | Udt String  -- User defined type
   | List Type
   | Func Type Type
   deriving (Show,Eq)
@@ -57,7 +56,7 @@ data Term =
 -- Types used to wrap top level declarations
 data UserDataStructure =
     PDUType [(String,Type)]       -- A name and a list of fields
-  | ADTType [(String,Maybe Type)] -- A name and a list of constructors
+  | ADTType [(String,[Type])] -- A name and a list of constructors
   deriving (Eq, Show)
 
 type UserType = (String, UserDataStructure)
@@ -77,3 +76,21 @@ instance Monad Compute where
   Good x >>= f = f x
   Bad msg >>= f = Bad msg
   fail msg = Bad msg
+
+
+type TypeBinding = (String, Type)
+
+
+
+
+-- Really common helper functions
+
+lunzip :: [(a,b)] -> [a]
+lunzip [] = []
+lunzip [(x,_)] = [x]
+lunzip ((x,_):xys) = x : (lunzip xys)
+
+runzip :: [(a,b)] -> [b]
+runzip [] = []
+runzip [(_,y)] = [y]
+runzip ((_,y):xys) = y : (runzip xys)

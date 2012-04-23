@@ -148,4 +148,38 @@ primary:
   (expression)
 
 
-Application (Application (Identifier f) (Identifier a)) (Identifier b)
+"inc :: Nat -> Nat \n
+inc k = k + 1 \n
+
+square :: Nat -> Nat\n
+square a = a * a"
+
+"inc :: Nat -> Nat; \n inc k = k + 1; \n square :: Nat -> Nat;\nsquare a = a * a;"
+
+"data T = T1 Snat | T2 Char | T3 Nat Char Char;"
+
+[
+  FuncDecl
+    (
+      "inc",
+      Func SNat SNat,
+      ["k"],
+      Binary Plus (Identifier "k") (Literal (LitNat 1))
+    )
+  ,
+  FuncDecl
+    (
+      "square",
+      Func SNat SNat,
+      ["a"],
+      Binary Multi (Identifier "a") (Identifier "a")
+    )
+]
+
+(
+  Let
+    "inc"
+    SNat
+    (Abs "k" SNat (App (App (Iden "+") (Iden "k")) (Lit (LitNat 1))))
+    (Abs "a" SNat (App (App (Iden "*") (Iden "a")) (Iden "a")))
+)

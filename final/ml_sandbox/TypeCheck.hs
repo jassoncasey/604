@@ -2,10 +2,6 @@ module Steve.TypeCheck where
 
 import Steve.Internal
 
-
--- Type binding environment type
-type TypeBinding = (String, Type)
-
 -- Initial type environment
 initTypeBinding :: [TypeBinding]
 initTypeBinding = [
@@ -30,35 +26,43 @@ typeOfFuncOut (Func _ typ) = Just typ
 typeOfFuncOut _ = Nothing
 
 
--- Type checker mark 1
--- This type checker only checks terms from the simply-typed lamdba calculus.
+-- Type checkMer mark 1
+-- This type checkMer only checkMs terms from the simply-typed lamdba calculus.
 -- It is entirely based on the Maybe monad
 -- Gee, wish I could make it smaller...
 {-============================================================================-}
 
-check :: [TypeBinding] -> Term -> Maybe Type
+typeCheck :: [TypeBinding] -> Term -> Maybe Type
+typeCheck ctors expr = checkM (ctors ++ initTypeBinding) expr
 
-check env (Lit c) = Just $ typeOfConstant c
+checkM :: [TypeBinding] -> Term -> Maybe Type
 
-check env (Iden sym) = lookup sym env
+checkM env (Lit c) = Just $ typeOfConstant c
 
-check env (App e1 e2) = do
-  typ1 <- check env e1
-  typ2 <- check env e2
+checkM env (Iden sym) = lookup sym env
+
+checkM env (App e1 e2) = do
+  typ1 <- checkM env e1
+  typ2 <- checkM env e2
   argType <- typeOfFuncIn typ1
-  ensure (argType == typ2)
+  ensureM (argType == typ2)
   outType <- typeOfFuncOut typ1
   return outType
 
-check env (Abs sym symType e) = check ((sym,symType):env) e
+checkM env (Abs sym symType e) = checkM ((sym,symType):env) e
 
-check env (If b e1 e2) = do
-  condType <- check env b
-  ensure (condType == SBool)
-  typ1 <- check env e1
-  typ2 <- check env e2
-  ensure (typ1 == typ2)
+checkM env (If b e1 e2) = do
+  condType <- checkM env b
+  ensureM (condType == SBool)
+  typ1 <- checkM env e1
+  typ2 <- checkM env e2
+  ensureM (typ1 == typ2)
   return typ1
+
+checkM env (Let sym typ func e) = do
+  funcType <- checkM env func
+  ensureM ( funcType == typ )
+  checkM ((sym,typ):env) e
 
 {-============================================================================-}
 
@@ -68,6 +72,10 @@ check env (If b e1 e2) = do
 -- Helper Functions
 {-============================================================================-}
 -- Think c-style assert =)
-ensure :: Bool -> Maybe Type
-ensure True = Just SNat
-ensure False = Nothing
+ensureM :: Bool -> Maybe Type
+ensureM True = Just SNat
+ensureM False = Nothing
+
+ensure :: Bool -> String -> Compute Type
+ensure True _ = Good SNat
+ensure False msg = Bad msg

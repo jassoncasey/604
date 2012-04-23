@@ -13,6 +13,15 @@ module Steve.Parser where
   definition. Inside the function body, the expression parser may be called.
 -}
 
+{-
+  FIXMEs (known bugs)
+    - identifiers currently only take lowercase letters, change to be alpha
+        numeric and "_", first letter must be lowercase
+    -make a dataIden that takes an identifier with first letter uppercase
+    -type expressions don't handle application
+    -type expressions don't distinguish between Udts (capital-case) and typevars
+-}
+
 import Steve.Internal
 
 import Text.Parsec
@@ -71,6 +80,7 @@ TokenParser {
 
 parseUnit :: [String] -> Parser [Declaration]
 parseUnit usedNames = do
+  m_whiteSpace
   declarations <- parseIt usedNames
   eof
   return declarations
@@ -162,7 +172,7 @@ adt usedNames = (do
         return $ (name, ADTType constructors)
   ) <?> "adt"
 
-constructorSequence :: Parser [(String, Maybe Type)]
+constructorSequence :: Parser [(String, [Type])]
 constructorSequence = (do
     first <- constructor
     rest  <- constructorSequenceTail
@@ -170,20 +180,18 @@ constructorSequence = (do
   ) <|> return []
   <?> "constructors"
 
-constructorSequenceTail :: Parser [(String, Maybe Type)]
+constructorSequenceTail :: Parser [(String, [Type])]
 constructorSequenceTail = (do
     m_reserved "|"
     constructorSequence
   ) <|> return []
   <?> "constructors"
 
-constructor :: Parser (String, Maybe Type)
+constructor :: Parser (String, [Type])
 constructor = (do
     name <- datatype
-    typ <- typePack
-    if null typ
-      then return (name, Nothing)
-      else return (name, Just $ makeTypeFromList typ)
+    typs <- typePack
+    return (name, typs)
   )
   <?> "value constructor"
 
@@ -206,9 +214,12 @@ typePackTail = (do
 
 datatype :: Parser String
 datatype = (do
-  first <- upper
-  rest <- m_identifier
-  return (first:rest))
+    first <- upper
+    rest <- m_identifier
+    return (first:rest))
+  <|> (do
+    first <- upper
+    return [first])
   <?> "data/constructor type name"
 
 {-============================================================================-}
@@ -381,16 +392,12 @@ cleanDQ ('\"':str) = cleanDQ str
 cleanDQ (a:str)    = a : (cleanDQ str)
 
 
-testParser :: String -> String
-testParser input = case parse (parseUnit ["cow"]) "steve" input of
-  Left err  -> "No match: " ++ show err
-  Right val -> "Found value: " ++ show val
-
 -- takes a list of types and turns it into a function type
 makeTypeFromList :: [Type] -> Type
 makeTypeFromList [] = error "Trying to convert an empty list into a type"
 makeTypeFromList [x] = x
 makeTypeFromList (x:xs) = Func x $ makeTypeFromList xs
+
 
 -- Extracts all names from a type so that we can ensure that a user doesn't use
 -- the same name twice
@@ -399,17 +406,8 @@ getNamesFromDeclaration (TypeDecl (name, userType)) = (name : memberNames)
   where memberNames = wertfgh userType
 getNamesFromDeclaration (FuncDecl (name,_,_,_)) = [name]
 
+
 wertfgh :: UserDataStructure -> [String]
 wertfgh a = case a of
   PDUType fields       -> lunzip fields
   ADTType constructors -> lunzip constructors
-
-lunzip :: [(a,b)] -> [a]
-lunzip [] = []
-lunzip [(x,_)] = [x]
-lunzip ((x,_):xys) = x : (lunzip xys)
-
-runzip :: [(a,b)] -> [b]
-runzip [] = []
-runzip [(_,y)] = [y]
-runzip ((_,y):xys) = y : (runzip xys)

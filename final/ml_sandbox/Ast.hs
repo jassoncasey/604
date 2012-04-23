@@ -20,38 +20,17 @@ interface:
 -- The result of parseUnit is just a declaration list. processDecls converts the
 -- list of declarations into a list of top-level functions and a type-table.
 {-============================================================================-}
--- output: (a,b,c)
---   a : list of top level functions (parse tree)
---   b : list of type names (symbols for lookup)
---   c : pdu definitions
---   d : value constructors
---processDecls :: [Declaration]
---                -> ([TopLevelFunc], [String], [PDURecord], [(String,Type)])
---processDecls decls = (getFuncsFromDecls decl, )
 
-
-{-getFuncsFromDecls :: [Declaration] -> [TopLevelFunc]
-getFuncsFromDecls [] = []
-getFuncsFromDecls [TypeDecl _] = []
-getFuncsFromDecls [FuncDecl f] = [f]
-getFuncsFromDecls ((TypeDecl _):decls) = getFuncsFromDecls decls
-getFuncsFromDecls ((FuncDecl f):decls) = f:(getFuncsFromDecls decls)
-
-getTypesFromDecls :: [Declaration] -> [UserType]
-getTypesFromDecls [] = []
-getTypesFromDecls [TypeDecl t] = [t]
-getTypesFromDecls [FuncDecl _] = []
-getTypesFromDecls ((TypeDecl t):decls) = t:(getFuncsFromDecls decls)
-getTypesFromDecls ((FuncDecl _):decls) = getFuncsFromDecls decls
-
-processType :: UserType -> (String, Maybe PDURecord, [(String,Type)])
-processType (name, PDUType fields) = (name, Just (name, fields), ctor)
-  where ctor = makePDUCtor ctor
-processType (name, ADTType ctors) = (name, Nothing, processADTCtors ctors)-}
-
---makePDUCtor :: String -> [(String,Type)] -> (String, [Types])
---makePDUCtor name fields
-
+-- takes declarations, returns an AST, list of ADT names, list of PDU records
+-- and a list of constructors with which to initialize the environment
+processDecls :: [Declaration] ->
+                Maybe (Term, [String], [PDURecord], [TypeBinding])
+processDecls decls = do
+  let udts = filterTypeDeclarations decls
+  let funcs = getFuncsFromDecls decls
+  let (adtNames, pduRecs, typBindings) = processUserTypes udts
+  prgm <- functionsToAst funcs
+  return (prgm, adtNames, pduRecs, typBindings)
 
 {-============================================================================-}
 
@@ -69,9 +48,9 @@ getFuncsFromDecls ((FuncDecl f):decls) = f:(getFuncsFromDecls decls)
 -- Given a list of types, a list of params and a term (function body), produce
 -- an abstraction over the term.
 makeAbs :: [Type] -> [String] -> Term -> Maybe Term
-makeAbs [] [] e = Just e
-makeAbs _  [] _ = Nothing
-makeAbs [] _  _ = Nothing
+makeAbs [t] [] e = Just e
+makeAbs []  _  _ = Nothing
+makeAbs  _  [] _ = Nothing
 makeAbs (typ:typs) (param:params) e =
   case makeAbs typs params e of
     Just e' -> Just $ Abs param typ e'
@@ -103,39 +82,81 @@ parseTreeToAst (Unary uop t) = App (Iden $ fromUnOpToStr uop) $ parseTreeToAst t
 -- converts a function to a top-level abstraction
 -- 'name' is only used for errors
 -- FIXME Add support for error handling
-functionToAbstraction :: TopLevelFunc -> Maybe Term
+functionToAbstraction :: TopLevelFunc -> Maybe (Term,Type)
 functionToAbstraction (name, typ, params, body) = do
   let inner = parseTreeToAst body
   typs <- tryBreakType (length params) typ
   abstract <- makeAbs typs params inner
-  return abstract
+  return (abstract, last typs)
 
-toAst :: [TopLevelFunc] -> Maybe Term
-toAst [] = Nothing
-toAst [func] = functionToAbstraction func
-toAst (f@(name,typ,_,_):funcs) = do
-  expr <- functionToAbstraction f
-  rest <- toAst funcs
-  return $ Let name typ expr rest
+functionsToAst :: [TopLevelFunc] -> Maybe Term
+functionsToAst [] = Nothing
+functionsToAst [func] =
+  case functionToAbstraction func of
+    Just (expr,_) -> Just expr
+    Nothing -> Nothing
+functionsToAst (f@(name,_,_,_):funcs) = do
+  (expr, resultTyp) <- functionToAbstraction f
+  rest <- functionsToAst funcs
+  return $ Let name resultTyp expr rest
 
-{-============================================================================-}
-
-
-
-{-============================================================================-}
-{-============================================================================-}
-
-{-============================================================================-}
-{-============================================================================-}
-{-============================================================================-}
-{-============================================================================-}
-{-============================================================================-}
-{-============================================================================-}
-{-============================================================================-}
 {-============================================================================-}
 
 
+-- Type conversion functions
+-- These are helper functions that take apart
+{-============================================================================-}
 
+filterTypeDeclarations :: [Declaration] -> [UserType]
+filterTypeDeclarations [] = []
+filterTypeDeclarations [FuncDecl _] = []
+filterTypeDeclarations [TypeDecl t] = [t]
+filterTypeDeclarations ((FuncDecl _):decls) = filterTypeDeclarations decls
+filterTypeDeclarations ((TypeDecl t):decls) = t : (filterTypeDeclarations decls)
+
+-- Return is, list of ADT names, list of PDU records and a list of Ctors.
+-- The Ctors are int a format that can be directly added to the type environment
+processUserTypes :: [UserType] -> ([String],[PDURecord],[TypeBinding])
+processUserTypes udts = (adtNames udts, pduRecords udts, makeCtors udts)
+
+adtNames :: [UserType] -> [String]
+adtNames [] = []
+adtNames ((n,ADTType _):udts) = n : (adtNames udts)
+adtNames (_:udts) = adtNames udts
+
+pduRecords :: [UserType] -> [PDURecord]
+pduRecords [] = []
+pduRecords ((n,PDUType rec):udts) = (n,rec) : (pduRecords udts)
+pduRecords (_:udts) = pduRecords udts
+
+makeCtors :: [UserType] -> [TypeBinding]
+makeCtors [] = []
+makeCtors ((name,ADTType ts):typs) = (makeADTCtors name ts) ++(makeCtors typs)
+makeCtors ((name,PDUType fields):typs) = makeCtors typs
+
+
+makeADTCtors :: String -> [(String, [Type])] -> [TypeBinding]
+makeADTCtors tname ctors =
+  case ctors of
+    [] -> error "Internal error: ADT defined without constructors."
+    [(ctorName,typs)] -> [(ctorName,(makeFunc tname typs))]
+    ((ctorName,typs):ctors') ->
+      (ctorName,(makeFunc tname typs)):(makeADTCtors tname ctors')
+  where makeFunc :: String -> [Type] -> Type
+        makeFunc tname' [] = Udt tname
+        makeFunc tname' (t:ts) = Func t $ makeFunc tname' ts
+
+
+{-============================================================================-}
+
+{-============================================================================-}
+{-============================================================================-}
+{-============================================================================-}
+{-============================================================================-}
+{-============================================================================-}
+{-============================================================================-}
+{-============================================================================-}
+{-============================================================================-}
 
 
 
