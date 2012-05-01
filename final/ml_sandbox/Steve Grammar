@@ -148,38 +148,21 @@ primary:
   (expression)
 
 
-"inc :: Nat -> Nat \n
-inc k = k + 1 \n
+Let
+  "inc" SNat
+  Abs "k" SNat (App (App (Iden "+") (Iden "k")) (Lit (LitNat 1))))
+  Let
+    "square" SNat
+    (Abs "a" SNat (App (App (Iden "*") (Iden "a")) (Iden "a")))
+    Let
+      "dontCare" SNat
+      (Abs "a" SNat (Abs "b" SNat (Lit (LitNat 3)))) (Lit (LitNat 1))
 
-square :: Nat -> Nat\n
-square a = a * a"
 
-"inc :: Nat -> Nat; \n inc k = k + 1; \n square :: Nat -> Nat;\nsquare a = a * a;"
-
-"data T = T1 Snat | T2 Char | T3 Nat Char Char;"
+["Breakfast"],[],
 
 [
-  FuncDecl
-    (
-      "inc",
-      Func SNat SNat,
-      ["k"],
-      Binary Plus (Identifier "k") (Literal (LitNat 1))
-    )
-  ,
-  FuncDecl
-    (
-      "square",
-      Func SNat SNat,
-      ["a"],
-      Binary Multi (Identifier "a") (Identifier "a")
-    )
+  Bacon :: SNat -> Breakfast
+  Eggs :: SChar -> SNat -> Breakfast
+  Ham :: Breakfast
 ]
-
-(
-  Let
-    "inc"
-    SNat
-    (Abs "k" SNat (App (App (Iden "+") (Iden "k")) (Lit (LitNat 1))))
-    (Abs "a" SNat (App (App (Iden "*") (Iden "a")) (Iden "a")))
-)

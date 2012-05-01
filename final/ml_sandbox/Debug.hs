@@ -10,18 +10,46 @@ import Steve.TypeCheck
 
 
 
-testParser :: String -> [Declaration]
-testParser input =
-  case parse (parseUnit ["cow"]) "steve" input of
+--testParser :: String -> [Declaration]
+testParser parser' input =
+  case parse parser' "steve" input of
     Left err  -> error $ show err
     Right val -> val
 
-parseFile :: String -> [String] -> IO ()
-parseFile fname reservedNames = do
+parseFile :: String -> IO ()
+parseFile fname = do
   source <- readFile fname
-  let result = parse (parseUnit reservedNames) fname source
+  let result = parse (parseUnit []) fname source
+  case result of
+    Left err -> putStrLn $ show err
+    Right output -> putStrLn $ show output
+
+
+getAstFromFile :: String -> IO ()
+getAstFromFile fname = do
+  source <- readFile fname
+  let result = parse (parseUnit []) fname source
+  case result of
+    Left err -> putStrLn $ show err
+    Right output -> putStrLn $ show $ processDecls output
+
+
+typeCheckFileM1 :: String -> IO ()
+typeCheckFileM1 fname = do
+  source <- readFile fname
+  let result = parse (parseUnit []) fname source
   case result of
     Left err -> putStrLn $ show err
     Right output -> case processDecls output of
-      Just (expr, _,_, ctors) -> putStrLn $ show $ typeCheck ctors expr
+      Just (expr, _,_, ctors) -> putStrLn $ show $ typeCheckM1 ctors expr
+      Nothing -> putStrLn "Failed to parse."
+
+typeCheckFileM2 :: String -> IO ()
+typeCheckFileM2 fname = do
+  source <- readFile fname
+  let result = parse (parseUnit []) fname source
+  case result of
+    Left err -> putStrLn $ show err
+    Right output -> case processDecls output of
+      Just (expr, _,_, ctors) -> putStrLn $ show $ typeCheckM2 ctors expr
       Nothing -> putStrLn "Failed to parse."

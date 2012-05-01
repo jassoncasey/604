@@ -7,3 +7,9 @@ inc k = k + 1;
 
 square :: Nat -> Nat;
 square a = a * a;
+
+dontCare :: Nat -> Nat -> Nat;
+dontCare a b = 3;
+
+saidYouCared :: Nat;
+saidYouCared = dontCare (square 23) 2;

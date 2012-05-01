@@ -58,11 +58,11 @@ makeAbs (typ:typs) (param:params) e =
 
 -- Takes a type and attempts to split it up into an n parameter function
 -- Result is a list of n+1 types or nothing. The extra type is the result type
-tryBreakType :: Int -> Type -> Maybe [Type]
-tryBreakType 0 t = Just [t]
-tryBreakType n (Func t1 t2) =
+tryBreakType :: Int -> PType -> Maybe [Type]
+tryBreakType 0 t = Just [toType t]
+tryBreakType n (PFunc t1 t2) =
   case tryBreakType (n-1) t2 of
-    Just t  -> Just (t1 : t)
+    Just t  -> Just ((toType t1) : t)
     Nothing -> Nothing
 tryBreakType _ t = Nothing
 
@@ -87,7 +87,7 @@ functionToAbstraction (name, typ, params, body) = do
   let inner = parseTreeToAst body
   typs <- tryBreakType (length params) typ
   abstract <- makeAbs typs params inner
-  return (abstract, last typs)
+  return (abstract, toType typ)
 
 functionsToAst :: [TopLevelFunc] -> Maybe Term
 functionsToAst [] = Nothing
@@ -107,7 +107,7 @@ functionsToAst (f@(name,_,_,_):funcs) = do
 -- These are helper functions that take apart
 {-============================================================================-}
 
-filterTypeDeclarations :: [Declaration] -> [UserType]
+filterTypeDeclarations :: [Declaration] -> [UserTypeDef]
 filterTypeDeclarations [] = []
 filterTypeDeclarations [FuncDecl _] = []
 filterTypeDeclarations [TypeDecl t] = [t]
@@ -116,40 +116,61 @@ filterTypeDeclarations ((TypeDecl t):decls) = t : (filterTypeDeclarations decls)
 
 -- Return is, list of ADT names, list of PDU records and a list of Ctors.
 -- The Ctors are int a format that can be directly added to the type environment
-processUserTypes :: [UserType] -> ([String],[PDURecord],[TypeBinding])
+processUserTypes :: [UserTypeDef] -> ([String],[PDURecord],[TypeBinding])
 processUserTypes udts = (adtNames udts, pduRecords udts, makeCtors udts)
 
-adtNames :: [UserType] -> [String]
+adtNames :: [UserTypeDef] -> [String]
 adtNames [] = []
 adtNames ((n,ADTType _):udts) = n : (adtNames udts)
 adtNames (_:udts) = adtNames udts
 
-pduRecords :: [UserType] -> [PDURecord]
+pduRecords :: [UserTypeDef] -> [PDURecord]
 pduRecords [] = []
 pduRecords ((n,PDUType rec):udts) = (n,rec) : (pduRecords udts)
 pduRecords (_:udts) = pduRecords udts
 
-makeCtors :: [UserType] -> [TypeBinding]
+makeCtors :: [UserTypeDef] -> [TypeBinding]
 makeCtors [] = []
-makeCtors ((name,ADTType ts):typs) = (makeADTCtors name ts) ++(makeCtors typs)
+makeCtors ((name,ADTType ts):typs) = (makeADTCtors name ts) ++ (makeCtors typs)
 makeCtors ((name,PDUType fields):typs) = makeCtors typs
 
 
-makeADTCtors :: String -> [(String, [Type])] -> [TypeBinding]
+makeADTCtors :: String -> [(String, [PType])] -> [TypeBinding]
 makeADTCtors tname ctors =
   case ctors of
     [] -> error "Internal error: ADT defined without constructors."
     [(ctorName,typs)] -> [(ctorName,(makeFunc tname typs))]
     ((ctorName,typs):ctors') ->
       (ctorName,(makeFunc tname typs)):(makeADTCtors tname ctors')
-  where makeFunc :: String -> [Type] -> Type
-        makeFunc tname' [] = Udt tname
-        makeFunc tname' (t:ts) = Func t $ makeFunc tname' ts
+  where makeFunc :: String -> [PType] -> Type
+        makeFunc tname' [] = UserType tname
+        makeFunc tname' (t:ts) = Func (toType t) $ makeFunc tname' ts
 
 
 {-============================================================================-}
 
+
+
+-- Converting PType to Type
 {-============================================================================-}
+toType :: PType -> Type
+toType (PSNat) = SNat
+toType (PSChar) = SChar
+toType (PSBool) = SBool
+toType (PList ptype) = List $ toType ptype
+toType (PFunc ptype1 ptype2) = Func t1 t2
+  where t1 = toType ptype1
+        t2 = toType ptype2
+toType (PTVar name) = TVar name
+toType (PUserType name) = UserType name
+toType (PArray ptype ptree) = Array t e
+  where t = toType ptype
+        e = parseTreeToAst ptree
+toType (PArrayPartial ptype) = ArrayPartial $ toType ptype
+toType (PUint ptree1 ptree2) = Uint e1 e2
+  where e1 = parseTreeToAst ptree1
+        e2 = parseTreeToAst ptree2
+toType (PUintPartial ptree) = UintPartial $ parseTreeToAst ptree
 {-============================================================================-}
 {-============================================================================-}
 {-============================================================================-}
@@ -200,25 +221,3 @@ fromPTreeToAst (P.Unary uop t) =
 
 
 
-
-
-
--- fromBinaryOp to String
-fromBinOpToStr :: BinOp -> String
-fromBinOpToStr Plus          = "+"
-fromBinOpToStr Minus         = "-"
-fromBinOpToStr Multi         = "*"
-fromBinOpToStr Div           = "/"
-fromBinOpToStr Mod           = "%"
-fromBinOpToStr LessThan      = "<"
-fromBinOpToStr LessThanEq    = "<="
-fromBinOpToStr GreaterThan   = ">"
-fromBinOpToStr GreaterThanEq = ">="
-fromBinOpToStr Equal         = "="
-fromBinOpToStr NotEqual      = "<>"
-fromBinOpToStr Or            = "or"
-fromBinOpToStr And           = "and"
-
-fromUnOpToStr :: UnOp -> String
-fromUnOpToStr Not = "not"
-fromUnOpToStr Negate = "-"

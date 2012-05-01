@@ -8,14 +8,35 @@ module Steve.Internal where
     TTerm (Typed Term definitions)
 -}
 
+
+-- FIXME Needs a pretty show instance
 data Type =
     SNat
-  | SBool
   | SChar
-  | TVar String
-  | Udt String  -- User defined type
+  | SBool
   | List Type
   | Func Type Type
+  | TVar String
+  | UserType String
+  | Array Type Term
+  | ArrayPartial Type
+  | Uint Term Term
+  | UintPartial Term
+  deriving (Show,Eq)
+
+-- PType is a type whose terms contain parse trees, not terms
+data PType =
+    PSNat
+  | PSChar
+  | PSBool
+  | PList PType
+  | PFunc PType PType
+  | PTVar String
+  | PUserType String
+  | PArray PType PTree
+  | PArrayPartial PType
+  | PUint PTree PTree
+  | PUintPartial PTree
   deriving (Show,Eq)
 
 
@@ -28,12 +49,14 @@ data PTree =
   | Literal Constant
   deriving (Eq, Show)
 
+-- FIXME Needs a pretty show instance
 data Constant = 
    LitBool Bool
  | LitNat  Integer
  | LitChar Char
  deriving (Eq, Show)
 
+-- FIXME Needs a pretty show instance
 data BinOp =
     Plus | Minus | Multi | Div | Mod                    -- Arithmetic
   | LessThan | LessThanEq | GreaterThan | GreaterThanEq -- Ordering
@@ -43,7 +66,7 @@ data BinOp =
 
 data UnOp = Not | Negate deriving (Eq, Show)
 
--- Terms in Steve are fully typed. There is no inference
+-- FIXME Needs a pretty show instance
 data Term =
     Iden String
   | Lit Constant
@@ -55,32 +78,26 @@ data Term =
 
 -- Types used to wrap top level declarations
 data UserDataStructure =
-    PDUType [(String,Type)]       -- A name and a list of fields
-  | ADTType [(String,[Type])] -- A name and a list of constructors
+    PDUType [(String,PType)]       -- A name and a list of fields
+  | ADTType [(String,[PType])] -- A name and a list of constructors
   deriving (Eq, Show)
 
-type UserType = (String, UserDataStructure)
+type UserTypeDef = (String, UserDataStructure)
 
-data Declaration = TypeDecl UserType | FuncDecl TopLevelFunc deriving (Show,Eq)
+data Declaration =
+    TypeDecl UserTypeDef
+  | FuncDecl TopLevelFunc
+  deriving (Show,Eq)
 
-type PDURecord = (String, [(String,Type)])
+type PDURecord = (String, [(String,PType)])
 
 -- name, type, param names, parse tree (definition)
-type TopLevelFunc = (String, Type, [String], PTree)
+type TopLevelFunc = (String, PType, [String], PTree)
 
--- I know either can be used, but I had to learn how to do it myself
-data Compute a = Good a | Bad String
 
-instance Monad Compute where
-  return x = Good x
-  Good x >>= f = f x
-  Bad msg >>= f = Bad msg
-  fail msg = Bad msg
 
 
 type TypeBinding = (String, Type)
-
-
 
 
 -- Really common helper functions
@@ -94,3 +111,25 @@ runzip :: [(a,b)] -> [b]
 runzip [] = []
 runzip [(_,y)] = [y]
 runzip ((_,y):xys) = y : (runzip xys)
+
+
+-- fromBinaryOp to String
+-- FIXME move this to Internal?
+fromBinOpToStr :: BinOp -> String
+fromBinOpToStr Plus          = "+"
+fromBinOpToStr Minus         = "-"
+fromBinOpToStr Multi         = "*"
+fromBinOpToStr Div           = "/"
+fromBinOpToStr Mod           = "%"
+fromBinOpToStr LessThan      = "<"
+fromBinOpToStr LessThanEq    = "<="
+fromBinOpToStr GreaterThan   = ">"
+fromBinOpToStr GreaterThanEq = ">="
+fromBinOpToStr Equal         = "="
+fromBinOpToStr NotEqual      = "<>"
+fromBinOpToStr Or            = "or"
+fromBinOpToStr And           = "and"
+
+fromUnOpToStr :: UnOp -> String
+fromUnOpToStr Not = "not"
+fromUnOpToStr Negate = "-"

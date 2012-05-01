@@ -15,11 +15,12 @@ module Steve.Parser where
 
 {-
   FIXMEs (known bugs)
-    - identifiers currently only take lowercase letters, change to be alpha
-        numeric and "_", first letter must be lowercase
-    -make a dataIden that takes an identifier with first letter uppercase
-    -type expressions don't handle application
-    -type expressions don't distinguish between Udts (capital-case) and typevars
+    - replace your own many and many1 functions with parsecs
+    - Types and value constructors need different reserved names lists?
+
+  ISSUES (known problems)
+    - type expressions are NOT intuitive now that we have dependent types
+      Example: "Uint 2 a 3" is parsed as "Uint 2 (a 3)"
 -}
 
 import Steve.Internal
@@ -29,12 +30,15 @@ import Text.Parsec.String
 import Text.Parsec.Expr
 import Text.Parsec.Token
 import Text.Parsec.Language
+import Data.Char (toLower)
+import Data.List (sort)
 
 
 
 
 keywords = [
-  "Nat","Char","Bool",    -- built-in types
+  "Nat","Char","Bool",    -- simple built-in types
+  "Uint","Array",         -- dependent built-in types
   "True", "False",        -- built-in literals
   "if", "then", "else",   -- built-in if-then-else support
   "data", "pdu"           -- Data declarators
@@ -62,7 +66,8 @@ languageDef =
 
 TokenParser {
   parens     = m_parens
-, identifier = m_identifier
+, lexeme     = m_lexeme
+, identifier = m_identifier_simple
 , reservedOp = m_reservedOp
 , reserved   = m_reserved
 , semiSep1   = m_semiSep1
@@ -118,13 +123,13 @@ parseDeclaration usedNames = (do
 -}
 {-============================================================================-}
 
-dataType :: [String] -> Parser UserType
+dataType :: [String] -> Parser UserTypeDef
 dataType usedNames =
       pdu usedNames
   <|> adt usedNames
   <?> "data type declaration"
 
-pdu :: [String] -> Parser UserType
+pdu :: [String] -> Parser UserTypeDef
 pdu usedNames = (do
     m_reserved "pdu"
     name <-  datatype
@@ -137,7 +142,7 @@ pdu usedNames = (do
           else return $ (name, PDUType members)
   ) <?> "pdu type"
 
-fieldSequence :: Parser [(String, Type)]
+fieldSequence :: Parser [(String, PType)]
 fieldSequence = (do
     first <- field
     rest  <- fieldSequenceTail
@@ -145,22 +150,22 @@ fieldSequence = (do
   ) <|> (return [])
   <?> "fields"
 
-fieldSequenceTail :: Parser [(String, Type)]
+fieldSequenceTail :: Parser [(String, PType)]
 fieldSequenceTail = (do
     m_reserved ","
     fieldSequence
   ) <|> return []
   <?> "fields"
 
-field :: Parser (String, Type)
+field :: Parser (String, PType)
 field = (do
     name <- m_identifier
     m_reservedOp "="
-    typ <- typeExpr
+    typ <- typeExpr'
     return (name, typ)
   ) <?> "field"
 
-adt :: [String] -> Parser UserType
+adt :: [String] -> Parser UserTypeDef
 adt usedNames = (do
     m_reserved "data"
     name <- datatype
@@ -172,7 +177,7 @@ adt usedNames = (do
         return $ (name, ADTType constructors)
   ) <?> "adt"
 
-constructorSequence :: Parser [(String, [Type])]
+constructorSequence :: Parser [(String, [PType])]
 constructorSequence = (do
     first <- constructor
     rest  <- constructorSequenceTail
@@ -180,31 +185,31 @@ constructorSequence = (do
   ) <|> return []
   <?> "constructors"
 
-constructorSequenceTail :: Parser [(String, [Type])]
+constructorSequenceTail :: Parser [(String, [PType])]
 constructorSequenceTail = (do
     m_reserved "|"
     constructorSequence
   ) <|> return []
   <?> "constructors"
 
-constructor :: Parser (String, [Type])
+constructor :: Parser (String, [PType])
 constructor = (do
-    name <- datatype
+    name <- m_typename
     typs <- typePack
     return (name, typs)
   )
   <?> "value constructor"
 
-typePack :: Parser [Type]
+typePack :: Parser [PType]
 typePack = (do
-    first <- typeExpr
+    first <- typeExpr'
     rest <- typePackTail
     return (first:rest)
   )
   <|> return []
   <?> "type pack"
 
-typePackTail :: Parser [Type]
+typePackTail :: Parser [PType]
 typePackTail = (do
     m_reserved ","
     typePack
@@ -248,17 +253,17 @@ function usedNames = (do
 
 --functionType
 -- returns the name of the function and the type expression annotating it
-functionType :: Parser (String,Type)
+functionType :: Parser (String,PType)
 functionType = (do
     name <- m_identifier
     m_reservedOp "::"
-    typeSig <- typeExpr
+    typeSig <- typeExpr'
     return (name, typeSig)
   ) <?> "type annotation"
 
 -- Parse a type expression
 -- FIXME this must take a dictionary of known types
-typeExpr :: Parser Type
+{-typeExpr :: Parser Type
 typeExpr = buildExpressionParser ops typeTerm <?> "type expression"
   where ops = [[ Infix ( m_reservedOp "->" >> return Func) AssocRight ]] 
 
@@ -274,7 +279,7 @@ typeTerm = m_parens typeExpr
 listType :: Parser Type
 listType = do
   inner <- m_brackets typeExpr
-  return $ List inner
+  return $ List inner-}
 
 functionDefinition :: Parser (String,[String],PTree)
 functionDefinition = (do
@@ -301,6 +306,25 @@ getParams = (do
 -- Expression Parser
 {-============================================================================-}
 
+expressionMany :: Parser [PTree]
+expressionMany = (do
+    e  <- expression
+    es <- expressionMany
+    return (e:es)
+  )
+  <|> return []
+  <?> "expression list"
+
+-- fails when the expression list is empty
+-- naming conventions borrowed from parsec
+expressionMany1 :: Parser [PTree]
+expressionMany1 = (do
+    e  <- expression
+    es <- expressionMany
+    return (e:es)
+  )
+  <?> "expression list"
+
 expression :: Parser PTree
 expression = ifThenElse <|> conditionalExpression <?> "expression"
 
@@ -314,21 +338,12 @@ term = m_parens expression
   <|> literal
 
 application :: Parser PTree
-application = (do
-    pack <- parameterPack
-    return $ makeApplication pack
+application = try (do
+    iden <- m_identifier
+    exprList <- expressionMany1
+    return $ makeApplication ((Identifier iden):exprList)
   ) <|> primary
   <?> "application"
-
--- Fails if there is no paramter pack
-parameterPack :: Parser [PTree]
-parameterPack = do
-  first <- primary
-  rest <- restOfParameterPack
-  return (first:rest)
-  where restOfParameterPack :: Parser [PTree]
-        restOfParameterPack = do
-          parameterPack <|> (return [])
 
 primary :: Parser PTree
 primary = fmap Identifier m_identifier
@@ -393,10 +408,10 @@ cleanDQ (a:str)    = a : (cleanDQ str)
 
 
 -- takes a list of types and turns it into a function type
-makeTypeFromList :: [Type] -> Type
+makeTypeFromList :: [PType] -> PType
 makeTypeFromList [] = error "Trying to convert an empty list into a type"
 makeTypeFromList [x] = x
-makeTypeFromList (x:xs) = Func x $ makeTypeFromList xs
+makeTypeFromList (x:xs) = PFunc x $ makeTypeFromList xs
 
 
 -- Extracts all names from a type so that we can ensure that a user doesn't use
@@ -411,3 +426,122 @@ wertfgh :: UserDataStructure -> [String]
 wertfgh a = case a of
   PDUType fields       -> lunzip fields
   ADTType constructors -> lunzip constructors
+
+
+isReservedName name = isReserved theReservedNames caseName
+  where
+    caseName
+      | caseSensitive languageDef  = name
+      | otherwise = map toLower name
+
+isReserved names name = scan names
+  where scan []     = False
+        scan (r:rs) =
+          case (compare r name) of
+            LT  -> scan rs
+            EQ  -> True
+            GT  -> False
+theReservedNames
+  | caseSensitive languageDef = sortedNames
+  | otherwise = map (map toLower) sortedNames
+  where sortedNames = sort (reservedNames languageDef)
+
+
+-- Testing
+{-============================================================================-}
+
+typeExpr'Many :: Parser [PType]
+typeExpr'Many = (do
+    t  <- typeExpr'
+    ts <- typeExpr'Many
+    return (t:ts)
+  )
+  <|> return []
+  <?> "type list"
+
+typeExpr'Many1 :: Parser [PType]
+typeExpr'Many1 = (do
+    t  <- typeExpr'
+    ts <- typeExpr'Many
+    return (t:ts)
+  )
+  <?> "type list"
+
+-- new type expressions
+typeExpr' :: Parser PType
+typeExpr' = buildExpressionParser ops typeTerm' <?> "type expression"
+  where ops = [[ Infix ( m_reservedOp "->" >> return PFunc) AssocRight ]] 
+
+typeTerm' :: Parser PType
+typeTerm' = m_parens typeExpr'
+  <|> listType'
+  <|> userType
+  <|> (m_reserved "Nat"  >> return PSNat)
+  <|> (m_reserved "Bool" >> return PSBool)
+  <|> (m_reserved "Char" >> return PSChar)
+  <|> fmap PTVar m_identifier
+  <?> "type term"
+
+listType' :: Parser PType
+listType' = do
+  inner <- m_brackets typeExpr'
+  return $ PList inner
+
+-- FIXME add support for user types with type params
+userType :: Parser PType
+userType = (do
+    name <- typename
+    params <- typeExpr'Many
+    -- Params currently unused
+    return $ PUserType name
+  )
+  <|> (m_reserved "Uint" >> uintType)
+  <|> (m_reserved "Array" >> arrayType)
+  <?> "user defined type"
+
+uintType :: Parser PType
+uintType = (do
+    uintParams <- expressionMany1
+    let count = length uintParams
+    if count > 2
+      then unexpected ("uint types take 2 terms, got " ++ show count ++ ".")
+      else if count == 1
+        then return $ PUintPartial $ head uintParams
+        else return $ PUint (head uintParams) (last uintParams)
+  ) <?> "uint type"
+
+arrayType :: Parser PType
+arrayType =  (try (do
+    typ <- typeExpr'
+    expr <- expression
+    return $ PArray typ expr
+    ))
+  <|> (try (do
+    typ <- typeExpr'
+    return $ PArrayPartial typ
+  ))
+  <?> "array type"
+
+{-============================================================================-}
+
+typename = 
+  m_lexeme $ try $ (do
+    c <- upper
+    -- Add a better diagnostic for lower case
+    cs <- many $ alphaNum
+    let name = (c:cs)
+    if isReservedName name
+      then unexpected ("reserved name" ++ name)
+      else return name
+  )
+
+m_typename = typename <?> "type name"
+
+identifier' = 
+    m_lexeme $ try $ (do
+    c <- lower
+    cs <- many $ alphaNum
+    return (c:cs)
+  )
+
+m_identifier = identifier' <?> "identifier"

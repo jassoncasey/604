@@ -2,6 +2,22 @@ module Steve.TypeCheck where
 
 import Steve.Internal
 
+
+
+-- TypeCheck Monad
+{-============================================================================-}
+-- I know either can be used, but I had to learn how to do it myself
+data TypeChecker a = Good a | Bad String deriving (Show,Eq)
+
+
+instance Monad TypeChecker where
+  return x = Good x
+  Good x >>= f = f x
+  Bad msg >>= f = Bad msg
+  fail msg = Bad msg
+{-============================================================================-}
+
+
 -- Initial type environment
 initTypeBinding :: [TypeBinding]
 initTypeBinding = [
@@ -12,57 +28,106 @@ initTypeBinding = [
   ("%", Func SBool $ Func SBool SBool),
   ("|", Func SBool $ Func SBool SBool) ]
 
-typeOfConstant :: Constant -> Type
-typeOfConstant (LitBool _) = SBool
-typeOfConstant (LitNat  _) = SNat
-typeOfConstant (LitChar _) = SChar
 
--- Get input and output types of a Func
-typeOfFuncIn :: Type -> Maybe Type
-typeOfFuncIn (Func typ _) = Just typ
-typeOfFuncIn _ = Nothing
-typeOfFuncOut :: Type -> Maybe Type
-typeOfFuncOut (Func _ typ) = Just typ
-typeOfFuncOut _ = Nothing
-
-
--- Type checkMer mark 1
--- This type checkMer only checkMs terms from the simply-typed lamdba calculus.
+-- Type checkM1er mark 1
+-- This type checkM1er only checkM1s terms from the simply-typed lamdba calculus.
 -- It is entirely based on the Maybe monad
 -- Gee, wish I could make it smaller...
 {-============================================================================-}
 
-typeCheck :: [TypeBinding] -> Term -> Maybe Type
-typeCheck ctors expr = checkM (ctors ++ initTypeBinding) expr
+typeCheckM1 :: [TypeBinding] -> Term -> Maybe Type
+typeCheckM1 ctors expr = checkM1 (ctors ++ initTypeBinding) expr
 
-checkM :: [TypeBinding] -> Term -> Maybe Type
+checkM1 :: [TypeBinding] -> Term -> Maybe Type
 
-checkM env (Lit c) = Just $ typeOfConstant c
+checkM1 env (Lit c) = Just $ typeOfConstant c
 
-checkM env (Iden sym) = lookup sym env
+checkM1 env (Iden sym) = lookup sym env
 
-checkM env (App e1 e2) = do
-  typ1 <- checkM env e1
-  typ2 <- checkM env e2
-  argType <- typeOfFuncIn typ1
+checkM1 env (App e1 e2) = do
+  typ1 <- checkM1 env e1
+  typ2 <- checkM1 env e2
+  argType <- typeOfFuncInM typ1
   ensureM (argType == typ2)
-  outType <- typeOfFuncOut typ1
+  outType <- typeOfFuncOutM typ1
   return outType
 
-checkM env (Abs sym symType e) = checkM ((sym,symType):env) e
+checkM1 env (Abs sym symType e) = checkM1 ((sym,symType):env) e
 
-checkM env (If b e1 e2) = do
-  condType <- checkM env b
+checkM1 env (If b e1 e2) = do
+  condType <- checkM1 env b
   ensureM (condType == SBool)
-  typ1 <- checkM env e1
-  typ2 <- checkM env e2
+  typ1 <- checkM1 env e1
+  typ2 <- checkM1 env e2
   ensureM (typ1 == typ2)
   return typ1
 
-checkM env (Let sym typ func e) = do
-  funcType <- checkM env func
+checkM1 env (Let sym typ func e) = do
+  funcType <- checkM1 env func
   ensureM ( funcType == typ )
-  checkM ((sym,typ):env) e
+  checkM1 ((sym,typ):env) e
+
+{-============================================================================-}
+
+
+
+-- Typechecker mark 2
+-- Has limited diagnostic support
+{-============================================================================-}
+typeCheckM2 :: [TypeBinding] -> Term -> TypeChecker Type
+typeCheckM2 ctors expr = check (ctors ++ initTypeBinding) expr
+
+check :: [TypeBinding] -> Term -> TypeChecker Type
+
+--   c:T ∊ Γ
+-- -------------- T-CONST
+--   Γ ⊢ c:T
+check env (Lit c) = return $ typeOfConstant c
+
+--   x:T ∊ Γ
+-- ----------------- T-VAR
+--   Γ ⊢ x:T
+check env (Iden x) =
+  case lookup x env of
+    Just t  -> return t
+    Nothing -> fail ("Not in scope: '" ++ x ++ "'")
+
+--   Γ,(x:T) ⊢ e:U
+-- ----------------- T-ABS
+--  Γ ⊢ λx:T.e:T→U
+check env (Abs x t e) = do
+  u <- check ((x,t):env) e
+  return $ Func t u
+
+--   Γ ⊢ e1:U → T   Γ ⊢ e2:U
+-- --------------------------- T-APP
+--        Γ ⊢ e1 e2:T
+check env (App e1 e2) = do
+  u_t <- check env e1
+  u <- check env e2
+  u' <- typeOfArg u_t
+  checkSameType u' u "Error with T-APP:"
+  t <- typeOfOut u_t
+  return t
+
+--   Γ ⊢ e1:Bool   Γ ⊢ e2:T   Γ ⊢ e3:T
+-- ------------------------------------- T-IF
+--      Γ ⊢ if e1 then e2 else e3:T
+check env (If e1 e2 e3) = do
+  conditionType <- check env e1
+  checkSameType SBool conditionType "Error with T-IF conditional:"
+  t  <- check env e2
+  t' <- check env e3
+  checkSameType t t' "Error with T-IF branches:"
+  return t
+
+--   Γ ⊢ e1:T    Γ,(x:T) ⊢ e2:U
+-- ------------------------------ T-Let
+--    Γ ⊢ let x = e1:T in e2:U
+check env (Let x t e1 e2) = do
+  t' <- check env e1
+  checkSameType t t' "Error with T-LET branches:"
+  check ((x,t):env) e2
 
 {-============================================================================-}
 
@@ -76,6 +141,34 @@ ensureM :: Bool -> Maybe Type
 ensureM True = Just SNat
 ensureM False = Nothing
 
-ensure :: Bool -> String -> Compute Type
+ensure :: Bool -> String -> TypeChecker Type
 ensure True _ = Good SNat
 ensure False msg = Bad msg
+
+
+typeOfConstant :: Constant -> Type
+typeOfConstant (LitBool _) = SBool
+typeOfConstant (LitNat  _) = SNat
+typeOfConstant (LitChar _) = SChar
+
+-- Get input and output types of a Func
+typeOfFuncInM :: Type -> Maybe Type
+typeOfFuncInM (Func typ _) = Just typ
+typeOfFuncInM _ = Nothing
+typeOfFuncOutM :: Type -> Maybe Type
+typeOfFuncOutM (Func _ typ) = Just typ
+typeOfFuncOutM _ = Nothing
+
+typeOfArg :: Type -> TypeChecker Type
+typeOfArg (Func typ _) = Good typ
+typeOfArg _ = Bad "Not a function type."
+typeOfOut :: Type -> TypeChecker Type
+typeOfOut (Func _ typ) = Good typ
+typeOfOut _ = Bad "Not a function type."
+
+-- errors
+checkSameType :: Type -> Type -> String -> TypeChecker Type
+checkSameType t u str = if t == u
+  then return SNat
+  else Bad (str ++ " Couldn't match expected type '"++ show t ++ "' with type '"
+           ++ show u ++ "'.")
