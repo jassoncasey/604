@@ -7,6 +7,10 @@ import Steve.Internal
 {-
   The AST file contains all code to convert a parse tree into an AST and to
   convert type declarations into type tables and constructors.
+
+  FIXMES
+    - rewrite monadically. We need error support!
+    - toType needs to see the typeBinding environment. right now, it's passed []
 -}
 
 {-
@@ -29,7 +33,7 @@ processDecls decls = do
   let udts = filterTypeDeclarations decls
   let funcs = getFuncsFromDecls decls
   let (adtNames, pduRecs, typBindings) = processUserTypes udts
-  prgm <- functionsToAst funcs
+  prgm <- functionsToAst funcs typBindings
   return (prgm, adtNames, pduRecs, typBindings)
 
 {-============================================================================-}
@@ -58,46 +62,75 @@ makeAbs (typ:typs) (param:params) e =
 
 -- Takes a type and attempts to split it up into an n parameter function
 -- Result is a list of n+1 types or nothing. The extra type is the result type
-tryBreakType :: Int -> PType -> Maybe [Type]
-tryBreakType 0 t = Just [toType t]
-tryBreakType n (PFunc t1 t2) =
+tryBreakType :: Int -> Type -> Maybe [Type]
+tryBreakType 0 t = Just [t]
+tryBreakType n (Func t1 t2) =
   case tryBreakType (n-1) t2 of
-    Just t  -> Just ((toType t1) : t)
+    Just t  -> Just (t1 : t)
     Nothing -> Nothing
 tryBreakType _ t = Nothing
 
-parseTreeToAst :: PTree -> Term
-parseTreeToAst (Identifier name) = Iden name
-parseTreeToAst (Literal c) = (Lit c)
-parseTreeToAst (Application t1 t2) = App (parseTreeToAst t1) (parseTreeToAst t2)
-parseTreeToAst (IfThenElse t1 t2 t3) = If t1' t2' t3'
-  where t1' = parseTreeToAst t1
-        t2' = parseTreeToAst t2
-        t3' = parseTreeToAst t3
-parseTreeToAst (Binary bop t1 t2) = App (App (Iden(fromBinOpToStr bop)) t1') t2'
-  where t1' = parseTreeToAst t1
-        t2' = parseTreeToAst t2
-parseTreeToAst (Unary uop t) = App (Iden $ fromUnOpToStr uop) $ parseTreeToAst t
+parseTreeToAst :: PTree -> [TypeBinding] -> Maybe Term
+parseTreeToAst (Identifier name) _ = Just $ Iden name
+parseTreeToAst (Literal c) _ = Just $ Lit c
+parseTreeToAst (Application t1 t2) typBindings = do
+  t1' <- parseTreeToAst t1 typBindings
+  t2' <- parseTreeToAst t2 typBindings
+  return $ App t1' t2'
+parseTreeToAst (IfThenElse t1 t2 t3) typBindings = do
+  t1' <- parseTreeToAst t1 typBindings
+  t2' <- parseTreeToAst t2 typBindings
+  t3' <- parseTreeToAst t3 typBindings
+  return $ If t1' t2' t3'
+parseTreeToAst (Binary bop t1 t2) typBindings = do
+  t1' <- parseTreeToAst t1 typBindings
+  t2' <- parseTreeToAst t2 typBindings
+  return $ App (App (Iden(fromBinOpToStr bop)) t1') t2'
+parseTreeToAst (Unary uop t) typBindings = do
+  t' <- parseTreeToAst t typBindings
+  return $ App (Iden $ fromUnOpToStr uop) t'
+parseTreeToAst (CaseStmt ptree pcases) typBindings = do
+  --error "12"
+  scrutinee <- parseTreeToAst ptree typBindings
+  --error "13"
+  let maybeCases = map (caseToAst typBindings) pcases
+  --error "14"
+  cases <- safeMaybeToList maybeCases
+  return $ Case scrutinee cases
+
+-- Take a case clause "K: a1 a2 ... aN -> e" and generate an Ast
+-- The type binding contains the type information we need for the ctor.
+-- The tuple is (ctorName, listOfParams, expression), relative to the example
+-- in the first line of this comment, the tuple is (K,[a1,a2,...,aN],e)
+caseToAst :: [TypeBinding] -> (String,[String],PTree)
+  -> Maybe (String,[TypeBinding],Term)
+caseToAst binding (ctorName, params, ptree) = do
+  ctorType <- lookup ctorName binding
+  ts <- tryBreakType (length params) ctorType
+  -- The pattern is the typed parameter pack that it tries to match
+  let pattern = zip params ts
+  e <- parseTreeToAst ptree binding
+  return (ctorName, pattern, e)
 
 -- converts a function to a top-level abstraction
 -- 'name' is only used for errors
 -- FIXME Add support for error handling
-functionToAbstraction :: TopLevelFunc -> Maybe (Term,Type)
-functionToAbstraction (name, typ, params, body) = do
-  let inner = parseTreeToAst body
-  typs <- tryBreakType (length params) typ
+functionToAbstraction :: TopLevelFunc -> [TypeBinding]-> Maybe (Term,Type)
+functionToAbstraction (name, typ, params, body) typBind = do
+  inner <- parseTreeToAst body typBind
+  typs <- tryBreakType (length params) $ toType typ
   abstract <- makeAbs typs params inner
   return (abstract, toType typ)
 
-functionsToAst :: [TopLevelFunc] -> Maybe Term
-functionsToAst [] = Nothing
-functionsToAst [func] =
-  case functionToAbstraction func of
+functionsToAst :: [TopLevelFunc] -> [TypeBinding] -> Maybe Term
+functionsToAst [] _ = Nothing
+functionsToAst [func] typBind =
+  case functionToAbstraction func typBind of
     Just (expr,_) -> Just expr
     Nothing -> Nothing
-functionsToAst (f@(name,_,_,_):funcs) = do
-  (expr, resultTyp) <- functionToAbstraction f
-  rest <- functionsToAst funcs
+functionsToAst (f@(name,_,_,_):funcs) typBind = do
+  (expr, resultTyp) <- functionToAbstraction f typBind
+  rest <- functionsToAst funcs typBind
   return $ Let name resultTyp expr rest
 
 {-============================================================================-}
@@ -165,12 +198,22 @@ toType (PTVar name) = TVar name
 toType (PUserType name) = UserType name
 toType (PArray ptype ptree) = Array t e
   where t = toType ptype
-        e = parseTreeToAst ptree
+        e = case parseTreeToAst ptree [] of
+          Just a  -> a
+          Nothing -> undefined
 toType (PArrayPartial ptype) = ArrayPartial $ toType ptype
 toType (PUint ptree1 ptree2) = Uint e1 e2
-  where e1 = parseTreeToAst ptree1
-        e2 = parseTreeToAst ptree2
-toType (PUintPartial ptree) = UintPartial $ parseTreeToAst ptree
+  where e1 = case parseTreeToAst ptree1 [] of
+          Just a  -> a
+          Nothing -> undefined
+        e2 = case parseTreeToAst ptree2 [] of
+          Just a  -> a
+          Nothing -> undefined
+toType (PUintPartial ptree) =
+  UintPartial $
+    case parseTreeToAst ptree [] of
+      Just a  -> a
+      Nothing -> undefined
 {-============================================================================-}
 {-============================================================================-}
 {-============================================================================-}

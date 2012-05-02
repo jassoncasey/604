@@ -13,3 +13,7 @@ dontCare a b = 3;
 
 saidYouCared :: Nat;
 saidYouCared = dontCare (square 23) 2;
+
+aMajorCase :: Breakfast -> Nat;
+aMajorCase item = case item of
+  { Bacon a -> a; Eggs a b -> 1729; Ham -> 4 };

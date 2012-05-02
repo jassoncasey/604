@@ -47,6 +47,7 @@ data PTree =
   | Binary BinOp PTree PTree
   | Unary UnOp PTree
   | Literal Constant
+  | CaseStmt PTree [(String,[String],PTree)] -- ctor name, param list, expr
   deriving (Eq, Show)
 
 -- FIXME Needs a pretty show instance
@@ -74,6 +75,7 @@ data Term =
   | App Term Term
   | If Term Term Term
   | Let String Type Term Term
+  | Case Term [(String,[TypeBinding],Term)]
   deriving (Eq,Show)
 
 -- Types used to wrap top level declarations
@@ -100,7 +102,7 @@ type TopLevelFunc = (String, PType, [String], PTree)
 type TypeBinding = (String, Type)
 
 
--- Really common helper functions
+-- Really common or really basic helper functions
 
 lunzip :: [(a,b)] -> [a]
 lunzip [] = []
@@ -111,6 +113,13 @@ runzip :: [(a,b)] -> [b]
 runzip [] = []
 runzip [(_,y)] = [y]
 runzip ((_,y):xys) = y : (runzip xys)
+
+safeMaybeToList :: [Maybe a] -> Maybe [a]
+safeMaybeToList [] = Just []
+--safeMaybeToList ((Just x):xs) = do { xs' <- safeMaybeToList xs; return (x:xs); }
+safeMaybeToList ((Just x):xs) = safeMaybeToList xs >>= \xs' -> return (x:xs')
+safeMaybeToList ((Nothing):_) = Nothing
+
 
 
 -- fromBinaryOp to String

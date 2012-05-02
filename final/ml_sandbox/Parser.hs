@@ -17,6 +17,9 @@ module Steve.Parser where
   FIXMEs (known bugs)
     - replace your own many and many1 functions with parsecs
     - Types and value constructors need different reserved names lists?
+    - integrate new typeExpr function inot code (clean up source code)
+    - Use many accum to gather lists
+    - correct usedNames list usage
 
   ISSUES (known problems)
     - type expressions are NOT intuitive now that we have dependent types
@@ -37,11 +40,11 @@ import Data.List (sort)
 
 
 keywords = [
-  "Nat","Char","Bool",    -- simple built-in types
-  "Uint","Array",         -- dependent built-in types
-  "True", "False",        -- built-in literals
-  "if", "then", "else",   -- built-in if-then-else support
-  "data", "pdu"           -- Data declarators
+  "Nat","Char","Bool",                -- simple built-in types
+  "Uint","Array",                     -- dependent built-in types
+  "True", "False",                    -- built-in literals
+  "if", "then", "else","case","of",   -- built-in if-then-else support
+  "data", "pdu"                       -- Data declarators
   ]
 
 operators = [
@@ -75,6 +78,7 @@ TokenParser {
 , brackets   = m_brackets
 , braces     = m_braces
 , natural    = m_natural   } = makeTokenParser languageDef
+
 
 
 
@@ -161,7 +165,7 @@ field :: Parser (String, PType)
 field = (do
     name <- m_identifier
     m_reservedOp "="
-    typ <- typeExpr'
+    typ <- typeExpr
     return (name, typ)
   ) <?> "field"
 
@@ -202,7 +206,7 @@ constructor = (do
 
 typePack :: Parser [PType]
 typePack = (do
-    first <- typeExpr'
+    first <- typeExpr
     rest <- typePackTail
     return (first:rest)
   )
@@ -257,46 +261,18 @@ functionType :: Parser (String,PType)
 functionType = (do
     name <- m_identifier
     m_reservedOp "::"
-    typeSig <- typeExpr'
+    typeSig <- typeExpr
     return (name, typeSig)
   ) <?> "type annotation"
-
--- Parse a type expression
--- FIXME this must take a dictionary of known types
-{-typeExpr :: Parser Type
-typeExpr = buildExpressionParser ops typeTerm <?> "type expression"
-  where ops = [[ Infix ( m_reservedOp "->" >> return Func) AssocRight ]] 
-
-typeTerm :: Parser Type
-typeTerm = m_parens typeExpr
-  <|> listType
-  <|> fmap TVar m_identifier
-  <|> (m_reserved "Nat"  >> return SNat)
-  <|> (m_reserved "Bool" >> return SBool)
-  <|> (m_reserved "Char" >> return SChar)
-  <?> "type term"
-
-listType :: Parser Type
-listType = do
-  inner <- m_brackets typeExpr
-  return $ List inner-}
 
 functionDefinition :: Parser (String,[String],PTree)
 functionDefinition = (do
   name <- m_identifier
-  params <- getParams
+  params <- manyAccum (:) m_identifier
   m_reservedOp "="
   body <- expression
   return $ (name, params, body)
   ) <?> "function definition"
-
-getParams :: Parser [String]
-getParams = (do
-    first <- m_identifier
-    rest <- getParams
-    return (first:rest)
-  ) <|> (return [])
-  <?> "parameters"
 
 {-============================================================================-}
 
@@ -305,28 +281,41 @@ getParams = (do
 
 -- Expression Parser
 {-============================================================================-}
-
-expressionMany :: Parser [PTree]
-expressionMany = (do
-    e  <- expression
-    es <- expressionMany
-    return (e:es)
-  )
-  <|> return []
-  <?> "expression list"
-
--- fails when the expression list is empty
--- naming conventions borrowed from parsec
-expressionMany1 :: Parser [PTree]
-expressionMany1 = (do
-    e  <- expression
-    es <- expressionMany
-    return (e:es)
-  )
-  <?> "expression list"
-
+-- Parsing an expression starts here
 expression :: Parser PTree
-expression = ifThenElse <|> conditionalExpression <?> "expression"
+expression = caseExpression <?> "expression"
+
+caseExpression :: Parser PTree
+caseExpression = (do
+    m_reserved "case"
+    scrutinee <-  expression
+    m_reserved "of"
+    clauses <- m_braces caseClauseSeq
+    return $ CaseStmt scrutinee clauses
+  )
+  <|> ifExpression
+  <?> "case expression"
+
+caseClauseSeq :: Parser [(String,[String],PTree)]
+caseClauseSeq = (do
+    first <- caseClause
+    rest  <- manyAccum (:) (do {m_reservedOp ";"; c <- caseClause; return c})
+    return (first:rest)
+  )
+  <?> "case clause sequence"
+
+caseClause :: Parser (String,[String],PTree)
+caseClause = (do 
+    ctor <- m_typename
+    params <- manyAccum (:) m_identifier
+    m_reservedOp "->"
+    expr <- caseExpression
+    return (ctor,params,expr)
+  )
+  <?> "case clause"
+
+ifExpression :: Parser PTree
+ifExpression = ifThenElse <|> conditionalExpression <?> "expression"
 
 conditionalExpression :: Parser PTree
 conditionalExpression =
@@ -340,7 +329,9 @@ term = m_parens expression
 application :: Parser PTree
 application = try (do
     iden <- m_identifier
-    exprList <- expressionMany1
+    firstExpr <- expression -- We require at least one member of an expr list
+    restExprs <- manyAccum (:) expression --expressionMany1 -- many1 expression
+    let exprList = firstExpr:restExprs
     return $ makeApplication ((Identifier iden):exprList)
   ) <|> primary
   <?> "application"
@@ -447,33 +438,16 @@ theReservedNames
   where sortedNames = sort (reservedNames languageDef)
 
 
--- Testing
+-- Type expression parser
 {-============================================================================-}
 
-typeExpr'Many :: Parser [PType]
-typeExpr'Many = (do
-    t  <- typeExpr'
-    ts <- typeExpr'Many
-    return (t:ts)
-  )
-  <|> return []
-  <?> "type list"
-
-typeExpr'Many1 :: Parser [PType]
-typeExpr'Many1 = (do
-    t  <- typeExpr'
-    ts <- typeExpr'Many
-    return (t:ts)
-  )
-  <?> "type list"
-
 -- new type expressions
-typeExpr' :: Parser PType
-typeExpr' = buildExpressionParser ops typeTerm' <?> "type expression"
+typeExpr :: Parser PType
+typeExpr = buildExpressionParser ops typeTerm' <?> "type expression"
   where ops = [[ Infix ( m_reservedOp "->" >> return PFunc) AssocRight ]] 
 
 typeTerm' :: Parser PType
-typeTerm' = m_parens typeExpr'
+typeTerm' = m_parens typeExpr
   <|> listType'
   <|> userType
   <|> (m_reserved "Nat"  >> return PSNat)
@@ -484,14 +458,14 @@ typeTerm' = m_parens typeExpr'
 
 listType' :: Parser PType
 listType' = do
-  inner <- m_brackets typeExpr'
+  inner <- m_brackets typeExpr
   return $ PList inner
 
 -- FIXME add support for user types with type params
 userType :: Parser PType
 userType = (do
     name <- typename
-    params <- typeExpr'Many
+    params <- manyAccum (:) typeExpr --typeExprMany --FIXME test this!
     -- Params currently unused
     return $ PUserType name
   )
@@ -512,36 +486,86 @@ uintType = (do
 
 arrayType :: Parser PType
 arrayType =  (try (do
-    typ <- typeExpr'
+    typ <- typeExpr
     expr <- expression
     return $ PArray typ expr
     ))
   <|> (try (do
-    typ <- typeExpr'
+    typ <- typeExpr
     return $ PArrayPartial typ
   ))
   <?> "array type"
 
 {-============================================================================-}
 
+
+-- Improved identifier  parsers
+{-============================================================================-}
+
+-- Typenames like in haskell: uppercase letter followed by alphaNum + '_'
 typename = 
   m_lexeme $ try $ (do
     c <- upper
-    -- Add a better diagnostic for lower case
-    cs <- many $ alphaNum
+    cs <- many (alphaNum <|> char '_')
     let name = (c:cs)
     if isReservedName name
-      then unexpected ("reserved name" ++ name)
+      then unexpected ("reserved name: " ++ name)
       else return name
   )
 
 m_typename = typename <?> "type name"
 
+-- Identifiers are as in haskell: lowercase letter followed by alphaNum + '_'
 identifier' = 
     m_lexeme $ try $ (do
     c <- lower
-    cs <- many $ alphaNum
-    return (c:cs)
+    cs <- many (alphaNum <|> char '_')
+    let name = (c:cs)
+    if isReservedName name
+      then unexpected ("reserved name: " ++ name)
+      else return name
   )
 
 m_identifier = identifier' <?> "identifier"
+
+{-============================================================================-}
+
+
+-- Recycling bin
+-- Throw this code out as soon as possible
+
+typeExprMany :: Parser [PType]
+typeExprMany = (do
+    t  <- typeExpr
+    ts <- typeExprMany
+    return (t:ts)
+  )
+  <|> return []
+  <?> "type list"
+
+typeExprMany1 :: Parser [PType]
+typeExprMany1 = (do
+    t  <- typeExpr
+    ts <- typeExprMany
+    return (t:ts)
+  )
+  <?> "type list"
+
+expressionMany :: Parser [PTree]
+expressionMany = (do
+    e  <- expression
+    es <- expressionMany
+    return (e:es)
+  )
+  <|> return []
+  <?> "expression list"
+
+-- fails when the expression list is empty
+-- naming conventions borrowed from parsec
+expressionMany1 :: Parser [PTree]
+expressionMany1 = (do
+    e  <- expression
+    es <- expressionMany
+    return (e:es)
+  )
+  <?> "expression list"

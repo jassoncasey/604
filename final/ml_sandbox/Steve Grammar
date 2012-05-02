@@ -32,7 +32,16 @@ cases-list:
 
 ===========expressions===============
 
-expression:
+case-expression:
+  "case" identifier "of" "{" case-clauses "}"
+
+case-clause-seq:
+  case-clause-seq ";" case-clause
+
+case-clause:
+  typename parameter-seq "->" case-expression
+
+if-expression:
   "if" conditional-expression "then" expression "else" expression
 
 conditional-expression:
@@ -148,21 +157,4 @@ primary:
   (expression)
 
 
-Let
-  "inc" SNat
-  Abs "k" SNat (App (App (Iden "+") (Iden "k")) (Lit (LitNat 1))))
-  Let
-    "square" SNat
-    (Abs "a" SNat (App (App (Iden "*") (Iden "a")) (Iden "a")))
-    Let
-      "dontCare" SNat
-      (Abs "a" SNat (Abs "b" SNat (Lit (LitNat 3)))) (Lit (LitNat 1))
 
-
-["Breakfast"],[],
-
-[
-  Bacon :: SNat -> Breakfast
-  Eggs :: SChar -> SNat -> Breakfast
-  Ham :: Breakfast
-]
