@@ -24,6 +24,18 @@ data Type =
   | UintPartial Term
   deriving (Show,Eq)
 
+-- FIXME Needs a pretty show instance
+data Term =
+    Iden String
+  | Lit Constant
+  | Pdu Type
+  | Abs String Type Term
+  | App Term Term
+  | If Term Term Term
+  | Let String Type Term Term
+  | Case Term [(String,[TypeBinding],Term)]
+  deriving (Eq,Show)
+
 -- PType is a type whose terms contain parse trees, not terms
 data PType =
     PSNat
@@ -48,14 +60,22 @@ data PTree =
   | Unary UnOp PTree
   | Literal Constant
   | CaseStmt PTree [(String,[String],PTree)] -- ctor name, param list, expr
+  | PduConstructor String
   deriving (Eq, Show)
 
 -- FIXME Needs a pretty show instance
+-- FIXME And better support for userdata
 data Constant = 
    LitBool Bool
  | LitNat  Integer
  | LitChar Char
- deriving (Eq, Show)
+ deriving (Eq)
+
+instance Show Constant where
+  show c = case c of
+    LitBool h -> show h
+    LitNat e  -> show e
+    LitChar y -> show y
 
 -- FIXME Needs a pretty show instance
 data BinOp =
@@ -67,16 +87,10 @@ data BinOp =
 
 data UnOp = Not | Negate deriving (Eq, Show)
 
--- FIXME Needs a pretty show instance
-data Term =
-    Iden String
-  | Lit Constant
-  | Abs String Type Term
-  | App Term Term
-  | If Term Term Term
-  | Let String Type Term Term
-  | Case Term [(String,[TypeBinding],Term)]
-  deriving (Eq,Show)
+
+-- FIXME Redo parse info hierarchy. A pdu declaration should be distinct from an
+--       ADT declaration
+
 
 -- Types used to wrap top level declarations
 data UserDataStructure =
@@ -88,10 +102,17 @@ type UserTypeDef = (String, UserDataStructure)
 
 data Declaration =
     TypeDecl UserTypeDef
+  | AdtDecl AdtInfo
+  | PduDecl PduInfo
   | FuncDecl TopLevelFunc
   deriving (Show,Eq)
 
 type PDURecord = (String, [(String,PType)])
+
+data PduInfo = PduInfo {
+  pduInfoName :: String,
+  pduInfoFields :: [(String,PType)]
+} deriving (Show,Eq)
 
 -- name, type, param names, parse tree (definition)
 type TopLevelFunc = (String, PType, [String], PTree)
@@ -114,16 +135,23 @@ runzip [] = []
 runzip [(_,y)] = [y]
 runzip ((_,y):xys) = y : (runzip xys)
 
+-- Gets [Maybe a] and produces Maybe [a]. Nothing if at least one element is
+-- Nothing.
 safeMaybeToList :: [Maybe a] -> Maybe [a]
 safeMaybeToList [] = Just []
---safeMaybeToList ((Just x):xs) = do { xs' <- safeMaybeToList xs; return (x:xs); }
 safeMaybeToList ((Just x):xs) = safeMaybeToList xs >>= \xs' -> return (x:xs')
 safeMaybeToList ((Nothing):_) = Nothing
 
-
+-- Checks to see if a list is unique
+unique :: (Eq a) => [a] -> Bool
+unique l = unique' l []
+  where
+    unique' [] _ = True
+    unique' (x:xs) ls
+      | elem x ls = False
+      | otherwise = unique' xs (x:ls)
 
 -- fromBinaryOp to String
--- FIXME move this to Internal?
 fromBinOpToStr :: BinOp -> String
 fromBinOpToStr Plus          = "+"
 fromBinOpToStr Minus         = "-"

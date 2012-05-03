@@ -101,6 +101,12 @@ check env (Iden x) =
     Just t  -> return t
     Nothing -> fail ("Not in scope: '" ++ x ++ "'")
 
+--          T:T ∊ Γ
+-- -------------------------- T-PDU
+--   Γ ⊢ T {x1,x2,...,xn}:T
+-- FIXME This should introduce type information to the fact environment
+check env (Pdu t) = return t
+
 --   Γ,(x:T) ⊢ e:U
 -- ----------------- T-ABS
 --  Γ ⊢ λx:T.e:T→U

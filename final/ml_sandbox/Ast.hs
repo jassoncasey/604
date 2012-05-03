@@ -21,6 +21,18 @@ interface:
 
 -}
 
+{-
+The parse tree to AST transformation is complicated so here is a sketch:
+  Assuming a successful transformation, we get a term, a list of types, a list
+    of records and a type binding environment
+  1. split declarations into type declarations and function declarations
+    a. process type declarations, get back list of user defined type, a list of
+       pdu records and typeBinding environment created from the adt value
+       constructors and pdu fields
+      i. 
+  2.
+-}
+
 -- Process declarations
 -- The result of parseUnit is just a declaration list. processDecls converts the
 -- list of declarations into a list of top-level functions and a type-table.
@@ -29,7 +41,7 @@ interface:
 -- takes declarations, returns an AST, list of ADT names, list of PDU records
 -- and a list of constructors with which to initialize the environment
 processDecls :: [Declaration] ->
-                Maybe (Term, [String], [PDURecord], [TypeBinding])
+                Maybe (Term, [String],[(String,[(String,Type)])], [TypeBinding])
 processDecls decls = do
   let udts = filterTypeDeclarations decls
   let funcs = getFuncsFromDecls decls
@@ -91,13 +103,11 @@ parseTreeToAst (Unary uop t) typBindings = do
   t' <- parseTreeToAst t typBindings
   return $ App (Iden $ fromUnOpToStr uop) t'
 parseTreeToAst (CaseStmt ptree pcases) typBindings = do
-  --error "12"
   scrutinee <- parseTreeToAst ptree typBindings
-  --error "13"
   let maybeCases = map (caseToAst typBindings) pcases
-  --error "14"
   cases <- safeMaybeToList maybeCases
   return $ Case scrutinee cases
+parseTreeToAst (PduConstructor name) _ = Just $ Pdu $ UserType name
 
 -- Take a case clause "K: a1 a2 ... aN -> e" and generate an Ast
 -- The type binding contains the type information we need for the ctor.
@@ -149,8 +159,9 @@ filterTypeDeclarations ((FuncDecl _):decls) = filterTypeDeclarations decls
 filterTypeDeclarations ((TypeDecl t):decls) = t : (filterTypeDeclarations decls)
 
 -- Return is, list of ADT names, list of PDU records and a list of Ctors.
--- The Ctors are int a format that can be directly added to the type environment
-processUserTypes :: [UserTypeDef] -> ([String],[PDURecord],[TypeBinding])
+-- The ctors are in a format that can be directly added to the type environment
+processUserTypes :: [UserTypeDef]
+                    -> ([String],[(String,[(String,Type)])],[TypeBinding])
 processUserTypes udts = (adtNames udts, pduRecords udts, makeCtors udts)
 
 adtNames :: [UserTypeDef] -> [String]
@@ -158,17 +169,21 @@ adtNames [] = []
 adtNames ((n,ADTType _):udts) = n : (adtNames udts)
 adtNames (_:udts) = adtNames udts
 
-pduRecords :: [UserTypeDef] -> [PDURecord]
+pduRecords :: [UserTypeDef] -> [(String,[(String,Type)])]
 pduRecords [] = []
-pduRecords ((n,PDUType rec):udts) = (n,rec) : (pduRecords udts)
+pduRecords ((n,PDUType rec):udts) = (n,map toTypeFields rec) : (pduRecords udts)
+  where toTypeFields :: (String,PType) -> (String, Type)
+        toTypeFields (n,t) = (n,toType t)
 pduRecords (_:udts) = pduRecords udts
 
+-- takes a list of userdefined data types and 
 makeCtors :: [UserTypeDef] -> [TypeBinding]
 makeCtors [] = []
-makeCtors ((name,ADTType ts):typs) = (makeADTCtors name ts) ++ (makeCtors typs)
-makeCtors ((name,PDUType fields):typs) = makeCtors typs
+makeCtors ((name,ADTType ts):typs) = makeADTCtors name ts ++ makeCtors typs
+makeCtors ((name,PDUType fields):typs) =
+  makePduAccessors name fields ++ makeCtors typs
 
-
+-- Turns an ADT definition into a list of constructors
 makeADTCtors :: String -> [(String, [PType])] -> [TypeBinding]
 makeADTCtors tname ctors =
   case ctors of
@@ -179,6 +194,15 @@ makeADTCtors tname ctors =
   where makeFunc :: String -> [PType] -> Type
         makeFunc tname' [] = UserType tname
         makeFunc tname' (t:ts) = Func (toType t) $ makeFunc tname' ts
+
+makePduAccessors :: String -> [(String,PType)] -> [TypeBinding]
+makePduAccessors fname fields =
+  case fields of
+    [] -> error ("How did we get an empty pdu declaration: " ++ fname)
+    [(n,ptyp)]    -> [pduAccessorType n ptyp]
+    ((n,ptyp):fs) -> (pduAccessorType n ptyp) : (makePduAccessors fname fs)
+  where pduAccessorType :: String -> PType -> TypeBinding
+        pduAccessorType name' ptyp = (name',Func (UserType fname) (toType ptyp))
 
 
 {-============================================================================-}

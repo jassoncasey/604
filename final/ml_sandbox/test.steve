@@ -1,7 +1,3 @@
-
-
-data Breakfast = { Bacon Nat | Eggs Char, Nat | Ham }
-
 inc :: Nat -> Nat;
 inc k = k + 1;
 
@@ -14,6 +10,19 @@ dontCare a b = 3;
 saidYouCared :: Nat;
 saidYouCared = dontCare (square 23) 2;
 
+data Breakfast = { Bacon Nat | Eggs Char Nat | Ham }
+
 aMajorCase :: Breakfast -> Nat;
 aMajorCase item = case item of
   { Bacon a -> a; Eggs a b -> 1729; Ham -> 4 };
+
+pdu Error = {
+  errorCode : Nat,
+  errorMsg : Bool
+}
+
+generateHelpfulError :: Error;
+generateHelpfulError = Error { errorCode = 12, errorMsg = True };
+
+getCodeFromError :: Error -> Nat;
+getCodeFromError err = errorCode err;

@@ -1,37 +1,33 @@
 Packet Grammar
 
+========== top-level ==========
+
 program:
   empty
-  function
+  data-declaration
+  function-declaration
 
-
-function:
+function-declaration:
   annotation function-definition
-  function-definition
+
+annotation:
+  identifier "::" type-expression ";"
 
 function-definition:
-  identifier parameter-list "=" function-body
+  identifier parameter-list "=" function-body ";"
 
 function-body:
-  let-clause body
-  body
-
-body:
   case-expression
-  expression
 
-case-expression:
-  "case" identifier "of" "{" cases-list "}"
-
-cases-list:
-  case-statement
-  cases-statements ";" case-statement
+data-declaration:
+  pdu-declaration
+  adt-declaration
 
 
 
 
-===========expressions===============
-
+========== expression ==========
+   FIXME - Add binary operators for uint
 case-expression:
   "case" identifier "of" "{" case-clauses "}"
 
@@ -68,6 +64,8 @@ negative-expr:
 
 multiplicative-expr:
   multiplicative-expr "*" applicative-expr
+  multiplicative-expr "/" applicative-expr
+  multiplicative-expr "%" applicative-expr
 
 applicative-expr:
   primary
@@ -89,10 +87,28 @@ pduConstructorFieldSeq:
 pduConstructorField:
   identifier ":" expression
 
-=======end expressions===============
 
-annotation:
-  identifier "::" type
+
+========== type-expression ==========
+
+type-expression:
+  type-expression -> type-term
+  type-term
+
+type-term:
+  (type-expression)
+  [type-expression]
+  user-type
+  Nat
+  Bool
+  Char
+  identifier
+
+user-type:
+  typename    // parameter-sequence only supported with generic adts
+
+type-variable:
+  identifier
 
 type:
   simple-type
@@ -120,7 +136,74 @@ simple-type:
   "Int"
   "Bool"
   "Char"
+  typename
+
+
+
+========== data-declaration ==========
+
+pdu-declaration:
+  "pdu" typename "=" "{" pdu-decl-field-seq "}"
+
+pdu-decl-field-seq:
+  pdu-decl-field-seq "," pdu-decl-field
+  pdu-decl-field
+
+pdu-decl-field:
+  identifier ":" type-expression
+
+adt-declaration:
+  "data" identifier "=" adt-constructor-sequence ";"
+
+adt-constructor-sequence:
+  adt-constructor-sequence "|" adt-constructor
+  adt-constructor
+
+adt-constructor:
+  typename type-sequence
+
+type-sequence:
+  type-sequence type-term
+  type-term
+  empty
+
+
+
+========== basics ==========
+
+typename:
+  upper-case ++ alpha-numeric
+
+parameter-sequence:
+  parameter-sequence identifier
   identifier
+  empty
+
+identifier:
+  lowercase ++ alpha-numeric
+
+literal:
+  natural
+  boolean
+  character-literal
+  string-literal
+  bit-string,hex...
+
+character-literal:
+  "'" character "'"
+
+string-literal:
+  "\"" string "\""
+
+boolean:
+  True
+  False
+
+
+
+
+
+
 
 
 
@@ -169,3 +252,20 @@ primary:
 
 
 
+
+
+
+
+Operator precedence
+  higher on list means higher precedence
+
+- (negate)
+*,/,%  multiplicative
++,-
+&,|,^
+<<,>>
+>,<,>=,<=
+not
+or,and
+: (append)
+++ (concat)
