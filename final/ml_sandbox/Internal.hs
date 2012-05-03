@@ -81,7 +81,7 @@ data BinOp =
   | LessThan | LessThanEq | GreaterThan | GreaterThanEq -- Ordering
   | Equal | NotEqual                                    -- Equality
   | Or | And                                            -- Logical
-  | BitAnd | BitNot | BitOr | BitXor                    -- Bit Operations
+  | BitAnd | BitOr | BitXor                    -- Bit Operations
   deriving (Eq)
 instance Show BinOp where
   show op = case op of
@@ -94,19 +94,18 @@ instance Show BinOp where
     LessThanEq    -> "<="
     GreaterThan   -> ">"
     GreaterThanEq -> ">="
-    Equal         -> "="
+    Equal         -> "=="
     NotEqual      -> "<>"
     Or            -> "or"
     And           -> "and"
     BitAnd        -> "&"
-    BitNot        -> "~"
     BitOr         -> "|"
     BitXor        -> "^"
 
-data UnOp = Not | Negate deriving (Eq)
+data UnOp = BitNot | Negate deriving (Eq)
 instance Show UnOp where
   show op = case op of
-    Not    -> "not"
+    BitNot -> "~"
     Negate -> "neg"
 
 

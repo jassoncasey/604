@@ -3,13 +3,6 @@ module Steve.TypeCheck where
 import Steve.Internal
 
 
-{-
-
-Initial typebindings are not complete
-
--}
-
-
 -- TypeCheck Monad
 {-============================================================================-}
 -- I know either can be used, but I had to learn how to do it myself
@@ -25,7 +18,7 @@ instance Monad TypeChecker where
 -- If any element is Bad, return bad. Otherwise, return a list of Good
 fromTypeCheckList :: [TypeChecker a] -> TypeChecker [a]
 fromTypeCheckList [] = Good []
-fromTypeCheckList ((Good x):xs) = fromTypeCheckList xs >>= \xs' -> return (x:xs')
+fromTypeCheckList ((Good x):xs) = fromTypeCheckList xs>>= \xs' -> return (x:xs')
 fromTypeCheckList ((Bad msg):_) = Bad msg
 
 mapTC :: (a -> TypeChecker b) -> [a] -> TypeChecker [b]
@@ -36,18 +29,25 @@ mapTC f xs = fromTypeCheckList $ map f xs
 -- Initial type environment
 initTypeBinding :: [TypeBinding]
 initTypeBinding = [
+  ("neg", Func SNat SNat),
   ("+", Func SNat $ Func SNat SNat),
   ("-", Func SNat $ Func SNat SNat),
   ("*", Func SNat $ Func SNat SNat),
   ("/", Func SNat $ Func SNat SNat),
   ("%", Func SNat $ Func SNat SNat),
+  ("<", Func SNat $ Func SNat SBool),
+  (">", Func SNat $ Func SNat SBool),
+  ("<=", Func SNat $ Func SNat SBool),
+  (">=", Func SNat $ Func SNat SBool),
+  ("<>", Func SNat $ Func SNat SBool),
+  ("==", Func SNat $ Func SNat SBool),
   ("not", Func SBool SBool),
   ("or", Func SBool $ Func SBool SBool),
   ("and", Func SBool $ Func SBool SBool),
   ("&", Func SNat $ Func SNat SNat),
-  ("&", Func SNat $ Func SNat SNat),
-  ("&", Func SNat $ Func SNat SNat),
-  ("&", Func SNat $ Func SNat SNat) ]
+  ("|", Func SNat $ Func SNat SNat),
+  ("^", Func SNat $ Func SNat SNat),
+  ("~", Func SNat SNat SNat) ]
 
 
 -- Type checkM1er mark 1
