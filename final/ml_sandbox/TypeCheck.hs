@@ -9,12 +9,21 @@ import Steve.Internal
 -- I know either can be used, but I had to learn how to do it myself
 data TypeChecker a = Good a | Bad String deriving (Show,Eq)
 
-
 instance Monad TypeChecker where
   return x = Good x
   Good x >>= f = f x
   Bad msg >>= f = Bad msg
   fail msg = Bad msg
+
+-- Take a list of type checked things and return a typechecked list.
+-- If any element is Bad, return bad. Otherwise, return a list of Good
+fromTypeCheckList :: [TypeChecker a] -> TypeChecker [a]
+fromTypeCheckList [] = Good []
+fromTypeCheckList ((Good x):xs) = fromTypeCheckList xs >>= \xs' -> return (x:xs')
+fromTypeCheckList ((Bad msg):_) = Bad msg
+
+mapTC :: (a -> TypeChecker b) -> [a] -> TypeChecker [b]
+mapTC f xs = fromTypeCheckList $ map f xs
 {-============================================================================-}
 
 
@@ -126,8 +135,27 @@ check env (If e1 e2 e3) = do
 --    Γ ⊢ let x = e1:T in e2:U
 check env (Let x t e1 e2) = do
   t' <- check env e1
-  checkSameType t t' "Error with T-LET branches:"
+  checkSameType t t' "Error with T-LET:"
   check ((x,t):env) e2
+
+--   Γ ⊢ e : T
+--   for each case i
+--     Ki:T1 → T2 → ... → Tn → T ∊ Γ
+--     Γ,(a1:T1),(a2:T2),...,(an:Tn) ⊢ ei:U
+-- --------------------------------------------------- T-CASE
+--   Γ ⊢ case e of {K1 a1 a2 ... -> e1; K2 b1 b2 ... -> e2; ...}:U
+check env (Case e cases) = do
+  t <- check env e
+  -- lookup each constructor...
+  -- verify params of each constructor
+  -- check each case
+  us <- mapTC checkCase cases
+  checkSameList (head us) us "Error with T-CASE clause types:"
+  return $ head us
+  where
+    checkCase :: (String,[TypeBinding],Term) -> TypeChecker Type
+    checkCase (_,newBindings,e) = check (newBindings ++ env) e
+
 
 {-============================================================================-}
 
@@ -170,5 +198,11 @@ typeOfOut _ = Bad "Not a function type."
 checkSameType :: Type -> Type -> String -> TypeChecker Type
 checkSameType t u str = if t == u
   then return SNat
-  else Bad (str ++ " Couldn't match expected type '"++ show t ++ "' with type '"
-           ++ show u ++ "'.")
+  else Bad (str ++ " Couldn't match expected type '"++ show t
+           ++ "' with type '" ++ show u ++ "'.")
+
+checkSameList :: Type -> [Type] -> String -> TypeChecker Type
+checkSameList t ts str = if all (== t) ts
+  then return SNat
+  else Bad (str ++ "Couldn't match type " ++ show t ++ " with the types "
+    ++ show ts ++ ".")

@@ -76,7 +76,18 @@ applicative-expr:
 primary:
   identifier
   literal
+  pduConstructor
   (expression)
+
+pduConstructor:
+  typename "{" pduConstructorFieldSeq "}"
+
+pduConstructorFieldSeq:
+  pduConstructorFieldSeq "," pduConstructorField
+  pduConstructorField
+
+pduConstructorField:
+  identifier ":" expression
 
 =======end expressions===============
 

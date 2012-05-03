@@ -11,6 +11,7 @@ import Steve.Internal
   FIXMES
     - rewrite monadically. We need error support!
     - toType needs to see the typeBinding environment. right now, it's passed []
+    - make sure all ctors are accounted for in case expressions
 -}
 
 {-

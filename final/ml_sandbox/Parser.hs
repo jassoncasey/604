@@ -20,6 +20,8 @@ module Steve.Parser where
     - integrate new typeExpr function inot code (clean up source code)
     - Use many accum to gather lists
     - correct usedNames list usage
+    - add string support
+    - put wildcard '_' into case expressions
 
   ISSUES (known problems)
     - type expressions are NOT intuitive now that we have dependent types
@@ -317,6 +319,17 @@ caseClause = (do
 ifExpression :: Parser PTree
 ifExpression = ifThenElse <|> conditionalExpression <?> "expression"
 
+ifThenElse :: Parser PTree
+ifThenElse = do
+  m_reserved "if"
+  b <- expression
+  m_reserved "then"
+  e1 <- expression
+  m_reserved "else"
+  e2 <- expression
+  return $ IfThenElse b e1 e2
+  <?> "conditional expression"
+
 conditionalExpression :: Parser PTree
 conditionalExpression =
   buildExpressionParser expressionOperators term <?> "expression"
@@ -339,24 +352,41 @@ application = try (do
 primary :: Parser PTree
 primary = fmap Identifier m_identifier
   <|> literal
+  -- <|> pduConstructor
   <?> "primary expression"
 
 literal :: Parser PTree
 literal = fmap (\x -> (Literal (LitNat x))) m_natural
+  -- <|> character
+  -- <|> stringLit
   <|> (m_reserved "True" >> return (Literal (LitBool True)))
   <|> (m_reserved "False" >> return (Literal (LitBool False)))
   <?> "literal"
 
-ifThenElse :: Parser PTree
-ifThenElse = do
-  m_reserved "if"
-  b <- expression
-  m_reserved "then"
-  e1 <- expression
-  m_reserved "else"
-  e2 <- expression
-  return $ IfThenElse b e1 e2
-  <?> "conditional expression"
+pduConstructor :: Parser PTree
+pduConstructor = (do
+    name <- m_typename
+    m_reservedOp "="
+    pduRecord <- m_braces pduConstructorBody
+    return $ Identifier "wazzuuuuuup!"
+  )
+  <?> "pdu record constructor"
+
+pduConstructorBody :: Parser [(String,PTree)]
+pduConstructorBody = (do
+    first <- pduConstructorField
+    rest <- manyAccum (:) (m_reservedOp "," >> pduConstructorField)
+    return (first:rest)
+  )
+  <?> "pdu constructor body"
+
+pduConstructorField :: Parser (String,PTree)
+pduConstructorField = (do 
+    name <- m_identifier
+    expr <- expression
+    return (name,expr))
+  <?> "pdu constructor field"
+
 
 expressionOperators =
   [
@@ -376,6 +406,72 @@ makeApplication [n] = n
 makeApplication ns = Application (makeApplication $ init ns) $ last ns
 
 {-============================================================================-}
+
+
+
+
+-- Type expression parser
+{-============================================================================-}
+
+-- new type expressions
+typeExpr :: Parser PType
+typeExpr = buildExpressionParser ops typeTerm' <?> "type expression"
+  where ops = [[ Infix ( m_reservedOp "->" >> return PFunc) AssocRight ]] 
+
+typeTerm' :: Parser PType
+typeTerm' = m_parens typeExpr
+  <|> listType'
+  <|> userType
+  <|> (m_reserved "Nat"  >> return PSNat)
+  <|> (m_reserved "Bool" >> return PSBool)
+  <|> (m_reserved "Char" >> return PSChar)
+  <|> fmap PTVar m_identifier
+  <?> "type term"
+
+listType' :: Parser PType
+listType' = do
+  inner <- m_brackets typeExpr
+  return $ PList inner
+
+-- FIXME add support for parametric user types
+userType :: Parser PType
+userType = (do
+    name <- m_typename
+    params <- manyAccum (:) typeExpr
+    -- Params currently unused???
+    if null params
+      then return $ PUserType name
+      else fail "Steve doesn't support parametric ADTs. Yet."
+  )
+  <|> (m_reserved "Uint" >> uintType)
+  <|> (m_reserved "Array" >> arrayType)
+  <?> "user defined type"
+
+uintType :: Parser PType
+uintType = (do
+    uintParams <- many1 expression
+    let count = length uintParams
+    if count > 2
+      then unexpected ("uint types take 2 terms, got " ++ show count ++ ".")
+      else if count == 1
+        then return $ PUintPartial $ head uintParams
+        else return $ PUint (head uintParams) (last uintParams)
+  ) <?> "uint type"
+
+arrayType :: Parser PType
+arrayType =  (try (do
+    typ <- typeExpr
+    expr <- expression
+    return $ PArray typ expr
+    ))
+  <|> (try (do
+    typ <- typeExpr
+    return $ PArrayPartial typ
+  ))
+  <?> "array type"
+
+{-============================================================================-}
+
 
 
 
@@ -438,65 +534,6 @@ theReservedNames
   where sortedNames = sort (reservedNames languageDef)
 
 
--- Type expression parser
-{-============================================================================-}
-
--- new type expressions
-typeExpr :: Parser PType
-typeExpr = buildExpressionParser ops typeTerm' <?> "type expression"
-  where ops = [[ Infix ( m_reservedOp "->" >> return PFunc) AssocRight ]] 
-
-typeTerm' :: Parser PType
-typeTerm' = m_parens typeExpr
-  <|> listType'
-  <|> userType
-  <|> (m_reserved "Nat"  >> return PSNat)
-  <|> (m_reserved "Bool" >> return PSBool)
-  <|> (m_reserved "Char" >> return PSChar)
-  <|> fmap PTVar m_identifier
-  <?> "type term"
-
-listType' :: Parser PType
-listType' = do
-  inner <- m_brackets typeExpr
-  return $ PList inner
-
--- FIXME add support for user types with type params
-userType :: Parser PType
-userType = (do
-    name <- typename
-    params <- manyAccum (:) typeExpr --typeExprMany --FIXME test this!
-    -- Params currently unused
-    return $ PUserType name
-  )
-  <|> (m_reserved "Uint" >> uintType)
-  <|> (m_reserved "Array" >> arrayType)
-  <?> "user defined type"
-
-uintType :: Parser PType
-uintType = (do
-    uintParams <- expressionMany1
-    let count = length uintParams
-    if count > 2
-      then unexpected ("uint types take 2 terms, got " ++ show count ++ ".")
-      else if count == 1
-        then return $ PUintPartial $ head uintParams
-        else return $ PUint (head uintParams) (last uintParams)
-  ) <?> "uint type"
-
-arrayType :: Parser PType
-arrayType =  (try (do
-    typ <- typeExpr
-    expr <- expression
-    return $ PArray typ expr
-    ))
-  <|> (try (do
-    typ <- typeExpr
-    return $ PArrayPartial typ
-  ))
-  <?> "array type"
-
-{-============================================================================-}
 
 
 -- Improved identifier  parsers
