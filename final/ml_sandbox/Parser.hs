@@ -354,7 +354,7 @@ expressionOperators =
     [binaryl "*" Multi, binaryl "/" Div, binaryl "/" Mod],
     [binaryl "+" Plus, binaryl "-" Minus],
     [binaryl "&" BitAnd, binaryl "|" BitOr,
-     binaryl "^" BitXor, binaryl "~" BitNot],
+     binaryl "^" BitXor, prefix "~" BitNot],
     [binaryl ">" GreaterThan, binaryl "<" LessThan,
      binaryl ">=" GreaterThanEq, binaryl " <=" LessThanEq],
     [prefix "not" Not],

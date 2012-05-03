@@ -102,9 +102,10 @@ instance Show BinOp where
     BitOr         -> "|"
     BitXor        -> "^"
 
-data UnOp = BitNot | Negate deriving (Eq)
+data UnOp = Not | BitNot | Negate deriving (Eq)
 instance Show UnOp where
   show op = case op of
+    Not    -> "not"
     BitNot -> "~"
     Negate -> "neg"
 
@@ -144,6 +145,17 @@ type TopLevelFunc = (String, PType, [String], PTree)
 
 
 type TypeBinding = (String, Type)
+
+
+data Env = Env {
+  gamma :: [TypeBinding]
+}
+
+bindType :: TypeBinding -> Env -> Env
+bindType typeBinding (Env typeEnv) = Env (typeBinding : typeEnv)
+
+bindTypes :: [TypeBinding] -> Env -> Env
+bindTypes typeBindings (Env typeEnv) = Env (typeBindings ++ typeEnv)
 
 
 -- Really common or really basic helper functions

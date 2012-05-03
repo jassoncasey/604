@@ -47,7 +47,7 @@ initTypeBinding = [
   ("&", Func SNat $ Func SNat SNat),
   ("|", Func SNat $ Func SNat SNat),
   ("^", Func SNat $ Func SNat SNat),
-  ("~", Func SNat SNat SNat) ]
+  ("~", Func SNat SNat) ]
 
 
 -- Type checkM1er mark 1
@@ -96,19 +96,19 @@ checkM1 env (Let sym typ func e) = do
 -- Has limited diagnostic support
 {-============================================================================-}
 typeCheckM2 :: [TypeBinding] -> Term -> TypeChecker Type
-typeCheckM2 ctors expr = check (ctors ++ initTypeBinding) expr
+typeCheckM2 ctors expr = check2 (ctors ++ initTypeBinding) expr
 
-check :: [TypeBinding] -> Term -> TypeChecker Type
+check2 :: [TypeBinding] -> Term -> TypeChecker Type
 
 --   c:T ∊ Γ
 -- -------------- T-CONST
 --   Γ ⊢ c:T
-check env (Lit c) = return $ typeOfConstant c
+check2 env (Lit c) = return $ typeOfConstant c
 
 --   x:T ∊ Γ
 -- ----------------- T-VAR
 --   Γ ⊢ x:T
-check env (Iden x) =
+check2 env (Iden x) =
   case lookup x env of
     Just t  -> return t
     Nothing -> fail ("Not in scope: '" ++ x ++ "'")
@@ -117,21 +117,21 @@ check env (Iden x) =
 -- -------------------------- T-PDU
 --   Γ ⊢ T {x1,x2,...,xn}:T
 -- FIXME This should introduce type information to the fact environment
-check env (Pdu t) = return t
+check2 env (Pdu t) = return t
 
 --   Γ,(x:T) ⊢ e:U
 -- ----------------- T-ABS
 --  Γ ⊢ λx:T.e:T→U
-check env (Abs x t e) = do
-  u <- check ((x,t):env) e
+check2 env (Abs x t e) = do
+  u <- check2 ((x,t):env) e
   return $ Func t u
 
 --   Γ ⊢ e1:U → T   Γ ⊢ e2:U
 -- --------------------------- T-APP
 --        Γ ⊢ e1 e2:T
-check env (App e1 e2) = do
-  u_t <- check env e1
-  u <- check env e2
+check2 env (App e1 e2) = do
+  u_t <- check2 env e1
+  u <- check2 env e2
   u' <- typeOfArg u_t
   checkSameType u' u "Error with T-APP:"
   t <- typeOfOut u_t
@@ -140,21 +140,21 @@ check env (App e1 e2) = do
 --   Γ ⊢ e1:Bool   Γ ⊢ e2:T   Γ ⊢ e3:T
 -- ------------------------------------- T-IF
 --      Γ ⊢ if e1 then e2 else e3:T
-check env (If e1 e2 e3) = do
-  conditionType <- check env e1
+check2 env (If e1 e2 e3) = do
+  conditionType <- check2 env e1
   checkSameType SBool conditionType "Error with T-IF conditional:"
-  t  <- check env e2
-  t' <- check env e3
+  t  <- check2 env e2
+  t' <- check2 env e3
   checkSameType t t' "Error with T-IF branches:"
   return t
 
 --   Γ ⊢ e1:T    Γ,(x:T) ⊢ e2:U
 -- ------------------------------ T-Let
 --    Γ ⊢ let x = e1:T in e2:U
-check env (Let x t e1 e2) = do
-  t' <- check env e1
+check2 env (Let x t e1 e2) = do
+  t' <- check2 env e1
   checkSameType t t' "Error with T-LET:"
-  check ((x,t):env) e2
+  check2 ((x,t):env) e2
 
 --   Γ ⊢ e : T
 --   for each case i
@@ -162,21 +162,108 @@ check env (Let x t e1 e2) = do
 --     Γ,(a1:T1),(a2:T2),...,(an:Tn) ⊢ ei:U
 -- --------------------------------------------------- T-CASE
 --   Γ ⊢ case e of {K1 a1 a2 ... -> e1; K2 b1 b2 ... -> e2; ...}:U
-check env (Case e cases) = do
-  t <- check env e
+check2 env (Case e cases) = do
+  t <- check2 env e
   -- lookup each constructor...
   -- verify params of each constructor
-  -- check each case
+  -- check2 each case
   us <- mapTC checkCase cases
   checkSameList (head us) us "Error with T-CASE clause types:"
   return $ head us
   where
     checkCase :: (String,[TypeBinding],Term) -> TypeChecker Type
-    checkCase (_,newBindings,e) = check (newBindings ++ env) e
+    checkCase (_,newBindings,e) = check2 (newBindings ++ env) e
 
 
 {-============================================================================-}
 
+
+
+
+-- Typechecker mark 3
+-- Uses new environment type, doesn't buy us anything :(
+{-============================================================================-}
+typeCheckM3 :: [TypeBinding] -> Term -> TypeChecker Type
+typeCheckM3 ctors expr = check3 (Env (ctors ++ initTypeBinding)) expr
+
+check3 :: Env -> Term -> TypeChecker Type
+
+--   c:T ∊ Γ
+-- -------------- T-CONST
+--   Γ ⊢ c:T
+check3 _ (Lit c) = return $ typeOfConstant c
+
+--   x:T ∊ Γ
+-- ----------------- T-VAR
+--   Γ ⊢ x:T
+check3 env (Iden x) =
+  case lookup x $ gamma env of
+    Just t  -> return t
+    Nothing -> fail ("Not in scope: '" ++ x ++ "'")
+
+--          T:T ∊ Γ
+-- -------------------------- T-PDU
+--   Γ ⊢ T {x1,x2,...,xn}:T
+-- FIXME This should introduce type information to the fact environment
+check3 _ (Pdu t) = return t
+
+--   Γ,(x:T) ⊢ e:U
+-- ----------------- T-ABS
+--  Γ ⊢ λx:T.e:T→U
+check3 env (Abs x t e) = do
+  u <- check3 (bindType (x,t) env) e
+  return $ Func t u
+
+--   Γ ⊢ e1:U → T   Γ ⊢ e2:U
+-- --------------------------- T-APP
+--        Γ ⊢ e1 e2:T
+check3 env (App e1 e2) = do
+  u_t <- check3 env e1
+  u <- check3 env e2
+  u' <- typeOfArg u_t
+  checkSameType u' u "Error with T-APP:"
+  t <- typeOfOut u_t
+  return t
+
+--   Γ ⊢ e1:Bool   Γ ⊢ e2:T   Γ ⊢ e3:T
+-- ------------------------------------- T-IF
+--      Γ ⊢ if e1 then e2 else e3:T
+check3 env (If e1 e2 e3) = do
+  conditionType <- check3 env e1
+  checkSameType SBool conditionType "Error with T-IF conditional:"
+  t  <- check3 env e2
+  t' <- check3 env e3
+  checkSameType t t' "Error with T-IF branches:"
+  return t
+
+--   Γ ⊢ e1:T    Γ,(x:T) ⊢ e2:U
+-- ------------------------------ T-Let
+--    Γ ⊢ let x = e1:T in e2:U
+check3 env (Let x t e1 e2) = do
+  t' <- check3 env e1
+  checkSameType t t' "Error with T-LET:"
+  check3 (bindType (x,t) env) e2
+
+--   Γ ⊢ e : T
+--   for each case i
+--     Ki:T1 → T2 → ... → Tn → T ∊ Γ
+--     Γ,(a1:T1),(a2:T2),...,(an:Tn) ⊢ ei:U
+-- --------------------------------------------------- T-CASE
+--   Γ ⊢ case e of {K1 a1 a2 ... -> e1; K2 b1 b2 ... -> e2; ...}:U
+check3 env (Case e cases) = do
+  t <- check3 env e
+  -- lookup each constructor...
+  -- verify params of each constructor
+  -- check2 each case
+  us <- mapTC checkCase cases
+  checkSameList (head us) us "Error with T-CASE clause types:"
+  return $ head us
+  where
+    checkCase :: (String,[TypeBinding],Term) -> TypeChecker Type
+    checkCase (_,newBindings,e) = check3 (bindTypes newBindings env) e
+
+
+{-============================================================================-}
 
 
 
