@@ -43,11 +43,12 @@ The parse tree to AST transformation is complicated so here is a sketch:
 processDecls :: [Declaration] ->
                 Maybe (Term, [String],[(String,[(String,Type)])], [TypeBinding])
 processDecls decls = do
-  let udts = filterTypeDeclarations decls
+  let (adtNames,ctors) = getAdtNamesAndCtors $ filterAdtDecls decls
+  let (pduRecs,accessors) = getPduRecordsAndAccessors $ filterPduDecls decls
+  let typeBindings = ctors ++ accessors
   let funcs = getFuncsFromDecls decls
-  let (adtNames, pduRecs, typBindings) = processUserTypes udts
-  prgm <- functionsToAst funcs typBindings
-  return (prgm, adtNames, pduRecs, typBindings)
+  prgm <- functionsToAst funcs typeBindings
+  return (prgm, adtNames, pduRecs, typeBindings)
 
 {-============================================================================-}
 
@@ -57,10 +58,11 @@ processDecls decls = do
 {-============================================================================-}
 getFuncsFromDecls :: [Declaration] -> [TopLevelFunc]
 getFuncsFromDecls [] = []
-getFuncsFromDecls [TypeDecl _] = []
 getFuncsFromDecls [FuncDecl f] = [f]
-getFuncsFromDecls ((TypeDecl _):decls) = getFuncsFromDecls decls
+getFuncsFromDecls [_] = []
 getFuncsFromDecls ((FuncDecl f):decls) = f:(getFuncsFromDecls decls)
+getFuncsFromDecls ((_):decls) = getFuncsFromDecls decls
+
 
 -- Given a list of types, a list of params and a term (function body), produce
 -- an abstraction over the term.
@@ -98,10 +100,10 @@ parseTreeToAst (IfThenElse t1 t2 t3) typBindings = do
 parseTreeToAst (Binary bop t1 t2) typBindings = do
   t1' <- parseTreeToAst t1 typBindings
   t2' <- parseTreeToAst t2 typBindings
-  return $ App (App (Iden(fromBinOpToStr bop)) t1') t2'
+  return $ App (App (Iden (show bop)) t1') t2'
 parseTreeToAst (Unary uop t) typBindings = do
   t' <- parseTreeToAst t typBindings
-  return $ App (Iden $ fromUnOpToStr uop) t'
+  return $ App (Iden $ show uop) t'
 parseTreeToAst (CaseStmt ptree pcases) typBindings = do
   scrutinee <- parseTreeToAst ptree typBindings
   let maybeCases = map (caseToAst typBindings) pcases
@@ -151,59 +153,47 @@ functionsToAst (f@(name,_,_,_):funcs) typBind = do
 -- These are helper functions that take apart
 {-============================================================================-}
 
-filterTypeDeclarations :: [Declaration] -> [UserTypeDef]
-filterTypeDeclarations [] = []
-filterTypeDeclarations [FuncDecl _] = []
-filterTypeDeclarations [TypeDecl t] = [t]
-filterTypeDeclarations ((FuncDecl _):decls) = filterTypeDeclarations decls
-filterTypeDeclarations ((TypeDecl t):decls) = t : (filterTypeDeclarations decls)
+filterAdtDecls :: [Declaration] -> [AdtInfo]
+filterAdtDecls [] = []
+filterAdtDecls [AdtDecl d] = [d]
+filterAdtDecls [_] = []
+filterAdtDecls ((AdtDecl d):decls) = d:(filterAdtDecls decls)
+filterAdtDecls ((_):decls) = filterAdtDecls decls
 
--- Return is, list of ADT names, list of PDU records and a list of Ctors.
--- The ctors are in a format that can be directly added to the type environment
-processUserTypes :: [UserTypeDef]
-                    -> ([String],[(String,[(String,Type)])],[TypeBinding])
-processUserTypes udts = (adtNames udts, pduRecords udts, makeCtors udts)
+-- Returns a list of ADT names and a list of ADT constructors ready for gamma
+getAdtNamesAndCtors :: [AdtInfo] -> ([String],[TypeBinding])
+getAdtNamesAndCtors adts = (names, ctors)
+  where names = map adtInfoName adts
+        ctors = foldl (++) [] $ map makeADTCtors' adts
 
-adtNames :: [UserTypeDef] -> [String]
-adtNames [] = []
-adtNames ((n,ADTType _):udts) = n : (adtNames udts)
-adtNames (_:udts) = adtNames udts
+makeADTCtors' :: AdtInfo -> [TypeBinding]
+makeADTCtors' adtInfo = map makeAdtCtor $ adtInfoCtors adtInfo
+  where makeAdtCtor :: (String,[PType]) -> TypeBinding
+        makeAdtCtor (ctorName, ptyps) = (ctorName,foldr Func adtType (mt ptyps))
+        mt ptyps = map toType ptyps
+        adtType = UserType $ adtInfoName adtInfo
 
-pduRecords :: [UserTypeDef] -> [(String,[(String,Type)])]
-pduRecords [] = []
-pduRecords ((n,PDUType rec):udts) = (n,map toTypeFields rec) : (pduRecords udts)
-  where toTypeFields :: (String,PType) -> (String, Type)
-        toTypeFields (n,t) = (n,toType t)
-pduRecords (_:udts) = pduRecords udts
+filterPduDecls :: [Declaration] -> [PduInfo]
+filterPduDecls [] = []
+filterPduDecls [PduDecl d] = [d]
+filterPduDecls [_] = []
+filterPduDecls ((PduDecl d):decls) = d:(filterPduDecls decls)
+filterPduDecls ((_):decls) = filterPduDecls decls
 
--- takes a list of userdefined data types and 
-makeCtors :: [UserTypeDef] -> [TypeBinding]
-makeCtors [] = []
-makeCtors ((name,ADTType ts):typs) = makeADTCtors name ts ++ makeCtors typs
-makeCtors ((name,PDUType fields):typs) =
-  makePduAccessors name fields ++ makeCtors typs
+-- Returns a list of PDU records and accessors
+getPduRecordsAndAccessors :: [PduInfo]
+  -> ([(String,[(String,Type)])], [TypeBinding])
+getPduRecordsAndAccessors pdus = (records, bindings)
+  where
+    records = map pduToRecord pdus
+    bindings = foldl (++) [] $ map makePduAccessor pdus
+    pduToRecord :: PduInfo -> (String,[(String,Type)])
+    pduToRecord (PduInfo name fields) = (name,map (\(x,y)->(x,toType y)) fields)
 
--- Turns an ADT definition into a list of constructors
-makeADTCtors :: String -> [(String, [PType])] -> [TypeBinding]
-makeADTCtors tname ctors =
-  case ctors of
-    [] -> error "Internal error: ADT defined without constructors."
-    [(ctorName,typs)] -> [(ctorName,(makeFunc tname typs))]
-    ((ctorName,typs):ctors') ->
-      (ctorName,(makeFunc tname typs)):(makeADTCtors tname ctors')
-  where makeFunc :: String -> [PType] -> Type
-        makeFunc tname' [] = UserType tname
-        makeFunc tname' (t:ts) = Func (toType t) $ makeFunc tname' ts
-
-makePduAccessors :: String -> [(String,PType)] -> [TypeBinding]
-makePduAccessors fname fields =
-  case fields of
-    [] -> error ("How did we get an empty pdu declaration: " ++ fname)
-    [(n,ptyp)]    -> [pduAccessorType n ptyp]
-    ((n,ptyp):fs) -> (pduAccessorType n ptyp) : (makePduAccessors fname fs)
-  where pduAccessorType :: String -> PType -> TypeBinding
-        pduAccessorType name' ptyp = (name',Func (UserType fname) (toType ptyp))
-
+makePduAccessor :: PduInfo -> [TypeBinding]
+makePduAccessor (PduInfo n fs) = map makeAccessor fs
+  where makeAccessor :: (String,PType) -> TypeBinding
+        makeAccessor (fname, ptyp) = (fname, Func (UserType n) (toType ptyp))
 
 {-============================================================================-}
 
@@ -240,52 +230,3 @@ toType (PUintPartial ptree) =
       Just a  -> a
       Nothing -> undefined
 {-============================================================================-}
-{-============================================================================-}
-{-============================================================================-}
-{-============================================================================-}
-{-============================================================================-}
-{-============================================================================-}
-{-============================================================================-}
-
-
-
-
-
-
-
--- Creates a let node for each top level function
-{-toAst :: [P.TopLevelFunc] -> Ast
-toAst [] = Nil
-toAst [func] = toAstFromTop func
-toAst (f@(name,_,_,_):funcs) = Let name t $ toAst funcs
-  where t = toAstFromTop f
-
--- Converts a top-level function into an Ast
-toAstFromTop :: P.TopLevelFunc -> Ast
-toAstFromTop (_, _, args, t) = argsToAbs args t
-
--- Converts a function body into a lambda calulus AST
-argsToAbs :: [String] -> P.PTree -> Ast
-argsToAbs [] t = fromPTreeToAst t
-argsToAbs [x] t = Abs x $ fromPTreeToAst t
-argsToAbs (x:xs) t = Abs x $ argsToAbs xs t
-
--- Convert a Parse tree to an AST
-fromPTreeToAst :: P.PTree -> Ast
-fromPTreeToAst (P.Identifier str) = Iden str
-fromPTreeToAst (P.Application t1 t2) =
-  App (fromPTreeToAst t1) (fromPTreeToAst t2)
-fromPTreeToAst (P.IfThenElse t1 t2 t3) =
-  If (fromPTreeToAst t1) (fromPTreeToAst t2) (fromPTreeToAst t3)
-fromPTreeToAst (P.Literal c) = Lit c
-fromPTreeToAst (P.Binary bop t1 t2) =
-  App (App (Iden $ fromBinOpToStr bop) (fromPTreeToAst t1)) $ fromPTreeToAst t2
-fromPTreeToAst (P.Unary uop t) =
-  App (Iden $ fromUnOpToStr uop) (fromPTreeToAst t)-}
-
-
-
-
-
-
-

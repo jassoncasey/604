@@ -63,14 +63,12 @@ data PTree =
   | PduConstructor String
   deriving (Eq, Show)
 
--- FIXME Needs a pretty show instance
 -- FIXME And better support for userdata
 data Constant = 
    LitBool Bool
  | LitNat  Integer
  | LitChar Char
  deriving (Eq)
-
 instance Show Constant where
   show c = case c of
     LitBool h -> show h
@@ -83,36 +81,62 @@ data BinOp =
   | LessThan | LessThanEq | GreaterThan | GreaterThanEq -- Ordering
   | Equal | NotEqual                                    -- Equality
   | Or | And                                            -- Logical
-  deriving (Eq, Show)
+  | BitAnd | BitNot | BitOr | BitXor                    -- Bit Operations
+  deriving (Eq)
+instance Show BinOp where
+  show op = case op of
+    Plus          -> "+"
+    Minus         -> "-"
+    Multi         -> "*"
+    Div           -> "/"
+    Mod           -> "%"
+    LessThan      -> "<"
+    LessThanEq    -> "<="
+    GreaterThan   -> ">"
+    GreaterThanEq -> ">="
+    Equal         -> "="
+    NotEqual      -> "<>"
+    Or            -> "or"
+    And           -> "and"
+    BitAnd        -> "&"
+    BitNot        -> "~"
+    BitOr         -> "|"
+    BitXor        -> "^"
 
-data UnOp = Not | Negate deriving (Eq, Show)
+data UnOp = Not | Negate deriving (Eq)
+instance Show UnOp where
+  show op = case op of
+    Not    -> "not"
+    Negate -> "neg"
 
 
 -- FIXME Redo parse info hierarchy. A pdu declaration should be distinct from an
 --       ADT declaration
 
 
--- Types used to wrap top level declarations
-data UserDataStructure =
-    PDUType [(String,PType)]       -- A name and a list of fields
-  | ADTType [(String,[PType])] -- A name and a list of constructors
-  deriving (Eq, Show)
-
-type UserTypeDef = (String, UserDataStructure)
-
 data Declaration =
-    TypeDecl UserTypeDef
+    PduDecl PduInfo
   | AdtDecl AdtInfo
-  | PduDecl PduInfo
   | FuncDecl TopLevelFunc
   deriving (Show,Eq)
 
 type PDURecord = (String, [(String,PType)])
 
 data PduInfo = PduInfo {
-  pduInfoName :: String,
+  pduInfoName   :: String,
   pduInfoFields :: [(String,PType)]
 } deriving (Show,Eq)
+
+data AdtInfo = AdtInfo {
+  adtInfoName  :: String,
+  adtInfoCtors :: [(String,[PType])]
+} deriving (Show,Eq)
+
+data Declarations = Declarations {
+  pduDecls  :: [PduInfo],
+  adtDecls  :: [AdtInfo],
+  funcDecls :: [TopLevelFunc]
+}
 
 -- name, type, param names, parse tree (definition)
 type TopLevelFunc = (String, PType, [String], PTree)
@@ -150,23 +174,3 @@ unique l = unique' l []
     unique' (x:xs) ls
       | elem x ls = False
       | otherwise = unique' xs (x:ls)
-
--- fromBinaryOp to String
-fromBinOpToStr :: BinOp -> String
-fromBinOpToStr Plus          = "+"
-fromBinOpToStr Minus         = "-"
-fromBinOpToStr Multi         = "*"
-fromBinOpToStr Div           = "/"
-fromBinOpToStr Mod           = "%"
-fromBinOpToStr LessThan      = "<"
-fromBinOpToStr LessThanEq    = "<="
-fromBinOpToStr GreaterThan   = ">"
-fromBinOpToStr GreaterThanEq = ">="
-fromBinOpToStr Equal         = "="
-fromBinOpToStr NotEqual      = "<>"
-fromBinOpToStr Or            = "or"
-fromBinOpToStr And           = "and"
-
-fromUnOpToStr :: UnOp -> String
-fromUnOpToStr Not = "not"
-fromUnOpToStr Negate = "-"

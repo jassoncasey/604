@@ -98,6 +98,7 @@ parseUnit usedNames = do
   eof
   return declarations
 
+-- FIXME This can use manyAccum
 parseIt :: [String] -> Parser [Declaration]
 parseIt usedNames = (do
     first <- parseDeclaration usedNames
@@ -111,19 +112,10 @@ parseIt usedNames = (do
   <?> "translation unit"
 
 parseDeclaration :: [String] -> Parser Declaration
-parseDeclaration usedNames = (do
-    decl <- dataType usedNames
-    return $ TypeDecl decl)
-  <|> (do
-    decl <- function usedNames
-    return $ FuncDecl decl)
+parseDeclaration usedNames =
+      (dataType usedNames)
+  <|> (function usedNames)
   <?> "declaration"
-
-parseDeclaration' :: [String] -> Parse Declaration
-parseDeclaration' usedNames = dataType <|> function <?> "declaration"
-
-
-
 
 {-============================================================================-}
 
@@ -141,13 +133,13 @@ parseDeclaration' usedNames = dataType <|> function <?> "declaration"
 -}
 {-============================================================================-}
 
-dataType :: [String] -> Parser UserTypeDef
+dataType :: [String] -> Parser Declaration
 dataType usedNames =
       pdu usedNames
   <|> adt usedNames
   <?> "data type declaration"
 
-pdu :: [String] -> Parser UserTypeDef
+pdu :: [String] -> Parser Declaration
 pdu usedNames = (do
     m_reserved "pdu"
     name <-  m_typename
@@ -156,7 +148,7 @@ pdu usedNames = (do
       then fail $ "Redeclaration of \"" ++ name ++ "\""
       else do
         members <- m_braces fieldSequence
-        return $ (name, PDUType members)
+        return $ PduDecl $ PduInfo name members--(name, PDUType members)
   ) <?> "pdu type"
 
 fieldSequence :: Parser [(String, PType)]
@@ -174,7 +166,7 @@ field = (do
     return (name, typ)
   ) <?> "field"
 
-adt :: [String] -> Parser UserTypeDef
+adt :: [String] -> Parser Declaration
 adt usedNames = (do
     m_reserved "data"
     name <- m_typename
@@ -183,7 +175,7 @@ adt usedNames = (do
       else do
         m_reservedOp "="
         constructors <- m_braces constructorSequence
-        return $ (name, ADTType constructors) )
+        return $ AdtDecl $ AdtInfo name constructors )
   <?> "adt"
 
 constructorSequence :: Parser [(String, [PType])]
@@ -210,7 +202,7 @@ constructor = (do
 {-============================================================================-}
 
 -- FIXME Place better requirements on 
-function :: [String] -> Parser TopLevelFunc
+function :: [String] -> Parser Declaration
 function usedNames = (do
     (name', typeSig) <- functionType
     if elem name' usedNames
@@ -220,7 +212,7 @@ function usedNames = (do
         (name, params, body) <- functionDefinition
         m_reservedOp ";"
         if name' == name
-          then return (name, typeSig, params, body)
+          then return $ FuncDecl (name, typeSig, params, body)
           else fail "annotation and definition must have the same name" )
   <?> "function"
 
@@ -308,11 +300,11 @@ term = m_parens expression
 
 application :: Parser PTree
 application = try (do
-    iden <- m_identifier
+    iden <- fmap Identifier m_identifier
     firstExpr <- expression -- We require at least one member of an expr list
-    restExprs <- manyAccum (:) expression --expressionMany1 -- many1 expression
+    restExprs <- manyAccum (:) expression
     let exprList = firstExpr:restExprs
-    return $ makeApplication ((Identifier iden):exprList)
+    return $ foldr Application iden exprList
   ) <|> primary
   <?> "application"
 
@@ -361,17 +353,13 @@ expressionOperators =
     [prefix "-" Negate], -- hmmm. 1+-2 doesn't parse, but 1+ -2 does (correctly)
     [binaryl "*" Multi, binaryl "/" Div, binaryl "/" Mod],
     [binaryl "+" Plus, binaryl "-" Minus],
+    [binaryl "&" BitAnd, binaryl "|" BitOr,
+     binaryl "^" BitXor, binaryl "~" BitNot],
     [binaryl ">" GreaterThan, binaryl "<" LessThan,
      binaryl ">=" GreaterThanEq, binaryl " <=" LessThanEq],
     [prefix "not" Not],
     [binaryl "or" Or, binaryl "and" And]
   ]
-
--- Takes a [PTree] string and turns it into an application tree
-makeApplication :: [PTree] -> PTree
-makeApplication [] = error "Calling makeApplication on an empty list of nodes."
-makeApplication [n] = n
-makeApplication ns = Application (makeApplication $ init ns) $ last ns
 
 {-============================================================================-}
 
@@ -449,15 +437,6 @@ binaryl name func =
   Infix (do {m_reservedOp name; return (Binary func)}) AssocLeft
 prefix symbol func = Prefix ( m_reservedOp symbol >> return (Unary func))
 
-
--- Removes the \" characters from strings
-cleanDQ :: String -> String
-cleanDQ "" = ""
-cleanDQ ('\\':str) = cleanDQ str
-cleanDQ ('\"':str) = cleanDQ str
-cleanDQ (a:str)    = a : (cleanDQ str)
-
-
 -- takes a list of types and turns it into a function type
 makeTypeFromList :: [PType] -> PType
 makeTypeFromList [] = error "Trying to convert an empty list into a type"
@@ -468,17 +447,11 @@ makeTypeFromList (x:xs) = PFunc x $ makeTypeFromList xs
 -- Extracts all names from a type so that we can ensure that a user doesn't use
 -- the same name twice
 getNamesFromDeclaration :: Declaration -> [String]
-getNamesFromDeclaration (TypeDecl (name, userType)) = (name : memberNames)
-  where memberNames = wertfgh userType
 getNamesFromDeclaration (FuncDecl (name,_,_,_)) = [name]
+getNamesFromDeclaration (PduDecl pduInfo) = lunzip $ pduInfoFields pduInfo
+getNamesFromDeclaration (AdtDecl adtInfo) = lunzip $ adtInfoCtors adtInfo
 
-
-wertfgh :: UserDataStructure -> [String]
-wertfgh a = case a of
-  PDUType fields       -> lunzip fields
-  ADTType constructors -> lunzip constructors
-
-
+-- Handles reserved name errors
 isReservedName name = isReserved theReservedNames caseName
   where
     caseName
@@ -530,43 +503,3 @@ identifier' =
 m_identifier = identifier' <?> "identifier"
 
 {-============================================================================-}
-
-
--- Recycling bin
--- Throw this code out as soon as possible
-
-typeExprMany :: Parser [PType]
-typeExprMany = (do
-    t  <- typeExpr
-    ts <- typeExprMany
-    return (t:ts)
-  )
-  <|> return []
-  <?> "type list"
-
-typeExprMany1 :: Parser [PType]
-typeExprMany1 = (do
-    t  <- typeExpr
-    ts <- typeExprMany
-    return (t:ts)
-  )
-  <?> "type list"
-
-expressionMany :: Parser [PTree]
-expressionMany = (do
-    e  <- expression
-    es <- expressionMany
-    return (e:es)
-  )
-  <|> return []
-  <?> "expression list"
-
--- fails when the expression list is empty
--- naming conventions borrowed from parsec
-expressionMany1 :: Parser [PTree]
-expressionMany1 = (do
-    e  <- expression
-    es <- expressionMany
-    return (e:es)
-  )
-  <?> "expression list"

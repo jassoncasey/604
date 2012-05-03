@@ -3,6 +3,12 @@ module Steve.TypeCheck where
 import Steve.Internal
 
 
+{-
+
+Initial typebindings are not complete
+
+-}
+
 
 -- TypeCheck Monad
 {-============================================================================-}
@@ -34,8 +40,14 @@ initTypeBinding = [
   ("-", Func SNat $ Func SNat SNat),
   ("*", Func SNat $ Func SNat SNat),
   ("/", Func SNat $ Func SNat SNat),
-  ("%", Func SBool $ Func SBool SBool),
-  ("|", Func SBool $ Func SBool SBool) ]
+  ("%", Func SNat $ Func SNat SNat),
+  ("not", Func SBool SBool),
+  ("or", Func SBool $ Func SBool SBool),
+  ("and", Func SBool $ Func SBool SBool),
+  ("&", Func SNat $ Func SNat SNat),
+  ("&", Func SNat $ Func SNat SNat),
+  ("&", Func SNat $ Func SNat SNat),
+  ("&", Func SNat $ Func SNat SNat) ]
 
 
 -- Type checkM1er mark 1
