@@ -1,6 +1,6 @@
 COMPILER=ghc
 FLAGS=-Wall
-LIBS=-package haskell98 -package containers
+LIBS=-package haskell98 -package containers -package bytestring
 
 TARGET=splc
 

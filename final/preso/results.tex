@@ -1,0 +1,23 @@
+\section{Results}
+
+\comment{
+\frame{\frametitle{Simple Example}
+\begin{verbatim}
+ rcv :: ARP -> Unit
+ rcv pkt as ARP =
+    if pkt.type == Request
+       then send pkt.mac ( arp_who_has pkt.ip )
+       else arp_update pkt.mac pkt.ip
+ 
+ rcv :: IPv4 -> Unit
+ rcv pkt as IPv4 =
+    if pkt.ttl == 0
+       then send pkt.src ( make_dst_unreach pkt )
+       else fwd ( dec_ttl pkt )
+    
+ rcv :: EtherII -> Unit
+ rcv pkt as EtherII = 
+    rcv pkt.payload  
+\end{verbatim}
+}
+}

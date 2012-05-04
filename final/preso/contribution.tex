@@ -1,0 +1,98 @@
+\section{Contribution}
+
+\subsection{Network Protocol Architecture}
+
+
+
+\subsection{Steve: A Network Protocol Specification Language}
+
+\frame{\frametitle{Language Terms}
+$t::=$   $t$ $t$
+   $|$ $\lambda$x$.t$
+   $|$ if $t$ then $t$ else $t$
+   $|$ $t$ as T
+   $|$ let x = $t$ in $t$
+   $|$ $\{ x_{i}=t_{i}^{i\in1..n}\}$
+   $|$ $t$.x
+   $|$ nil
+   $|$ cons t t
+   $|$ array $t$ $t$
+   $|$ uint $t$ $t$
+   $|$ pad $t$
+   $|$ pdu $t$
+   $|$ enum $t$\\
+
+   $\tau::=$ Nat $|$ Char $|$ Bool $|$ Unit $|$ $\tau \rightarrow \tau$ 
+            $|$ $[\tau]$ $|$ $\tau ? t$
+
+   $\sigma::=$ $\tau$ $|$ $\alpha$ $|$ $\forall \alpha . \sigma$
+}
+
+\frame{\frametitle{Type Constructors}
+
+array $t_1$ $t_2$\\
+$t_1=$ expression defining the type contained in the array\\
+$t_2=$ expression defining the initial/default value of the array\\
+ 
+uint $t_1$ $t_2$\\
+$t_1=$ expression defining the number size of this uint in bits\\
+$t_2=$ expression defining the initial/default value of this type\\
+
+pad $t$\\
+$t=$ expression defining the number of bits to skip\\
+
+}
+
+\subsection{A Theory of Steve}
+
+\frame{\frametitle{Predicate Introduction}
+\begin{itemize}
+   \item $\Delta$ - set of known facts
+   \item conditional terms introduce predicates
+   \item evaluate sub-terms using new fact established by predicate
+\end{itemize}
+ 
+\begin{prooftree}
+   \scriptsize
+   \def \fCenter{\ \vdash\ }
+   \RightLabel{\textbf{T$_{if}$}}
+   \AxiomC{$\Delta | \Gamma \fCenter\ t_1 : Bool$}
+   \AxiomC{$\Delta,\{t_1\} | \Gamma \fCenter\ t_2 : \tau$}276 \AxiomC{$\Delta,\{\neg t_1\} | \Gamma \fCenter\ t_3 : \tau$}
+   \TrinaryInfC{$\Delta | \Gamma \fCenter\ $ if $t_1$ then $t_2$ else $t_3 : \tau$}
+\end{prooftree}
+}
+
+\frame{\frametitle{Dependency Elimination}
+\begin{itemize}
+   \item deduce dependency from known facts
+   \item eliminate dependency in resulting type
+\end{itemize}
+ 
+\begin{prooftree}
+   \scriptsize
+   \def \fCenter{\ \vdash\ }
+   \RightLabel{\textbf{T$_{DepElim_1}$}}
+   \AxiomC{$\Delta | \Gamma \fCenter\ t : \tau ? \delta$}
+   \AxiomC{$\Delta \vDash \delta$}
+   \BinaryInfC{$\Delta | \Gamma \fCenter\ t : \tau$}
+\end{prooftree}
+}
+
+\frame{\frametitle{Dependency Deferral}
+\begin{itemize}
+   \item use of type without proof of dependency
+   \item rewrite term using conditional
+   \item eliminate dependency of type
+\end{itemize}
+ 
+\begin{prooftree}
+   \scriptsize
+   \def \fCenter{\ \vdash\ }
+   \RightLabel{\textbf{T$_{DepElim_2}$}}
+   \AxiomC{$\Delta | \Gamma \fCenter\ t : \tau ? \delta$}313 \AxiomC{$\Delta \nvDash \delta$}
+   \BinaryInfC{$\Delta | \Gamma \fCenter\ t : \tau ? \delta \rightsquigarrow$ if $
+   \delta$ then $t$ else $error : \tau$}
+\end{prooftree}
+}
+
+\subsection{Steve's interpreter}
