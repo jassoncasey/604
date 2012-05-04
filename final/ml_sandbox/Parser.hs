@@ -28,6 +28,11 @@ module Steve.Parser where
   ISSUES (known problems)
     - type expressions are NOT intuitive now that we have dependent types
       Example: "Uint 2 a 3" is parsed as "Uint 2 (a 3)"
+
+  INSIGHTS
+    - When looking for expression lists, always parse a term. The parser will
+      fall through and look for surrounding parantheses or a simple expr and
+      then continue on to the rest.
 -}
 
 import Steve.Internal
@@ -44,11 +49,11 @@ import Data.List (sort)
 
 
 keywords = [
-  "Nat","Char","Bool",                -- simple built-in types
-  "Uint","Array",                     -- dependent built-in types
-  "True", "False",                    -- built-in literals
-  "if", "then", "else","case","of",   -- built-in if-then-else support
-  "data", "pdu"                       -- Data declarators
+  "Nat","Char","Bool"                -- simple built-in types
+, "Uint","Array","Pad"               -- dependent built-in types
+, "True", "False"                    -- built-in literals
+, "if", "then", "else","case","of"   -- built-in if-then-else support
+, "data", "pdu"                      -- Data declarators
   ]
 
 operators = [
@@ -311,7 +316,8 @@ application = try (do
 primary :: Parser PTree
 primary = fmap Identifier m_identifier
   <|> literal
-  <|> pduConstructor
+  <|> try pduConstructor
+  <|> fmap Identifier m_typename  -- Used for constructors
   <?> "primary expression"
 
 literal :: Parser PTree
@@ -399,25 +405,37 @@ complexType = try (do
       then return $ PUserType name
       else fail "Steve doesn't support parametric ADTs. Yet."
   )
-  <|> (m_reserved "Uint" >> uintType)
-  <|> (m_reserved "Array" >> arrayType)
+  <|> uintType
+  <|> arrayType
+  <|> padType
   <?> "user defined type"
 
 uintType :: Parser PType
 uintType = (do
+    m_reserved "Uint"
     uintParams <- many1 expression
     let count = length uintParams
     if count == 2
       then return $ PUint (head uintParams) (last uintParams)
-      else unexpected ("uint types take 2 terms, got " ++ show count ++ ".") )
+      else unexpected ("uint types take 2 terms, got " ++ show count ++ ".")
+  )
   <?> "uint type"
 
 arrayType :: Parser PType
-arrayType =  (try (do
+arrayType = (do
+    m_reserved "Array"
     typ <- typeTerm
-    expr <- expression
-    return $ PArray typ expr ))
+    expr <- term
+    return $ PArray typ expr
+  )
   <?> "array type"
+
+padType :: Parser PType
+padType = (do
+    m_reserved "Pad"
+    expr <- term
+  )
+  <?> "pad type"
 
 {-============================================================================-}
 

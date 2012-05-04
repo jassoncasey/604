@@ -10,7 +10,13 @@ dontCare a b = 3;
 saidYouCared :: Nat;
 saidYouCared = dontCare (square 23) 2;
 
-data Breakfast = { Bacon Nat | Eggs Char Nat | Ham }
+data Breakfast = { Bacon Nat | Eggs Nat Bool | Ham }
+
+healthyBreakfast :: Breakfast;
+healthyBreakfast = Eggs 3 True;
+
+badBreakfast :: Breakfast;
+badBreakfast = Bacon 12;
 
 aMajorCase :: Breakfast -> Nat;
 aMajorCase item = case item of

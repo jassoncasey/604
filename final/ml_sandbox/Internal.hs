@@ -56,6 +56,7 @@ data PType =
   | PUserType String
   | PArray PType PTree
   | PUint PTree PTree
+  | PPad PTree
   deriving (Show,Eq)
 
 
