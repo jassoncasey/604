@@ -20,10 +20,7 @@ SPL input files are read and typechecked. An AST is constructed from each file. 
 
 
 \section{Typing Relations}
-\subsection{Types}
-Types used in the program.
 
-\subsection{Type System}
 The rules are inspired by the modified Damas-Milner system and includes support for natural numbers, primitives and the list constructors.
 
 \begin{center}
@@ -149,10 +146,12 @@ defined for $( +, -, x, / )$ over $\mathbb{N}$.
 
 \section{Testing}
 
-Some testing
+The type inference and argument deduction was tested against a large set of 
+test inputs designed using the type construction rules from the Mini-ML paper.
+Negative and positive test cases were created directly from the syntax directed
+typing rules outlined.
 
 \section{Files}
-\subsection{Core files}
 \begin{tabular}{|p{20mm}|p{93mm}|}
   \hline
 {\bf Files}&{\bf Description}\\
@@ -172,8 +171,5 @@ Typing.hs & Module that implements type inference and type error reporting.\\
 ProofTree.hs & Module that implements type inference and returns the proof tree.\\
   \hline
 \end{tabular}
-
-\section{Division of labor}
-The division of labor is quite fair. We both implemented our own versions of the typechecker. We collaborate heavily in the ideas phase and in much of the planning phase. The output of which, as exhibited in this project, was a quick and simple typechecker and a more robust typechecker that incorporates elements of system F and outputs a proof tree. ???The latter is in the works, but will be available soon.
 
 \end{document}
