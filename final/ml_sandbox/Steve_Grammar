@@ -68,8 +68,11 @@ multiplicative-expr:
   multiplicative-expr "%" applicative-expr
 
 applicative-expr:
+  adtConstructor
+  applicative-expr primary
   primary
-  Application primary
+
+
 
 primary:
   identifier
@@ -104,8 +107,10 @@ type-term:
   Char
   identifier
 
-user-type:
+complex-type:
   typename    // parameter-sequence only supported with generic adts
+  "Uint" expression expression
+  "Array" type-term expression
 
 type-variable:
   identifier
@@ -133,7 +138,7 @@ typesig:
   simple-type
 
 simple-type:
-  "Int"
+  "Nat"
   "Bool"
   "Char"
   typename

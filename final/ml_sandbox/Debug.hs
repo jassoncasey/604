@@ -53,3 +53,13 @@ typeCheckFileM2 fname = do
     Right output -> case processDecls output of
       Just (expr, _,_, ctors) -> putStrLn $ show $ typeCheckM2 ctors expr
       Nothing -> putStrLn "Failed to parse."
+
+typeCheckFileM3 :: String -> IO ()
+typeCheckFileM3 fname = do
+  source <- readFile fname
+  let result = parse (parseUnit []) fname source
+  case result of
+    Left err -> putStrLn $ show err
+    Right output -> case processDecls output of
+      Just (expr, _,_, ctors) -> putStrLn $ show $ typeCheckM3 ctors expr
+      Nothing -> putStrLn "Failed to parse."

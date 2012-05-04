@@ -183,21 +183,21 @@ check2 env (Case e cases) = do
 -- Typechecker mark 3
 -- Uses new environment type, doesn't buy us anything :(
 {-============================================================================-}
-typeCheckM3 :: [TypeBinding] -> Term -> TypeChecker Type
-typeCheckM3 ctors expr = check3 (Env (ctors ++ initTypeBinding)) expr
+typeCheckM3 :: ([TypeBinding]) -> Term -> TypeChecker Type
+typeCheckM3 ctors expr = check3 ((ctors ++ initTypeBinding),[]) expr
 
-check3 :: Env -> Term -> TypeChecker Type
+check3 :: ([TypeBinding],[Fact]) -> Term -> TypeChecker Type
 
 --   c:T ∊ Γ
 -- -------------- T-CONST
 --   Γ ⊢ c:T
-check3 _ (Lit c) = return $ typeOfConstant c
+check3 (env,_) (Lit c) = return $ typeOfConstant c
 
 --   x:T ∊ Γ
 -- ----------------- T-VAR
 --   Γ ⊢ x:T
-check3 env (Iden x) =
-  case lookup x $ gamma env of
+check3 (env,_) (Iden x) =
+  case lookup x env of
     Just t  -> return t
     Nothing -> fail ("Not in scope: '" ++ x ++ "'")
 
@@ -205,21 +205,21 @@ check3 env (Iden x) =
 -- -------------------------- T-PDU
 --   Γ ⊢ T {x1,x2,...,xn}:T
 -- FIXME This should introduce type information to the fact environment
-check3 _ (Pdu t) = return t
+check3 (env,_) (Pdu t) = return t
 
 --   Γ,(x:T) ⊢ e:U
 -- ----------------- T-ABS
 --  Γ ⊢ λx:T.e:T→U
-check3 env (Abs x t e) = do
-  u <- check3 (bindType (x,t) env) e
+check3 (env,facts) (Abs x t e) = do
+  u <- check3 (((x,t):env),facts) e
   return $ Func t u
 
 --   Γ ⊢ e1:U → T   Γ ⊢ e2:U
 -- --------------------------- T-APP
 --        Γ ⊢ e1 e2:T
-check3 env (App e1 e2) = do
-  u_t <- check3 env e1
-  u <- check3 env e2
+check3 (env,facts) (App e1 e2) = do
+  u_t <- check3 (env,facts) e1
+  u <- check3 (env,facts) e2
   u' <- typeOfArg u_t
   checkSameType u' u "Error with T-APP:"
   t <- typeOfOut u_t
@@ -228,21 +228,21 @@ check3 env (App e1 e2) = do
 --   Γ ⊢ e1:Bool   Γ ⊢ e2:T   Γ ⊢ e3:T
 -- ------------------------------------- T-IF
 --      Γ ⊢ if e1 then e2 else e3:T
-check3 env (If e1 e2 e3) = do
-  conditionType <- check3 env e1
+check3 (env,facts) (If e1 e2 e3) = do
+  conditionType <- check3 (env,facts) e1
   checkSameType SBool conditionType "Error with T-IF conditional:"
-  t  <- check3 env e2
-  t' <- check3 env e3
+  t  <- check3 (env,facts) e2
+  t' <- check3 (env,facts) e3
   checkSameType t t' "Error with T-IF branches:"
   return t
 
 --   Γ ⊢ e1:T    Γ,(x:T) ⊢ e2:U
 -- ------------------------------ T-Let
 --    Γ ⊢ let x = e1:T in e2:U
-check3 env (Let x t e1 e2) = do
-  t' <- check3 env e1
+check3 (env,facts) (Let x t e1 e2) = do
+  t' <- check3 (env,facts) e1
   checkSameType t t' "Error with T-LET:"
-  check3 (bindType (x,t) env) e2
+  check3 (((x,t):env),facts) e2
 
 --   Γ ⊢ e : T
 --   for each case i
@@ -250,8 +250,8 @@ check3 env (Let x t e1 e2) = do
 --     Γ,(a1:T1),(a2:T2),...,(an:Tn) ⊢ ei:U
 -- --------------------------------------------------- T-CASE
 --   Γ ⊢ case e of {K1 a1 a2 ... -> e1; K2 b1 b2 ... -> e2; ...}:U
-check3 env (Case e cases) = do
-  t <- check3 env e
+check3 (env,facts) (Case e cases) = do
+  t <- check3 (env,facts) e
   -- lookup each constructor...
   -- verify params of each constructor
   -- check2 each case
@@ -260,8 +260,7 @@ check3 env (Case e cases) = do
   return $ head us
   where
     checkCase :: (String,[TypeBinding],Term) -> TypeChecker Type
-    checkCase (_,newBindings,e) = check3 (bindTypes newBindings env) e
-
+    checkCase (_,newBindings,e) = check3 ((newBindings ++ env),facts) e
 
 {-============================================================================-}
 

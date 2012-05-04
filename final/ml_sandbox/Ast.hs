@@ -216,7 +216,6 @@ toType (PArray ptype ptree) = Array t e
         e = case parseTreeToAst ptree [] of
           Just a  -> a
           Nothing -> undefined
-toType (PArrayPartial ptype) = ArrayPartial $ toType ptype
 toType (PUint ptree1 ptree2) = Uint e1 e2
   where e1 = case parseTreeToAst ptree1 [] of
           Just a  -> a
@@ -224,9 +223,4 @@ toType (PUint ptree1 ptree2) = Uint e1 e2
         e2 = case parseTreeToAst ptree2 [] of
           Just a  -> a
           Nothing -> undefined
-toType (PUintPartial ptree) =
-  UintPartial $
-    case parseTreeToAst ptree [] of
-      Just a  -> a
-      Nothing -> undefined
 {-============================================================================-}

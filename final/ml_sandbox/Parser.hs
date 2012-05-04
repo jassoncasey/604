@@ -232,7 +232,7 @@ functionDefinition = (do
   params <- manyAccum (:) m_identifier
   m_reservedOp "="
   body <- expression
-  return $ (name, params, body)
+  return $ (name, reverse params, body)
   ) <?> "function definition"
 
 {-============================================================================-}
@@ -301,10 +301,10 @@ term = m_parens expression
 application :: Parser PTree
 application = try (do
     iden <- fmap Identifier m_identifier
-    firstExpr <- expression -- We require at least one member of an expr list
-    restExprs <- manyAccum (:) expression
-    let exprList = firstExpr:restExprs
-    return $ foldr Application iden exprList
+    firstExpr <- primary -- We require at least one member of an expr list
+    restExprs <- manyAccum (:) primary
+    let exprList = firstExpr:(reverse restExprs)
+    return $ foldl Application iden exprList
   ) <|> primary
   <?> "application"
 
@@ -372,12 +372,12 @@ expressionOperators =
 -- new type expressions
 typeExpr :: Parser PType
 typeExpr = buildExpressionParser ops typeTerm <?> "type expression"
-  where ops = [[ Infix ( m_reservedOp "->" >> return PFunc) AssocRight ]] 
+  where ops = [[ Infix ( m_reservedOp "->" >> return PFunc) AssocRight ]]
 
 typeTerm :: Parser PType
 typeTerm = m_parens typeExpr
   <|> listType
-  <|> userType
+  <|> complexType
   <|> (m_reserved "Nat"  >> return PSNat)
   <|> (m_reserved "Bool" >> return PSBool)
   <|> (m_reserved "Char" >> return PSChar)
@@ -390,8 +390,8 @@ listType = do
   return $ PList inner
 
 -- FIXME add support for parametric user types
-userType :: Parser PType
-userType = (do
+complexType :: Parser PType
+complexType = try (do
     name <- m_typename
     params <- manyAccum (:) typeExpr
     -- Params currently unused???
@@ -407,19 +407,16 @@ uintType :: Parser PType
 uintType = (do
     uintParams <- many1 expression
     let count = length uintParams
-    if count > 2
-      then unexpected ("uint types take 2 terms, got " ++ show count ++ ".")
-      else if count == 1
-        then return $ PUintPartial $ head uintParams
-        else return $ PUint (head uintParams) (last uintParams)
-  ) <?> "uint type"
+    if count == 2
+      then return $ PUint (head uintParams) (last uintParams)
+      else unexpected ("uint types take 2 terms, got " ++ show count ++ ".") )
+  <?> "uint type"
 
 arrayType :: Parser PType
 arrayType =  (try (do
-    typ <- typeExpr
+    typ <- typeTerm
     expr <- expression
     return $ PArray typ expr ))
-  <|> (try (typeExpr >>= \typ -> return $ PArrayPartial typ))
   <?> "array type"
 
 {-============================================================================-}

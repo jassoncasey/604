@@ -19,10 +19,19 @@ data Type =
   | TVar String
   | UserType String
   | Array Type Term
-  | ArrayPartial Type
   | Uint Term Term
-  | UintPartial Term
-  deriving (Show,Eq)
+  deriving (Eq)
+instance Show Type where
+  show typ = case typ of
+    SNat -> "Nat"
+    SChar -> "Char"
+    SBool -> "Bool"
+    List t -> "[" ++ show t ++ "]"
+    Func t1 t2 -> "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
+    TVar str -> str
+    UserType str -> str
+    Array t e -> "Array " ++ show t ++ " (" ++ show e ++ ")"
+    Uint e1 e2 -> "Uint (" ++ show e1 ++ ") (" ++ show e2 ++ ")"
 
 -- FIXME Needs a pretty show instance
 data Term =
@@ -46,9 +55,7 @@ data PType =
   | PTVar String
   | PUserType String
   | PArray PType PTree
-  | PArrayPartial PType
   | PUint PTree PTree
-  | PUintPartial PTree
   deriving (Show,Eq)
 
 
@@ -75,13 +82,12 @@ instance Show Constant where
     LitNat e  -> show e
     LitChar y -> show y
 
--- FIXME Needs a pretty show instance
 data BinOp =
     Plus | Minus | Multi | Div | Mod                    -- Arithmetic
   | LessThan | LessThanEq | GreaterThan | GreaterThanEq -- Ordering
   | Equal | NotEqual                                    -- Equality
   | Or | And                                            -- Logical
-  | BitAnd | BitOr | BitXor                    -- Bit Operations
+  | BitAnd | BitOr | BitXor                             -- Bit Operations
   deriving (Eq)
 instance Show BinOp where
   show op = case op of
@@ -137,6 +143,8 @@ data Declarations = Declarations {
   adtDecls  :: [AdtInfo],
   funcDecls :: [TopLevelFunc]
 }
+
+data Fact = Nil deriving (Show,Eq)
 
 -- name, type, param names, parse tree (definition)
 type TopLevelFunc = (String, PType, [String], PTree)
