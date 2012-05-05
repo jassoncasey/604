@@ -25,14 +25,14 @@
     id \{ \overline{\ell = t} \} \\
     &~~|~
     \mbox{data } id = \overline{K \overline{\tau}} ~|~
-    \mbox{pdu } id = \{ \overline{\ell = \tau} \}
+    \mbox{pdu } id = \{ \overline{\ell = \tau} \} \\
+    &~~|~ \mbox{enum } id = \{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\}
   \end{align*}
 \end{flushleft}
 }
 
 \frame{\frametitle{Kinds and Types of Steve} 
 \begin{flushleft}
-
    \begin{align*}
       K &::= \star ~|~ \Pi x:\tau.K
    \end{align*}
@@ -40,22 +40,24 @@
   \begin{align*}
     \tau &::= \mbox{ Ascii } | \mbox{ Nat } | \mbox{ Bool } \\
          &~~| \tau \rightarrow \tau | [\tau] \\
-         &~~| \mbox{ Uint } t~t | \mbox{Array } \tau~t
+         &~~| \mbox{ Uint } t~t ~|~ \mbox{Array } \tau~t \\
+         &~~| \mbox{ Pdu } \{\overline{\ell = \tau}\} ~|~ 
+         \mbox{Enum } \{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\} 
   \end{align*}
 \end{flushleft}
 }
 
 \frame{\frametitle{Steve's Type Constructors}
-array $t_1$ $t_2$\\
-$t_1=$ expression defining the type contained in the array\\
-$t_2=$ expression defining the initial/default value of the array\\
- 
-uint $t_1$ $t_2$\\
-$t_1=$ expression defining the number size of this uint in bits\\
-$t_2=$ expression defining the initial/default value of this type\\
-
-pad $t$\\
-$t=$ expression defining the number of bits to skip\\
+\begin{flushleft}
+   \begin{align*}
+      \mbox{uint} &:: \Pi x:\mbox{Nat}.\Pi y:\mbox{Nat}.\mbox{Uint}~x~y \\
+      \mbox{array} &:: \Pi \alpha::\star.\Pi y:\mbox{Nat}.\mbox{Uint}~x~y \\
+      \mbox{pdu} &:: \Pi x:\{\overline{\ell = \tau}\}.
+      \mbox{Pdu}~\{ \overline{\ell = \tau }\} \\
+      \mbox{enum} &:: \Pi x:\{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\}.
+      \mbox{Enum } \{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\}
+   \end{align*}
+\end{flushleft}
 }
 
 \subsection{A Theory of Steve}
