@@ -10,6 +10,7 @@ dontCare a b = 3;
 saidYouCared :: Nat;
 saidYouCared = dontCare (square 23) 2;
 
+-- Testing a comment!
 data Breakfast = { Bacon Nat | Eggs Char Nat | Ham }
 
 aMajorCase :: Breakfast -> Nat;

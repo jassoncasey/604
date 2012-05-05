@@ -1,3 +1,6 @@
+
+
+
 \section{Contribution}
 
 \subsection{Network Protocol Architecture}
@@ -5,6 +8,36 @@
 
 
 \subsection{Steve: A Network Protocol Specification Language}
+
+\frame{\frametitle{Terms, Types and Kinds}
+
+  \begin{flushleft}
+  \begin{align*}
+  t &::= t_1~t_2 ~|~ \lambda x:T.t ~|~ x ~|~ c ~|~
+    \mbox{if } t_1 \mbox{ then } t_2 \mbox{ else } t_3 \\
+     &~~|~
+    \mbox{let } x:T = e_1 \mbox{ in } e_2 ~|~ 
+    K:\overline{t} ~|~
+    \mbox{case } t \mbox{ of } \{
+      \overline{K_i:\overline{t_i} \rightarrow e_i;} \}\\
+    &~~|~
+    \mbox{uint } t_1~t_2 ~|~ \mbox{ Array } \tau~t ~|~ t_1[t_2] ~|~ t.\ell ~|~
+    \tau \{ \overline{\ell = t} \} \\
+    &~~|~
+    \mbox{data } \tau = \overline{K \overline{\tau}} ~|~
+    \mbox{pdu } \tau = \{ \overline{\ell : \tau} \}
+  \end{align*}
+
+
+  \begin{align*}
+    \tau &::= \mbox{ Uint } t~t | \mbox{Array } \tau~t \\
+         &~~| \mbox{ ascii } | \mbox{ Nat } | \mbox{ Bool } \\
+         &~~| \tau_1 \rightarrow \tau_2 | [\tau]
+  \end{align*}
+  \end{flushleft}
+}
+
+
 
 \frame{\frametitle{Language Terms}
 $t::=$   $t$ $t$

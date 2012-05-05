@@ -45,7 +45,7 @@ import Data.List (sort)
 
 keywords = [
   "Nat","Char","Bool",                -- simple built-in types
-  "Uint","Array",                     -- dependent built-in types
+  "Uint","Array","Pad",               -- dependent built-in types
   "True", "False",                    -- built-in literals
   "if", "then", "else","case","of",   -- built-in if-then-else support
   "data", "pdu"                       -- Data declarators
@@ -63,6 +63,7 @@ languageDef =
   emptyDef{ 
     commentStart = "{-"
   , commentEnd   = "-}"
+  , commentLine  = "--"
   , identStart   = lower
   , identLetter  = alphaNum
   , opStart  = oneOf "-:oan><%/*+=!;,"
@@ -193,8 +194,68 @@ constructor = (do
   )
   <?> "value constructor"
 
+newPdu :: Parser (String,[PduPField])
+newPdu = do
+    m_reserved "pdu"
+    name <- m_typename
+    m_reservedOp "="
+    definition <- m_braces pduDefinition
+    return (name, definition)
+  <?> "pdu"
+
+pduDefinition :: Parser [PduPField]
+pduDefinition = do
+    first <- pduField
+    rest <- manyAccum (:) (m_reservedOp "," >> pduField)
+    return (first:rest)
+  <?> "pdu definition"
+
+pduField :: Parser PduPField
+pduField = padField <|> uintField <|> arrayField <|> depField <?> "pdu field"
+
+padField :: Parser PduPField
+padField = do
+  m_reserved "Pad"
+  expr <- term
+  return $ PPadF expr
+
+uintField :: Parser PduPField
+uintField = (try $ do
+    name <- m_identifier
+    m_reservedOp ":"
+    t <- uintType
+    return $ PNormField name t)
+  <?> "uint"
+
+arrayField :: Parser PduPField
+arrayField = (try $ do
+    name <- m_identifier
+    m_reservedOp ":"
+    t <- arrayType
+    return $ PNormField name t)
+  <?> "array"
+
+depField :: Parser PduPField
+depField = (try $ do
+    name  <- m_identifier
+    m_reservedOp ":"
+    m_reserved "if"
+    b <- term
+    m_reserved "then"
+    t <- pduType
+    return $ PIfThenF name b t )
+  <?> "dependent field"
+
+
 {-============================================================================-}
 
+
+
+
+-- New pdu parser
+{-============================================================================-}
+
+{-============================================================================-}
 
 
 
@@ -312,6 +373,7 @@ primary :: Parser PTree
 primary = fmap Identifier m_identifier
   <|> literal
   <|> pduConstructor
+  <|> m_parens expression
   <?> "primary expression"
 
 literal :: Parser PTree
@@ -391,32 +453,44 @@ listType = do
 
 -- FIXME add support for parametric user types
 complexType :: Parser PType
-complexType = try (do
+complexType =  parametricType <|> pduType <?> "user defined type"
+
+parametricType :: Parser PType
+parametricType = try (do
     name <- m_typename
-    params <- manyAccum (:) typeExpr
+    params <- manyAccum (:) typeTerm
     -- Params currently unused???
     if null params
       then return $ PUserType name
       else fail "Steve doesn't support parametric ADTs. Yet."
-  )
-  <|> (m_reserved "Uint" >> uintType)
-  <|> (m_reserved "Array" >> arrayType)
-  <?> "user defined type"
+  ) <?> "parametric type"
+
+pduType :: Parser PType
+pduType = padType <|> uintType <|> arrayType <?> "pdu type"
+
+padType :: Parser PType
+padType = (do
+    m_reserved "Pad"
+    expr <- term
+    return $ PPad expr
+  ) <?> "pad type"
 
 uintType :: Parser PType
 uintType = (do
-    uintParams <- many1 expression
-    let count = length uintParams
-    if count == 2
-      then return $ PUint (head uintParams) (last uintParams)
-      else unexpected ("uint types take 2 terms, got " ++ show count ++ ".") )
+    m_reserved "Uint"
+    numBits <- primary
+    initial <- primary
+    return $ PUint numBits initial
+  )
   <?> "uint type"
 
 arrayType :: Parser PType
-arrayType =  (try (do
+arrayType =  (do
+    m_reserved "Array"
     typ <- typeTerm
-    expr <- expression
-    return $ PArray typ expr ))
+    expr <- primary
+    return $ PArray typ expr
+  )
   <?> "array type"
 
 {-============================================================================-}

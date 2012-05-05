@@ -33,17 +33,28 @@ instance Show Type where
     Array t e -> "Array " ++ show t ++ " (" ++ show e ++ ")"
     Uint e1 e2 -> "Uint (" ++ show e1 ++ ") (" ++ show e2 ++ ")"
 
--- FIXME Needs a pretty show instance
+-- FIXME Make a prettier App rule
 data Term =
     Iden String
   | Lit Constant
-  | Pdu Type
+  | Pdu Type     -- Rename this to PduCtor
   | Abs String Type Term
   | App Term Term
   | If Term Term Term
   | Let String Type Term Term
   | Case Term [(String,[TypeBinding],Term)]
-  deriving (Eq,Show)
+  deriving (Eq)
+instance Show Term where
+  show expr = case expr of
+    Iden str   -> str
+    Lit c      -> show c
+    Pdu t      -> show t ++ " = {...}"
+    Abs x t e  -> "\\" ++ x ++ " : " ++ show t ++ "." ++ show e
+    App e1 e2  -> "(" ++ show e1 ++ ") (" ++ show e2 ++ ")"
+    If b e1 e2 -> "if " ++ show b ++ " then " ++ show e1 ++ " else " ++ show e2
+    Let x t e prgm -> "let " ++ x ++ " = " ++ show e ++ " : " ++ show t
+      ++ " in " ++ show prgm
+    Case e _   -> "case " ++ show e ++ " of ..."
 
 -- PType is a type whose terms contain parse trees, not terms
 data PType =
@@ -56,6 +67,7 @@ data PType =
   | PUserType String
   | PArray PType PTree
   | PUint PTree PTree
+  | PPad PTree
   deriving (Show,Eq)
 
 
@@ -144,7 +156,16 @@ data Declarations = Declarations {
   funcDecls :: [TopLevelFunc]
 }
 
-data Fact = Nil deriving (Show,Eq)
+-- These are the types that a pdu field can be
+data PduPField =
+    PPadF PTree
+  | PNormField String PType
+  | PIfThenF String PTree PType
+  deriving (Show,Eq)
+
+
+
+type Fact = Term
 
 -- name, type, param names, parse tree (definition)
 type TopLevelFunc = (String, PType, [String], PTree)
