@@ -1,2 +1,32 @@
-\frame{\frametitle{Low Level Rules}
+\frame{\frametitle{Base Environment \& Rules}
+   \begin{flushleft}
+   \begin{align*}
+      \Gamma_0 &::= \{  \mbox{Nat}::\star, \mbox{Bool}::\star, 
+                        \mbox{Ascii}::\star\} \\
+      \Gamma_1 &::= \Gamma_0, \{ 0..\infty:\mbox{Nat}, True:\mbox{Bool}, 
+                                 False:\mbox{Bool} \}
+   \end{align*}
+   \end{flushleft}
+
+\begin{mathpar}
+   \inferrule[] {
+      \tau :: K \in \Gamma 
+   } {
+      \Gamma \vdash \tau :: K } \\
+   \inferrule[] {
+      x : \tau \in \Gamma 
+   } {
+      \Gamma \vdash x : \tau } \\
+\end{mathpar}
+}
+
+\frame{\frametitle{}
+\begin{mathpar}
+   \inferrule[] {
+      \Gamma \vdash \tau_1 :: \star \\
+      \Gamma,x:\tau_1 \vdash \tau_2 :: \star
+   } {
+      \gamma \vdash \Pi x:\tau_1.\tau_2 :: \star }
+\end{mathpar}
+
 }
