@@ -28,10 +28,9 @@
     \mbox{pdu } \tau = \{ \overline{\ell : \tau} \}
   \end{align*}
 
-
   \begin{align*}
-    \tau &::= \mbox{ Uint } t~t | \mbox{Array } \tau~t \\
-         &~~| \mbox{ ascii } | \mbox{ Nat } | \mbox{ Bool } \\
+    \tau &::= \mbox{ Uint } t~t | \mbox{Array } \tau~t | \mbox{ ascii }
+            | \mbox{ Nat } | \mbox{ Bool } \\
          &~~| \tau_1 \rightarrow \tau_2 | [\tau]
   \end{align*}
   \end{flushleft}
@@ -85,6 +84,8 @@ $t=$ expression defining the number of bits to skip\\
    \item evaluate sub-terms using new fact established by predicate
 \end{itemize}
  
+
+
 \begin{prooftree}
    \scriptsize
    \def \fCenter{\ \vdash\ }
@@ -94,6 +95,16 @@ $t=$ expression defining the number of bits to skip\\
    \AxiomC{$\Delta,\{\neg t_1\} | \Gamma \fCenter\ t_3 : \tau$}
    \TrinaryInfC{$\Delta | \Gamma \fCenter\ $ if $t_1$ then $t_2$ else $t_3 : \tau$}
 \end{prooftree}
+
+  \begin{mathpar}
+    \inferrule[K-Proj]{
+        \Gamma \vdash \tau_1 :: \star \\
+        \Gamma, \langle \tau_{i-1} :: \star \rangle \vdash \tau_i :: \star \\
+        \tau,\tau_1 \in RT
+      }{
+        \Gamma \vdash \mbox{ pdu } \{ \ell_i = \tau_i \} }
+  \end{mathpar}
+
 }
 
 \frame{\frametitle{Dependency Elimination}
