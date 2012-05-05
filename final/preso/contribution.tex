@@ -9,59 +9,43 @@
 
 \subsection{Steve: A Network Protocol Specification Language}
 
-\frame{\frametitle{Terms, Types and Kinds}
+\frame{\frametitle{Steve's Terms}
 
   \begin{flushleft}
   \begin{align*}
-  t &::= t_1~t_2 ~|~ \lambda x:T.t ~|~ x ~|~ c ~|~
-    \mbox{if } t_1 \mbox{ then } t_2 \mbox{ else } t_3 \\
+  t &::= t~t ~|~ \lambda x:\tau.t ~|~ x ~|~ c ~|~
+    \mbox{if } t \mbox{ then } t \mbox{ else } t \\
      &~~|~
-    \mbox{let } x:T = e_1 \mbox{ in } e_2 ~|~ 
-    K:\overline{t} ~|~
+    \mbox{let } x:\tau = t \mbox{ in } t ~|~ 
+    K~\overline{t} ~|~
     \mbox{case } t \mbox{ of } \{
-      \overline{K_i:\overline{t_i} \rightarrow e_i;} \}\\
+      \overline{K~\overline{t} \rightarrow t} \}\\
     &~~|~
-    \mbox{uint } t_1~t_2 ~|~ \mbox{ Array } \tau~t ~|~ t_1[t_2] ~|~ t.\ell ~|~
-    \tau \{ \overline{\ell = t} \} \\
+    \mbox{uint } t~t ~|~ \mbox{ array } \tau~t ~|~ t[t] ~|~ t.\ell ~|~
+    id \{ \overline{\ell = t} \} \\
     &~~|~
-    \mbox{data } \tau = \overline{K \overline{\tau}} ~|~
-    \mbox{pdu } \tau = \{ \overline{\ell : \tau} \}
+    \mbox{data } id = \overline{K \overline{\tau}} ~|~
+    \mbox{pdu } id = \{ \overline{\ell = \tau} \}
   \end{align*}
+\end{flushleft}
+}
+
+\frame{\frametitle{Kinds and Types of Steve} 
+\begin{flushleft}
+
+   \begin{align*}
+      K &::= \star ~|~ \Pi x:\tau.K
+   \end{align*}
 
   \begin{align*}
-    \tau &::= \mbox{ Uint } t~t | \mbox{Array } \tau~t | \mbox{ ascii }
-            | \mbox{ Nat } | \mbox{ Bool } \\
-         &~~| \tau_1 \rightarrow \tau_2 | [\tau]
+    \tau &::= \mbox{ Ascii } | \mbox{ Nat } | \mbox{ Bool } \\
+         &~~| \tau \rightarrow \tau | [\tau] \\
+         &~~| \mbox{ Uint } t~t | \mbox{Array } \tau~t
   \end{align*}
-  \end{flushleft}
+\end{flushleft}
 }
 
-
-
-\frame{\frametitle{Language Terms}
-$t::=$   $t$ $t$
-   $|$ $\lambda$x$.t$
-   $|$ if $t$ then $t$ else $t$
-   $|$ $t$ as T
-   $|$ let x = $t$ in $t$
-   $|$ $\{ x_{i}=t_{i}^{i\in1..n}\}$
-   $|$ $t$.x
-   $|$ nil
-   $|$ cons t t
-   $|$ array $t$ $t$
-   $|$ uint $t$ $t$
-   $|$ pad $t$
-   $|$ pdu $t$
-   $|$ enum $t$\\
-
-   $\tau::=$ Nat $|$ Char $|$ Bool $|$ Unit $|$ $\tau \rightarrow \tau$ 
-            $|$ $[\tau]$ $|$ $\tau ? t$
-
-   $\sigma::=$ $\tau$ $|$ $\alpha$ $|$ $\forall \alpha . \sigma$
-}
-
-\frame{\frametitle{Type Constructors}
-
+\frame{\frametitle{Steve's Type Constructors}
 array $t_1$ $t_2$\\
 $t_1=$ expression defining the type contained in the array\\
 $t_2=$ expression defining the initial/default value of the array\\
@@ -72,7 +56,6 @@ $t_2=$ expression defining the initial/default value of this type\\
 
 pad $t$\\
 $t=$ expression defining the number of bits to skip\\
-
 }
 
 \subsection{A Theory of Steve}
@@ -96,14 +79,14 @@ $t=$ expression defining the number of bits to skip\\
    \TrinaryInfC{$\Delta | \Gamma \fCenter\ $ if $t_1$ then $t_2$ else $t_3 : \tau$}
 \end{prooftree}
 
-  \begin{mathpar}
-    \inferrule[K-Proj]{
+\begin{mathpar}
+   \inferrule[K-Proj]{
         \Gamma \vdash \tau_1 :: \star \\
         \Gamma, \langle \tau_{i-1} :: \star \rangle \vdash \tau_i :: \star \\
         \tau,\tau_1 \in RT
-      }{
-        \Gamma \vdash \mbox{ pdu } \{ \ell_i = \tau_i \} }
-  \end{mathpar}
+      } {
+         \Gamma \vdash \mbox{ pdu } \{ \ell_i = \tau_i \} }
+\end{mathpar}
 
 }
 
