@@ -33,6 +33,81 @@ The parse tree to AST transformation is complicated so here is a sketch:
   2.
 -}
 
+
+toAsts :: [Declaration] -> Maybe [Ast]
+toAsts ((PduDecl pduInfo) :ds) = do
+  restOfAst <- toAsts ds
+  return ((makePdu pduInfo) : restOfAst)
+--toAsts ((AdtDecl _) :ds) = return (makeAst: (toAst ds))
+toAsts ((FuncDecl funcDef):ds) = do
+  f <- funcToAst funcDef
+  prgm <- toAsts ds
+  return (f:prgm)
+-- toAst((EnumDecl _):ds) = Enum
+toAsts [] = Just []
+
+
+-- It will be a let
+funcToAst :: (String, PType, [String], PTree) -> Maybe Ast
+funcToAst (f, ptype, params, ptree) = do
+  let t = toType ptype
+  binding <- bindParamTypes params t
+  let body = toAst ptree
+  let cover = funcCover binding body
+  return $ Let' f t body Nil  -- Could just put a literal there...
+
+
+-- Takes a ptree and converts it to an Ast
+toAst :: PTree -> Ast
+toAst (Identifier name) = Iden' name
+toAst (Literal c) = Lit' c
+toAst (Application t1 t2) = App' t1' t2'
+  where t1' = toAst t1
+        t2' = toAst t2
+toAst (IfThenElse t1 t2 t3) = If' t1' t2' t3'
+  where t1' = toAst t1
+        t2' = toAst t2
+        t3' = toAst t3
+toAst (Binary bop t1 t2) = App' (App' (Iden' (show bop)) t1') t2'
+  where t1' = toAst t1
+        t2' = toAst t2
+toAst (Unary uop t) = App' (Iden' $ show uop) t'
+  where t' = toAst t
+
+
+-- takes params and makes an abstraction over input ast
+funcCover :: [TypeBinding] -> Ast -> Ast
+funcCover binding e = foldl toAbs e binding
+  where toAbs :: Ast -> (String,Type) -> Ast
+        toAbs e (n,t) = Abs' n t e
+
+
+{-parseTreeToAst (Unary uop t) typBindings = do
+  t' <- parseTreeToAst t typBindings
+  return $ App (Iden $ show uop) t'
+parseTreeToAst (CaseStmt ptree pcases) typBindings = do
+  scrutinee <- parseTreeToAst ptree typBindings
+  let maybeCases = map (caseToAst typBindings) pcases
+  cases <- safeMaybeToList maybeCases
+  return $ Case scrutinee cases
+parseTreeToAst (PduConstructor name) _ = Just $ Pdu $ UserType name-}
+
+
+-- take a list of params and a function type, return thte binding
+bindParamTypes :: [String] -> Type -> Maybe [TypeBinding]
+bindParamTypes [p] typ = Just [(p,typ)]
+bindParamTypes (p:ps) (Func t1 t2) = do
+  bound <- bindParamTypes ps t2
+  return ((p,t1):bound)
+bindParamTypes (_:_) _ = Nothing
+
+
+-- take a pdu and put it in ast form
+makePdu :: PduInfo -> Ast
+makePdu (PduInfo n pfields) = PduDef n fields
+  where fields = map (\(n,pt) -> (n,toType pt)) pfields
+
+
 -- Process declarations
 -- The result of parseUnit is just a declaration list. processDecls converts the
 -- list of declarations into a list of top-level functions and a type-table.

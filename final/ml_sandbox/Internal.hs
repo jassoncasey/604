@@ -33,6 +33,35 @@ instance Show Type where
     Array t e -> "Array " ++ show t ++ " (" ++ show e ++ ")"
     Uint e1 e2 -> "Uint (" ++ show e1 ++ ") (" ++ show e2 ++ ")"
 
+-- Kinds of things
+data Kind =
+    Star
+  | KApp Kind Kind
+  | To Kind Kind
+  | KType Type
+  | KTerm Ast
+  deriving (Eq)
+instance Show Kind where
+  show x = case x of
+    Star -> "*"
+    KApp k1 k2 -> "(" ++ show k1 ++ ") (" ++ show k2 ++ ")"
+    KTerm e -> show e
+    KType t -> show t
+
+data Ast =
+    Iden' String
+  | Lit' Constant
+  | Pdu' Type     -- Rename this to PduCtor
+  | PduDef String [(String,Type)]
+  | Abs' String Type Ast
+  | App' Ast Ast
+  | If' Ast Ast Ast
+  | Let' String Type Ast Ast
+  | Case' Ast [(String,[TypeBinding],Ast)]
+  | Nil
+  deriving (Show,Eq)
+
+
 -- FIXME Make a prettier App rule
 data Term =
     Iden String
