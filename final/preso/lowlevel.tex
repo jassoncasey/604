@@ -74,4 +74,16 @@
 
 \frame{\frametitle{}
 
+  \begin{mathpar}
+    \inferrule[Proj]{
+      \Delta \vdash id:\langle \ell_i' : \tau_i' \rangle \\
+      k \leq i \\ \forall j \in 1..k \
+        \ell_j \in \langle \ell_i : \tau_i \rangle \
+        t_j : \tau_k \ \tau_i \equiv \tau_i'
+    } {
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash \{ \overline{\ell_k = \tau_k} \}
+        : \langle \ell_i : \tau_i \rangle
+    }
+  \end{mathpar}
+
 }
