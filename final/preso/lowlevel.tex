@@ -38,14 +38,13 @@
 }
 
 \frame{\frametitle{Pdu Kinding}
-  Define $f$ by
-    $$f(\{ \rho \}) = \forall (\ell : \tau'') \in \rho,
-      \forall t \in \tau, .$$
+
   \begin{mathpar}
    \inferrule[PduFieldKind]{
-     \ell \not \in \Sigma \\ \gamma \leftarrow f(\rho) \\
-     \Sigma ~|~ \Gamma, \gamma \vdash \tau' :: \star \\
-     \tau' = \forall t \in \tau, [\rho.t/ t]
+     \ell \not \in \Sigma \\
+     \gamma = \forall \ell \in dom(\rho), [\rho.\ell / \rho] \\
+     \tau' = \forall t \in \tau ~|~ t \in \rho, [\rho.t / \rho] \tau\\
+     \Sigma ~|~ \Gamma, \gamma \vdash \tau' :: \star
    } {
       \Sigma ~|~ \Gamma \vdash \langle \rho, \ell : \tau \rangle
         : \langle \rho, \ell : \tau \rangle
@@ -73,16 +72,39 @@
 }
 
 \frame{\frametitle{}
+  Clean up this notation.
 
   \begin{mathpar}
-    \inferrule[Proj]{
-      \Delta \vdash id:\langle \ell_i' : \tau_i' \rangle \\
+    \inferrule[Proj-Ctor]{
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t:\rho \\
+      \langle \ell : \tau \rangle \in
+      \Sigma \vdash id:\langle \ell_i' : \tau_i' \rangle \\
       k \leq i \\ \forall j \in 1..k \
         \ell_j \in \langle \ell_i : \tau_i \rangle \
         t_j : \tau_k \ \tau_i \equiv \tau_i'
     } {
       \Delta ~|~ \Sigma ~|~ \Gamma \vdash \{ \overline{\ell_k = \tau_k} \}
         : \langle \ell_i : \tau_i \rangle
+    }
+  \end{mathpar}
+
+  \begin{mathpar}
+    \inferrule[Proj]{
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t:\rho \\
+      \langle \ell : \tau \rangle \in \rho
+    } {
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t.\ell : [t/p] \tau
+    }
+  \end{mathpar}
+
+}
+
+\frame{\frametitle{}
+
+  \begin{mathpar}
+    inferrule[App] {
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t_1 : \tau_1 \rightarrow
+    } {
     }
   \end{mathpar}
 
