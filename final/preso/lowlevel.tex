@@ -9,41 +9,49 @@
    \end{flushleft}
 
 \begin{mathpar}
-   \inferrule[] {
+   \inferrule[Kind Basis] {
       \tau :: K \in \Gamma 
    } {
       \Gamma \vdash \tau :: K } \\
-   \inferrule[] {
+   \inferrule[Type Basis] {
       x : \tau \in \Gamma 
    } {
       \Gamma \vdash x : \tau } \\
 \end{mathpar}
 }
 
-\frame{\frametitle{}
+\frame{\frametitle{Abstraction Rules}
 \begin{mathpar}
-   \inferrule[KindAbs]{
-      \Gamma \vdash \tau_1 ::\star \\
-      \Gamma,x:\tau_1 \vdash \tau_2 ::\star
+   \inferrule[Kind Abs]{
+      \Sigma | \Gamma \vdash \tau_1 ::\star \\
+      \Sigma | \Gamma,x:\tau_1 \vdash \tau_2 ::\star
    } {
       \Gamma \vdash \Pi x:\tau_1.\tau_2 ::\star 
    }\\
-   \inferrule[KindApp]{
+   \inferrule[Type Abs]{
+      \Sigma | \Gamma \vdash \tau_1 ::\star \\
+      \Sigma | \Gamma,x:\tau_1 \vdash t ~:~\tau_2
+   } {
+      \Sigma | \Gamma \vdash \lambda x:\tau_1.t ~:~ \Pi x:\tau_1.\tau_2
+   }\\
+   \inferrule[Type Let]{
+      \Sigma | \Gamma \vdash t_1 : \tau_1 \\
+      \Sigma | \Gamma \vdash \tau_1 ::\star \\
+      \Sigma | \Gamma,x:\tau_1 \vdash t_2 :\tau_2
+   } {
+      \Sigma | \Gamma \vdash \mbox{let }x = t_1 \mbox{ in } t_2 : \tau_2 
+   }
+\end{mathpar}
+}
+
+\frame{\frametitle{Application Rules}
+
+   \inferrule[Kind App]{
       \Sigma | \Gamma \vdash \tau ::\Pi x:\tau_1 .K \\
       \Sigma | \Gamma \vdash t:\tau_2
    } {
       \Sigma | \Gamma \vdash \tau t:[x \mapsto t]K
    }
-\end{mathpar}
-}
-
-\frame{\frametitle{}
-
-  \begin{mathpar}
-    inferrule[App] {
-      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t_1 : \tau_1 \rightarrow
-    } {
-    }
-  \end{mathpar}
+   
 
 }
