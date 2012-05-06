@@ -38,12 +38,24 @@
 }
 
 \frame{\frametitle{Pdu Type Checking - Definition}
-
+  Add function $rf$ that flattens a record and removes empty.
+  Add new $dom$ function that returns the labels of a record.
+  Define $dom'(\rho)$ as
+  %$$
+  %  rf(\pho) = \left\{
+  %  \begin{array}{ll}
+  %    (\ell : \tau), rf(\rho') & \mbox{ when } \rho = \langle \rho', \ell : \tau \rangle\\
+  %    (\ell : \tau) & \mbox{ when } \rho = \langle \langle \rangle, \ell : \tau \rangle
+  %  \end{array}
+  %  \right\}
+  %$$
   \begin{mathpar}
    \inferrule[LowLevel Term]{
      \ell \not \in dom(\rho) \\
-     \gamma = \forall \ell \in dom(\rho), [\rho.\ell / \ell] \rho \\
-     \tau' = \forall t \in \tau ~|~ t \in dom(\rho), [\rho.t / t] \tau\\
+     \gamma = \forall \ell \in dom \langle \rho,\ell:\tau \rangle,
+       [\rho.\ell / \ell] \langle \rho, \ell:\tau \rangle \\
+       \tau' = \forall t \in \tau ~|~ t \in dom(\rho),
+       [\rho.t / t] \tau\\
      \Sigma ~|~ \Gamma, \gamma \vdash \tau' :: \star
    } {
       \Sigma ~|~ \Gamma \vdash \langle \rho, \ell : \tau \rangle
@@ -88,7 +100,7 @@
   \begin{mathpar}
     \inferrule[Projection]{
       \Delta ~|~ \Sigma ~|~ \Gamma \vdash t:\rho \\
-      \langle \ell : \tau \rangle \in \rho
+      \langle \rho . \ell : \tau \rangle \in \rho
     } {
       \Delta ~|~ \Sigma ~|~ \Gamma \vdash t.\ell : [t/\rho] \tau
     }
