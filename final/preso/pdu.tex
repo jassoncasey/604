@@ -76,7 +76,7 @@
   \begin{mathpar}
     \inferrule[TopLevel Record]{
       \Sigma ~|~ \Gamma \vdash \mbox{ pdu } id \{ \overline{\ell_i = \tau_i} \} : \rho \\
-      \Sigma, \langle id : \rho \rangle ~|~ \Gamma \vdash prgm
+      \Sigma, \langle id : \rho \rangle ~|~ \Gamma, \langle id::\star \rangle  \vdash prgm
     } {
       \Sigma ~|~ \Gamma \vdash \mbox{ pdu } id \{ \overline{\ell_i = \tau_i } \} , prgm  
     }
