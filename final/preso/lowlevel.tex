@@ -20,7 +20,7 @@
 \end{mathpar}
 }
 
-\frame{\frametitle{Abstraction Rules}
+\frame{\frametitle{Abstraction \& Let Rules}
 \begin{mathpar}
    \inferrule[Kind Abs]{
       \Sigma | \Gamma \vdash \tau_1 ::\star \\
@@ -37,9 +37,16 @@
    \inferrule[Type Let]{
       \Sigma | \Gamma \vdash t_1 : \tau_1 \\
       \Sigma | \Gamma \vdash \tau_1 ::\star \\
-      \Sigma | \Gamma,x:\tau_1 \vdash t_2 :\tau_2
+      \Sigma | \Gamma, \langle x:\tau_1 \rangle \vdash t_2 :\tau_2
    } {
       \Sigma | \Gamma \vdash \mbox{let }x = t_1 \mbox{ in } t_2 : \tau_2 
+   }\\
+   \inferrule[Type TopLevel Let]{
+      \Sigma | \Gamma \vdash \tau ::\star \\
+      \Sigma | \Gamma \vdash t : \tau \\
+      \Sigma | \Gamma, \langle f:\tau \rangle \vdash prgm
+   } {
+      \Sigma | \Gamma \vdash \mbox{let }f = t:\tau, prgm 
    }
 \end{mathpar}
 }
