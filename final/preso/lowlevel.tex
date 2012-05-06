@@ -64,7 +64,7 @@
   \begin{mathpar}
     \inferrule[Pdu]{
       \Sigma ~|~ \Gamma \vdash \mbox{ pdu } id \{ \overline{\ell_i = \tau_i} \} : \rho \\
-      \Sigma, \langle id : \rho \rangle ~|~ \vdash prgm
+      \Sigma, \langle id : \rho \rangle ~|~ \Gamma \vdash prgm
     } {
       \Sigma ~|~ \Gamma \vdash \mbox{ pdu } id \{ \overline{\ell_i = \tau_i } \} , prgm  
     }
