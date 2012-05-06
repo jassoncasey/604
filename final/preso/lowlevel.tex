@@ -37,21 +37,41 @@
 \end{mathpar}
 }
 
-\frame{\frametitle{}
-\begin{mathpar}
-   \inferrule[]{
-      \ell \notin \Gamma \\
-      \Sigma | \Gamma \vdash \tau : \tau'
+\frame{\frametitle{Pdu Kinding}
+  Define $f$ by
+    $$f(\{ \rho \}) = \forall (\ell : \tau'') \in \rho,
+      \forall t \in \tau, .$$
+  \begin{mathpar}
+   \inferrule[PduFieldKind]{
+     \ell \not \in \Sigma \\ \gamma \leftarrow f(\rho) \\
+     \Sigma ~|~ \Gamma, \gamma \vdash \tau' :: \star \\
+     \tau' = \forall t \in \tau, [\rho.t/ t]
    } {
-      \Sigma | \Gamma \vdash \ell = \tau : \tau'
+      \Sigma ~|~ \Gamma \vdash \langle \rho, \ell : \tau \rangle
+        : \langle \rho, \ell : \tau \rangle
    }\\
-   \inferrule[KindPdu]{
-      id \not \in \Sigma \\
-      \forall i \ \Sigma;\Gamma,(\ell_1:\tau_1'),...(\ell_{i-1} : \tau_{i-1})
-      \vdash \ell_i = \tau_i : \tau_i'
+   \inferrule[TypeCheckPdu]{
+      id \not \in dom(\Sigma) \\
+      \Sigma ~|~ \Gamma \vdash \langle \langle \rangle, \ell_1 : \tau_1 \rangle
+        : \rho_1 \\
+      \forall i \in 2..n \ \Sigma ~|~ \Gamma \vdash \langle \rho_{i-1} ,
+        \ell_{i} : \tau_{i} \rangle : \rho_i
    } {
-      \Sigma | \Gamma \vdash pdu \mbox{ id }\{ \overline{\ell_i = \tau_i} \}
-      : pdu \{ \overline{ \ell_i = \tau_i' } \} 
+      \Sigma | \Gamma \vdash \mbox{ pdu } \mbox{ id }
+        \{ \overline{\ell_i = \tau_i} \} : \rho_n 
    }
-\end{mathpar}
+  \end{mathpar}
+
+  \begin{mathpar}
+    \inferrule[Pdu]{
+      \Sigma ~|~ \Gamma \vdash \mbox{ pdu } id \{ \overline{\ell_i = \tau_i} \} : \rho \\
+      \Sigma, \langle id : \rho \rangle ~|~ \vdash prgm
+    } {
+      \Sigma ~|~ \Gamma \vdash \mbox{ pdu } id \{ \overline{\ell_i = \tau_i } \} , prgm  
+    }
+  \end{mathpar}
+}
+
+\frame{\frametitle{}
+
 }
