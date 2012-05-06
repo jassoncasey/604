@@ -45,13 +45,13 @@
    } {
       \Sigma | \Gamma \vdash \ell = \tau : \tau'
    }\\
-   \inferrule[T-PDU-LL]{
+   \inferrule[KindPdu]{
       id \not \in \Sigma \\
       \forall i \ \Sigma;\Gamma,(\ell_1:\tau_1'),...(\ell_{i-1} : \tau_{i-1})
       \vdash \ell_i = \tau_i : \tau_i'
    } {
-      \Sigma;\Gamma \vdash pdu id \{ \overline{\ell_i = \tau_i} \}
-      : pdu \{ \ell_i = \tau_i' \} 
+      \Sigma | \Gamma \vdash pdu \mbox{ id }\{ \overline{\ell_i = \tau_i} \}
+      : pdu \{ \overline{ \ell_i = \tau_i' } \} 
    }
 \end{mathpar}
 }
