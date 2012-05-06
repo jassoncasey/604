@@ -44,6 +44,18 @@
 \end{mathpar}
 }
 
+\frame{\frametitle{Abstraction Environment}
+   \begin{flushleft}
+   \begin{align*}
+      \Gamma_2 ::= \Gamma_1, \{ &\mbox{Uint }x~y :: \star \} \\
+      \Gamma_3 ::= \Gamma_2, \{ 
+         &\mbox{nat\_binop}:\Pi a:Nat.\Pi b:Nat.Nat,\\
+         &\mbox{uint\_binop}:\Pi a:\Pi x:Nat.Uint x.\Pi b:\Pi y:Nat.Uint y.Uint z
+      \}
+   \end{align*}
+   \end{flushleft}
+}
+
 \frame{\frametitle{Application Rules}
 
    \inferrule[Kind App]{
