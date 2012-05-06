@@ -2,7 +2,7 @@
    \begin{flushleft}
    \begin{align*}
       \Gamma_0 &::= \{  \mbox{Nat}::\star, \mbox{Bool}::\star, 
-                        \mbox{Ascii}::\star\} \\
+                        \mbox{Ascii}::\star, \mbox{Uint x}::\star\} \\
       \Gamma_1 &::= \Gamma_0, \{ 0..\infty:\mbox{Nat}, True:\mbox{Bool}, 
                                  False:\mbox{Bool} \}
    \end{align*}
@@ -51,14 +51,12 @@
 \end{mathpar}
 }
 
-\frame{\frametitle{Abstraction Environment}
+\frame{\frametitle{Delta Functions}
    \begin{flushleft}
    \begin{align*}
-      \Gamma_2 ::= \Gamma_1, \{ &\mbox{Uint }x~y :: \star \} \\
-      \Gamma_3 ::= \Gamma_2, \{ 
-         &\mbox{nat\_binop}:\Pi a:Nat.\Pi b:Nat.Nat,\\
-         &\mbox{uint\_binop}:\Pi a:\Pi x:Nat.Uint x.\Pi b:\Pi y:Nat.Uint y.Uint z
-      \}
+      \mbox{nat\_plus}&: \Pi a:\mbox{Nat}.\Pi b:\mbox{Nat}.\mbox{Nat} \\
+      \mbox{uint}&: \Pi a:\mbox{Nat}.\Pi b:\mbox{Nat}.\mbox{Uint}~a\\
+      \mbox{uint\_plus}&: \Pi a:(\Pi x:\mbox{Nat}.\mbox{Uint}~x).\Pi b:(\Pi y:\mbox{Nat}.\mbox{Uint}~y).\mbox{Uint}~z\\
    \end{align*}
    \end{flushleft}
 }
