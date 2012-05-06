@@ -76,15 +76,13 @@
 
   \begin{mathpar}
     \inferrule[Construction]{
-      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t:\rho \\
-      \langle \ell : \tau \rangle \in
-      \Sigma \vdash id:\langle \ell_i' : \tau_i' \rangle \\
-      k \leq i \\ \forall j \in 1..k \
-        \ell_j \in \langle \ell_i : \tau_i \rangle \
-        t_j : \tau_k \ \tau_i \equiv \tau_i'
+      \langle id : \rho \rangle \in \Sigma \ ~~~
+      \forall j \in 1..k \langle \ell_j : \tau_j \rangle \in \rho \ ~~~
+      \Delta | \Sigma | \Gamma \vdash t_j : \tau_j' \\ 
+        \tau_j \equiv \tau_j'
     } {
-      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t.\{ \overline{\ell_k = \tau_k} \}
-        : \langle \ell_i : \tau_i \rangle
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash id\{ \overline{\ell_k = t_k} \}
+        : \rho 
     }
   \end{mathpar}
 
