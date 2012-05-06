@@ -22,13 +22,13 @@
 
 \frame{\frametitle{}
 \begin{mathpar}
-   \inferrule[]{
+   \inferrule[KindAbs]{
       \Gamma \vdash \tau_1 ::\star \\
       \Gamma,x:\tau_1 \vdash \tau_2 ::\star
    } {
       \Gamma \vdash \Pi x:\tau_1.\tau_2 ::\star 
    }\\
-   \inferrule[]{
+   \inferrule[KindApp]{
       \Sigma | \Gamma \vdash \tau ::\Pi x:\tau_1 .K \\
       \Sigma | \Gamma \vdash t:\tau_2
    } {
@@ -44,6 +44,14 @@
       \Sigma | \Gamma \vdash \tau : \tau'
    } {
       \Sigma | \Gamma \vdash \ell = \tau : \tau'
+   }\\
+   \inferrule[KindPdu]{
+      id \not \in \Sigma \\
+      \forall i \ \Sigma;\Gamma,(\ell_1:\tau_1'),...(\ell_{i-1} : \tau_{i-1})
+      \vdash \ell_i = \tau_i : \tau_i'
+   } {
+      \Sigma | \Gamma \vdash pdu \mbox{ id }\{ \overline{\ell_i = \tau_i} \}
+      : pdu \{ \overline{ \ell_i = \tau_i' } \} 
    }
 \end{mathpar}
 }
