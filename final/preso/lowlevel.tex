@@ -41,9 +41,9 @@
 
   \begin{mathpar}
    \inferrule[PduFieldKind]{
-     \ell \not \in \Sigma \\
-     \gamma = \forall \ell \in dom(\rho), [\rho.\ell / \rho] \\
-     \tau' = \forall t \in \tau ~|~ t \in \rho, [\rho.t / \rho] \tau\\
+     \ell \not \in dom(\rho) \\
+     \gamma = \forall \ell \in dom(\rho), [\rho.\ell / \ell] \rho \\
+     \tau' = \forall t \in \tau ~|~ t \in dom(\rho), [\rho.t / t] \tau\\
      \Sigma ~|~ \Gamma, \gamma \vdash \tau' :: \star
    } {
       \Sigma ~|~ \Gamma \vdash \langle \rho, \ell : \tau \rangle
