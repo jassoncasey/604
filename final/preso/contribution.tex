@@ -128,4 +128,50 @@
 \end{prooftree}
 }
 
+\frame{\frametitle{Top-Level Rules}
+
+\begin{mathpar}
+  \inferrule[T-FUNC]
+  { \Sigma;\Gamma \vdash e : \tau \\
+    \Sigma; \Gamma, (f:\tau) \vdash prgm : \tau'}
+  {\Sigma ; \Gamma \vdash f :: \tau = e, prgm}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[T-PDU]
+  {
+    \Sigma; \Gamma \vdash \overline{\ell = \tau}: \tau_i \\
+    \Sigma, (id:\tau); \Gamma \vdash prgm : \tau'
+  }
+  {\Sigma; \Gamma \vdash pdu id \{ \overline{\ell = \tau} \} }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[T-ENUM]
+  { \Sigma; \Gamma \vdash verify all are bool  \\
+    \Sigma,(id:\tau); \Gamma,\overline{(t:\tau)} \vdash prgm : \tau'}
+  {\Sigma; \Gamma \vdash enum id \{ \overline{t \tau} \}}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[T-ADT]
+  { \Sigma; \Gamma \vdash \\
+    \Sigma,(T:\tau_T); \Gamma,\overline{
+      (K: \overline{\tau} \to \tau_T \vdash )
+    \vdash prgm: \tau'} }
+  { data T = \{ \overline{K \overline{\tau}}, prgm \} }
+\end{mathpar}
+
+}
+
+\frame{
+  \begin{mathpar}
+    \inferrule[T-PDU-LL]
+    { id \not \in \Sigma \\
+      \forall i \ \Sigma;\Gamma,(\ell_1:\tau_1'),...(\ell_{i-1} : \tau_{i-1})
+      \vdash \ell_i = \tau_i : \tau_i'}
+    { \Sigma;\Gamma \vdash pdu id \{ \overline{\ell_i = \tau_i} \}
+      : pdu \{ \ell_i = \tau_i' \} }
+  \end{mathpar}
+}
 \subsection{Steve's interpreter}
