@@ -1,0 +1,111 @@
+\frame{\frametitle{Base Environment \& Rules}
+   \begin{flushleft}
+   \begin{align*}
+      \Gamma_0 &::= \{  \mbox{Nat}::\star, \mbox{Bool}::\star, 
+                        \mbox{Ascii}::\star\} \\
+      \Gamma_1 &::= \Gamma_0, \{ 0..\infty:\mbox{Nat}, True:\mbox{Bool}, 
+                                 False:\mbox{Bool} \}
+   \end{align*}
+   \end{flushleft}
+
+\begin{mathpar}
+   \inferrule[] {
+      \tau :: K \in \Gamma 
+   } {
+      \Gamma \vdash \tau :: K } \\
+   \inferrule[] {
+      x : \tau \in \Gamma 
+   } {
+      \Gamma \vdash x : \tau } \\
+\end{mathpar}
+}
+
+\frame{\frametitle{}
+\begin{mathpar}
+   \inferrule[KindAbs]{
+      \Gamma \vdash \tau_1 ::\star \\
+      \Gamma,x:\tau_1 \vdash \tau_2 ::\star
+   } {
+      \Gamma \vdash \Pi x:\tau_1.\tau_2 ::\star 
+   }\\
+   \inferrule[KindApp]{
+      \Sigma | \Gamma \vdash \tau ::\Pi x:\tau_1 .K \\
+      \Sigma | \Gamma \vdash t:\tau_2
+   } {
+      \Sigma | \Gamma \vdash \tau t:[x \mapsto t]K
+   }
+\end{mathpar}
+}
+
+\frame{\frametitle{Pdu Type Checking - Definition}
+
+  \begin{mathpar}
+   \inferrule[LowLevel Term]{
+     \ell \not \in dom(\rho) \\
+     \gamma = \forall \ell \in dom(\rho), [\rho.\ell / \ell] \rho \\
+     \tau' = \forall t \in \tau ~|~ t \in dom(\rho), [\rho.t / t] \tau\\
+     \Sigma ~|~ \Gamma, \gamma \vdash \tau' :: \star
+   } {
+      \Sigma ~|~ \Gamma \vdash \langle \rho, \ell : \tau \rangle
+        : \langle \rho, \ell : \tau' \rangle
+   }\\
+   \inferrule[LowLevel Record]{
+      id \not \in dom(\Sigma) \\
+      \Sigma ~|~ \Gamma \vdash \langle \langle \rangle, \ell_1 : \tau_1 \rangle
+        : \rho_1 \\
+      \forall i \in 2..n \ \Sigma ~|~ \Gamma \vdash \langle \rho_{i-1} ,
+        \ell_{i} : \tau_{i} \rangle : \rho_i
+   } {
+      \Sigma | \Gamma \vdash \mbox{ pdu } \mbox{ id }
+        \{ \overline{\ell_i = \tau_i} \} : \rho_n 
+   }
+  \end{mathpar}
+
+  \begin{mathpar}
+    \inferrule[TopLevel Record]{
+      \Sigma ~|~ \Gamma \vdash \mbox{ pdu } id \{ \overline{\ell_i = \tau_i} \} : \rho \\
+      \Sigma, \langle id : \rho \rangle ~|~ \Gamma \vdash prgm
+    } {
+      \Sigma ~|~ \Gamma \vdash \mbox{ pdu } id \{ \overline{\ell_i = \tau_i } \} , prgm  
+    }
+  \end{mathpar}
+}
+
+\frame{\frametitle{Pdu Type Checking - Use}
+  Clean up this notation.
+
+  \begin{mathpar}
+    \inferrule[Construction]{
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t:\rho \\
+      \langle \ell : \tau \rangle \in
+      \Sigma \vdash id:\langle \ell_i' : \tau_i' \rangle \\
+      k \leq i \\ \forall j \in 1..k \
+        \ell_j \in \langle \ell_i : \tau_i \rangle \
+        t_j : \tau_k \ \tau_i \equiv \tau_i'
+    } {
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t.\{ \overline{\ell_k = \tau_k} \}
+        : \langle \ell_i : \tau_i \rangle
+    }
+  \end{mathpar}
+
+  \begin{mathpar}
+    \inferrule[Projection]{
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t:\rho \\
+      \langle \ell : \tau \rangle \in \rho
+    } {
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t.\ell : [t/\rho] \tau
+    }
+  \end{mathpar}
+
+}
+
+\frame{\frametitle{}
+
+  \begin{mathpar}
+    inferrule[App] {
+      \Delta ~|~ \Sigma ~|~ \Gamma \vdash t_1 : \tau_1 \rightarrow
+    } {
+    }
+  \end{mathpar}
+
+}
