@@ -1,6 +1,3 @@
-
-
-
 \section{Contribution}
 
 \subsection{Network Protocol Architecture}
@@ -8,6 +5,19 @@
 
 
 \subsection{Steve: A Network Protocol Specification Language}
+
+\frame{\frametitle{A Problem for Steve}
+pdu Pkt \{
+   opcode=Uint 16
+   payload=Uint opcode==2 ? 16 : 0
+\}
+
+test :: Pkt -> Uint 16
+test pkt = pkt.payload == 0
+
+test :: Pkt -> Uint
+
+}
 
 \frame{\frametitle{Steve's Terms}
 
@@ -39,24 +49,11 @@
 
   \begin{align*}
     \tau &::= \mbox{ Ascii } | \mbox{ Nat } | \mbox{ Bool } \\
-         &~~| \tau \rightarrow \tau | [\tau] \\
+         &~~|~ \Pi x:\tau.\tau ~|~ [\tau] \\
          &~~| \mbox{ Uint } t~t ~|~ \mbox{Array } \tau~t \\
          &~~| \mbox{ Pdu } \{\overline{\ell = \tau}\} ~|~ 
          \mbox{Enum } \{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\} 
   \end{align*}
-\end{flushleft}
-}
-
-\frame{\frametitle{Steve's Type Constructors}
-\begin{flushleft}
-   \begin{align*}
-      \mbox{uint} &:: \Pi x:\mbox{Nat}.\Pi y:\mbox{Nat}.\mbox{Uint}~x~y \\
-      \mbox{array} &:: \Pi \alpha::\star.\Pi y:\mbox{Nat}.\mbox{Uint}~x~y \\
-      \mbox{pdu} &:: \Pi x:\{\overline{\ell = \tau}\}.
-      \mbox{Pdu}~\{ \overline{\ell = \tau }\} \\
-      \mbox{enum} &:: \Pi x:\{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\}.
-      \mbox{Enum } \{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\}
-   \end{align*}
 \end{flushleft}
 }
 

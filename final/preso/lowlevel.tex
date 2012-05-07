@@ -55,8 +55,8 @@
    \scriptsize
    \begin{flushleft}
    \begin{align*}
-      \mbox{nat\_plus}&: \Pi a:\mbox{Nat}.\Pi b:\mbox{Nat}.\mbox{Nat} \\
-      \mbox{uint}&: \Pi a:\mbox{Nat}.\Pi b:\mbox{Nat}.\mbox{Uint}~a\\
+      \mbox{nat\_plus}&: \Pi a:(\mbox{Nat}).\Pi b:(\mbox{Nat}).\mbox{Nat} \\
+      \mbox{uint}&: \Pi a:(\mbox{Nat}).\Pi b:(\mbox{Nat}).\mbox{Uint}~a\\
       \mbox{uint\_plus}&: \Pi a:(\Pi x:\mbox{Nat}.\mbox{Uint}~x).
                \Pi b:(\Pi y:\mbox{Nat}.\mbox{Uint}~y).\mbox{Uint}~x>y?x+1:y+1\\
       \mbox{uint\_bits}&: \Pi a:(\Pi x:\mbox{Nat}.\mbox{Uint }x).\mbox{Nat}
