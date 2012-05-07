@@ -49,11 +49,11 @@ import Data.List (sort)
 
 
 keywords = [
-  "Nat","Char","Bool"                -- simple built-in types
-, "Uint","Array","Pad"               -- dependent built-in types
-, "True", "False"                    -- built-in literals
-, "if", "then", "else","case","of"   -- built-in if-then-else support
-, "data", "pdu"                      -- Data declarators
+  "Nat","Char","Bool",                -- simple built-in types
+  "Uint","Array","Pad",               -- dependent built-in types
+  "True", "False",                    -- built-in literals
+  "if", "then", "else","case","of",   -- built-in if-then-else support
+  "data", "pdu"                       -- Data declarators
   ]
 
 operators = [
@@ -61,17 +61,18 @@ operators = [
   "*","/","%","+","-",          -- Arithmetic
   "<",">","<=",">=","==","!=",  -- Relational
   "not","or","and",             -- Logical
-  ";", ","                      -- Delimiters
+  ";", ",","."                  -- Delimiters
   ]
 
 languageDef =
   emptyDef{ 
     commentStart = "{-"
   , commentEnd   = "-}"
+  , commentLine  = "--"
   , identStart   = lower
   , identLetter  = alphaNum
-  , opStart  = oneOf "-:oan><%/*+=!;,"
-  , opLetter = oneOf "-:oan><%/*+=!;,"
+  , opStart  = oneOf "-:oan><%/*+=!;,."
+  , opLetter = oneOf "-:oan><%/*+=!;,."
   , reservedOpNames = operators
   , reservedNames   = keywords
 }
@@ -140,7 +141,7 @@ parseDeclaration usedNames =
 
 dataType :: [String] -> Parser Declaration
 dataType usedNames =
-      pdu usedNames
+      newPdu usedNames
   <|> adt usedNames
   <?> "data type declaration"
 
@@ -198,8 +199,68 @@ constructor = (do
   )
   <?> "value constructor"
 
+newPdu :: [String] -> Parser Declaration
+newPdu str = do
+    m_reserved "pdu"
+    name <- m_typename
+    m_reservedOp "="
+    definition <- m_braces pduDefinition
+    return $ NewPduDecl name definition
+  <?> "pdu"
+
+pduDefinition :: Parser [PduPField]
+pduDefinition = do
+    first <- pduField
+    rest <- manyAccum (:) (m_reservedOp "," >> pduField)
+    return (first:rest)
+  <?> "pdu definition"
+
+pduField :: Parser PduPField
+pduField = padField <|> uintField <|> arrayField <|> depField <?> "pdu field"
+
+padField :: Parser PduPField
+padField = do
+  m_reserved "Pad"
+  expr <- term
+  return $ PPadF expr
+
+uintField :: Parser PduPField
+uintField = (try $ do
+    name <- m_identifier
+    m_reservedOp ":"
+    t <- uintType
+    return $ PNormField name t)
+  <?> "uint"
+
+arrayField :: Parser PduPField
+arrayField = (try $ do
+    name <- m_identifier
+    m_reservedOp ":"
+    t <- arrayType
+    return $ PNormField name t)
+  <?> "array"
+
+depField :: Parser PduPField
+depField = (try $ do
+    name  <- m_identifier
+    m_reservedOp ":"
+    m_reserved "if"
+    b <- term
+    m_reserved "then"
+    t <- pduType
+    return $ PIfThenF name b t )
+  <?> "dependent field"
+
+
 {-============================================================================-}
 
+
+
+
+-- New pdu parser
+{-============================================================================-}
+
+{-============================================================================-}
 
 
 
@@ -310,8 +371,17 @@ application = try (do
     restExprs <- manyAccum (:) primary
     let exprList = firstExpr:(reverse restExprs)
     return $ foldl Application iden exprList
-  ) <|> primary
+  ) <|> projection
   <?> "application"
+
+projection :: Parser PTree
+projection = try (do
+    expr <- primary
+    m_reservedOp "."
+    rec <- m_identifier
+    return $ Projection expr rec
+  ) <|> primary
+  <?> "projection"
 
 primary :: Parser PTree
 primary = fmap Identifier m_identifier
@@ -363,6 +433,7 @@ expressionOperators =
      binaryl "^" BitXor, prefix "~" BitNot],
     [binaryl ">" GreaterThan, binaryl "<" LessThan,
      binaryl ">=" GreaterThanEq, binaryl " <=" LessThanEq],
+    [binaryl "==" Equal],
     [prefix "not" Not],
     [binaryl "or" Or, binaryl "and" And]
   ]
@@ -397,35 +468,42 @@ listType = do
 
 -- FIXME add support for parametric user types
 complexType :: Parser PType
-complexType = try (do
+complexType =  parametricType <|> pduType <?> "user defined type"
+
+parametricType :: Parser PType
+parametricType = try (do
     name <- m_typename
-    params <- manyAccum (:) typeExpr
+    params <- manyAccum (:) typeTerm
     -- Params currently unused???
     if null params
       then return $ PUserType name
       else fail "Steve doesn't support parametric ADTs. Yet."
-  )
-  <|> uintType
-  <|> arrayType
-  <|> padType
-  <?> "user defined type"
+  ) <?> "parametric type"
+
+pduType :: Parser PType
+pduType = padType <|> uintType <|> arrayType <?> "pdu type"
+
+padType :: Parser PType
+padType = (do
+    m_reserved "Pad"
+    expr <- term
+    return $ PPad expr
+  ) <?> "pad type"
 
 uintType :: Parser PType
 uintType = (do
     m_reserved "Uint"
-    uintParams <- many1 expression
-    let count = length uintParams
-    if count == 2
-      then return $ PUint (head uintParams) (last uintParams)
-      else unexpected ("uint types take 2 terms, got " ++ show count ++ ".")
+    numBits <- primary
+    initial <- primary
+    return $ PUint numBits initial
   )
   <?> "uint type"
 
 arrayType :: Parser PType
-arrayType = (do
+arrayType =  (do
     m_reserved "Array"
     typ <- typeTerm
-    expr <- term
+    expr <- primary
     return $ PArray typ expr
   )
   <?> "array type"
@@ -465,6 +543,7 @@ getNamesFromDeclaration :: Declaration -> [String]
 getNamesFromDeclaration (FuncDecl (name,_,_,_)) = [name]
 getNamesFromDeclaration (PduDecl pduInfo) = lunzip $ pduInfoFields pduInfo
 getNamesFromDeclaration (AdtDecl adtInfo) = lunzip $ adtInfoCtors adtInfo
+getNamesFromDeclaration (NewPduDecl n fields) = n : (map getFieldName fields)
 
 -- Handles reserved name errors
 isReservedName name = isReserved theReservedNames caseName

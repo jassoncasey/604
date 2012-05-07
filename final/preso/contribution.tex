@@ -6,95 +6,103 @@
 
 \subsection{Steve: A Network Protocol Specification Language}
 
-\frame{\frametitle{Language Terms}
-$t::=$   $t$ $t$
-   $|$ $\lambda$x$.t$
-   $|$ if $t$ then $t$ else $t$
-   $|$ $t$ as T
-   $|$ let x = $t$ in $t$
-   $|$ $\{ x_{i}=t_{i}^{i\in1..n}\}$
-   $|$ $t$.x
-   $|$ nil
-   $|$ cons t t
-   $|$ array $t$ $t$
-   $|$ uint $t$ $t$
-   $|$ pad $t$
-   $|$ pdu $t$
-   $|$ enum $t$\\
-
-   $\tau::=$ Nat $|$ Char $|$ Bool $|$ Unit $|$ $\tau \rightarrow \tau$ 
-            $|$ $[\tau]$ $|$ $\tau ? t$
-
-   $\sigma::=$ $\tau$ $|$ $\alpha$ $|$ $\forall \alpha . \sigma$
+\begin{frame}[fragile]{A Problem for Steve}
+\begin{verbatim}
+-- Dependent record packing precision types
+pdu Pkt {
+   opcode  = Uint 16
+   payload = Uint (opcode==2 ? 16 : 0)
 }
 
-\frame{\frametitle{Type Constructors}
+-- Unsafe dependent access
+test :: Pkt -> Bool
+test pkt = pkt.payload == 0
 
-array $t_1$ $t_2$\\
-$t_1=$ expression defining the type contained in the array\\
-$t_2=$ expression defining the initial/default value of the array\\
- 
-uint $t_1$ $t_2$\\
-$t_1=$ expression defining the number size of this uint in bits\\
-$t_2=$ expression defining the initial/default value of this type\\
+-- Safe dependent access
+test :: Pkt -> Bool
+test pkt = if pkt.opcode == 2 
+            then pkt.payload == 0 
+            else False
+\end{verbatim}
+\end{frame}
 
-pad $t$\\
-$t=$ expression defining the number of bits to skip\\
+\frame{\frametitle{Steve's Terms}
 
+  \begin{flushleft}
+  \begin{align*}
+  t &::= t~t ~|~ \lambda x:\tau.t ~|~ x ~|~ c ~|~
+    \mbox{if } t \mbox{ then } t \mbox{ else } t \\
+     &~~|~
+    \mbox{let } x:\tau = t \mbox{ in } t ~|~ 
+    K~\overline{t} ~|~
+    \mbox{case } t \mbox{ of } \{
+      \overline{K~\overline{t} \rightarrow t} \}\\
+    &~~|~
+    \mbox{uint } t~t ~|~ \mbox{ array } \tau~t ~|~ t[t] ~|~ t.\ell ~|~
+    id \{ \overline{\ell = t} \} \\
+    &~~|~
+    \mbox{data } id = \overline{K \overline{\tau}} ~|~
+    \mbox{pdu } id = \{ \overline{\ell = \tau} \} \\
+    &~~|~ \mbox{enum } id = \{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\}
+  \end{align*}
+\end{flushleft}
+}
+
+\frame{\frametitle{Kinds and Types of Steve} 
+\begin{flushleft}
+   \begin{align*}
+      K &::= \star ~|~ \Pi x:\tau.K
+   \end{align*}
+
+  \begin{align*}
+    \tau &::= \mbox{ Ascii } | \mbox{ Nat } | \mbox{ Bool } \\
+         &~~|~ \Pi x:\tau.\tau ~|~ [\tau] \\
+         &~~| \mbox{ Uint } t~t ~|~ \mbox{Array } \tau~t \\
+         &~~| \mbox{ Pdu } \{\overline{\ell = \tau}\} ~|~ 
+         \mbox{Enum } \{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\} 
+  \end{align*}
+\end{flushleft}
 }
 
 \subsection{A Theory of Steve}
 
-\frame{\frametitle{Predicate Introduction}
-\begin{itemize}
-   \item $\Delta$ - set of known facts
-   \item conditional terms introduce predicates
-   \item evaluate sub-terms using new fact established by predicate
-\end{itemize}
- 
-\begin{prooftree}
-   \scriptsize
-   \def \fCenter{\ \vdash\ }
-   \RightLabel{\textbf{T$_{if}$}}
-   \AxiomC{$\Delta | \Gamma \fCenter\ t_1 : Bool$}
-   \AxiomC{$\Delta,\{t_1\} | \Gamma \fCenter\ t_2 : \tau$}
-   \AxiomC{$\Delta,\{\neg t_1\} | \Gamma \fCenter\ t_3 : \tau$}
-   \TrinaryInfC{$\Delta | \Gamma \fCenter\ $ if $t_1$ then $t_2$ else $t_3 : \tau$}
-\end{prooftree}
-}
+\input{lowlevel.tex}
+\input{pdu.tex}
 
-\frame{\frametitle{Dependency Elimination}
-\begin{itemize}
-   \item deduce dependency from known facts
-   \item eliminate dependency in resulting type
-\end{itemize}
- 
-\begin{prooftree}
-   \scriptsize
-   \def \fCenter{\ \vdash\ }
-   \RightLabel{\textbf{T$_{DepElim_1}$}}
-   \AxiomC{$\Delta | \Gamma \fCenter\ t : \tau ? \delta$}
-   \AxiomC{$\Delta \vDash \delta$}
-   \BinaryInfC{$\Delta | \Gamma \fCenter\ t : \tau$}
-\end{prooftree}
-}
+\frame{\frametitle{Top-Level Rules}
 
-\frame{\frametitle{Dependency Deferral}
-\begin{itemize}
-   \item use of type without proof of dependency
-   \item rewrite term using conditional
-   \item eliminate dependency of type
-\end{itemize}
- 
-\begin{prooftree}
-   \scriptsize
-   \def \fCenter{\ \vdash\ }
-   \RightLabel{\textbf{T$_{DepElim_2}$}}
-   \AxiomC{$\Delta | \Gamma \fCenter\ t : \tau ? \delta$}
-   \AxiomC{$\Delta \nvDash \delta$}
-   \BinaryInfC{$\Delta | \Gamma \fCenter\ t : \tau ? \delta \rightsquigarrow$ if $
-   \delta$ then $t$ else $error : \tau$}
-\end{prooftree}
+\begin{mathpar}
+  \inferrule[T-FUNC]
+  { \Sigma;\Gamma \vdash e : \tau \\
+    \Sigma; \Gamma, (f:\tau) \vdash prgm : \tau'}
+  {\Sigma ; \Gamma \vdash f :: \tau = e, prgm}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[T-PDU]
+  {
+    \Sigma; \Gamma \vdash \overline{\ell = \tau}: \tau_i \\
+    \Sigma, (id:\tau); \Gamma \vdash prgm : \tau'
+  }
+  {\Sigma; \Gamma \vdash pdu id \{ \overline{\ell = \tau} \} }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[T-ENUM]
+  { \Sigma; \Gamma \vdash verify all are bool  \\
+    \Sigma,(id:\tau); \Gamma,\overline{(t:\tau)} \vdash prgm : \tau'}
+  {\Sigma; \Gamma \vdash enum id \{ \overline{t \tau} \}}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[T-ADT]
+  { \Sigma; \Gamma \vdash \\
+    \Sigma,(T:\tau_T); \Gamma,\overline{
+      (K: \overline{\tau} \to \tau_T \vdash )
+    \vdash prgm: \tau'} }
+  { data T = \{ \overline{K \overline{\tau}}, prgm \} }
+\end{mathpar}
+
 }
 
 \subsection{Steve's interpreter}

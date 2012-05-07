@@ -1,0 +1,168 @@
+\frame{\frametitle{Base Environment \& Rules}
+   \begin{flushleft}
+   \begin{align*}
+      \Gamma_0 &::= \{  \mbox{Nat}::\star, \mbox{Bool}::\star, 
+                        \mbox{Ascii}::\star, \mbox{Uint x}::\star\} \\
+      \Gamma_1 &::= \Gamma_0, \{ 0..\infty:\mbox{Nat}, True:\mbox{Bool}, 
+                                 False:\mbox{Bool} \}
+   \end{align*}
+   \end{flushleft}
+
+\begin{mathpar}
+   \inferrule[Kind Basis] {
+      \tau :: K \in \Gamma 
+   } {
+      \Gamma \vdash \tau :: K } \\
+   \inferrule[Type Basis] {
+      x : \tau \in \Gamma 
+   } {
+      \Gamma \vdash x : \tau } \\
+\end{mathpar}
+}
+
+\frame{\frametitle{Abstraction \& Let Rules}
+\begin{mathpar}
+   \inferrule[Kind Abs]{
+      \Sigma | \Gamma \vdash \tau_1 ::\star \\
+      \Sigma | \Gamma,x:\tau_1 \vdash \tau_2 ::\star
+   } {
+      \Sigma | \Gamma \vdash \Pi x:\tau_1.\tau_2 ::\star 
+   }\\
+   \inferrule[Type Abs]{
+      \Sigma | \Gamma \vdash \tau_1 ::\star \\
+      \Delta | \Sigma | \Gamma,x:\tau_1 \vdash t ~:~\tau_2
+   } {
+      \Delta | \Sigma | \Gamma \vdash \lambda x:\tau_1.t ~:~ \Pi x:\tau_1.\tau_2
+   }\\
+   \inferrule[Type Let]{
+      \Delta | \Sigma | \Gamma \vdash t_1 : \tau_1 \\
+      \Sigma | \Gamma \vdash \tau_1 ::\star \\
+      \Delta | \Sigma | \Gamma, \langle x:\tau_1 \rangle \vdash t_2 :\tau_2
+   } {
+      \Delta | \Sigma | \Gamma \vdash \mbox{let }x = t_1 \mbox{ in } t_2 : \tau_2 
+   }\\
+   \inferrule[Type TopLevel Let]{
+      \Sigma | \Gamma \vdash \tau ::\star \\
+      \Delta | \Sigma | \Gamma \vdash t : \tau \\
+      \Delta | \Sigma | \Gamma, \langle f:\tau \rangle \vdash prgm
+   } {
+      \Delta | \Sigma | \Gamma \vdash \mbox{let }f = t:\tau, prgm 
+   }
+\end{mathpar}
+}
+
+\frame{\frametitle{Delta Functions}
+   \scriptsize
+   \begin{flushleft}
+   \begin{align*}
+      \mbox{nat\_plus}&: \Pi a:(\mbox{Nat}).\Pi b:(\mbox{Nat}).\mbox{Nat} \\
+      \mbox{uint}&: \Pi a:(\mbox{Nat}).\Pi b:(\mbox{Nat}).\mbox{Uint}~a\\
+      \mbox{uint\_plus}&: \Pi a:(\Pi x:\mbox{Nat}.\mbox{Uint}~x).
+               \Pi b:(\Pi y:\mbox{Nat}.\mbox{Uint}~y).\mbox{Uint}~x>y?x+1:y+1\\
+      \mbox{uint\_bits}&: \Pi a:(\Pi x:\mbox{Nat}.\mbox{Uint }x).\mbox{Nat}
+   \end{align*}
+   \end{flushleft}
+}
+
+\frame{\frametitle{Application Rules}
+   \begin{mathpar}
+   \inferrule[Term App]{
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1 : \Pi x:\tau_1.\tau_3 
+      \rightsquigarrow \theta'\\
+      \Delta | \Sigma | \Gamma | \theta' \vdash t_2:\tau_2 
+      \rightsquigarrow \theta''\\
+      bw \leftarrow BoundVar(\tau_1)~
+      bv' \leftarrow Fresh(bv) \\
+      \Delta | \Sigma | \Gamma | \theta'' \vdash [bv'/bv]Body(\tau_1) \equiv \tau_3 
+      \rightsquigarrow \theta'''
+   } {
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1~t_2:[t_2/x][bv'/bv]\tau 
+      \rightsquigarrow \theta'''
+   }
+   \end{mathpar}
+}
+
+\frame{\frametitle{Predicate Introduction}
+ \begin{itemize}
+   \item $\Delta$ - set of known facts
+   \item conditional terms introduce predicates
+   \item evaluate sub-terms using new fact established by predicate
+\end{itemize}
+
+\begin{mathpar}
+   \inferrule[Conditional]{
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1 : \mbox{Bool}
+      \rightsquigarrow \theta' \\
+      \Delta, \langle t_1 \rangle | \Sigma | \Gamma | \theta' \vdash
+      t_2 : \tau \rightsquigarrow \theta'' \\
+      \Delta, \langle t_1 \rangle | \Sigma | \Gamma | \theta'' \vdash
+      t_3 : \tau \rightsquigarrow \theta''' \\
+   } {
+      \Delta | \Sigma | \Gamma | \theta \vdash \mbox{if } t_1
+      \mbox{ else } t_2 \mbox{ then } t_3 : \tau
+      \rightsquigarrow \theta'''
+   }
+\end{mathpar}
+
+}
+
+\frame{\frametitle{Type Equivalence Rules}
+   \begin{mathpar}
+   \inferrule[TAUT]{}{
+      \Delta | \Sigma | \Gamma | \theta \vdash \tau \equiv \tau 
+      \rightsquigarrow \theta
+   } \\
+   \inferrule[Pi]{
+      \Delta | \Sigma | \Gamma | \theta \vdash \tau_1 \equiv \tau_3 
+      \rightsquigarrow \theta'\\
+      \Delta | \Sigma | \Gamma,\langle x:\tau_1 \rangle | \theta' \vdash 
+      \tau_2 \equiv \tau_4 \rightsquigarrow \theta''
+   }{
+      \Delta | \Sigma | \Gamma | \theta \vdash \Pi x:\tau_1.\tau_2 \equiv
+      \Pi x:\tau_3.\tau_4 \rightsquigarrow \theta''
+   } \\
+   \inferrule[Uint]{
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1 \equiv t_2
+      \rightsquigarrow \theta'
+   }{
+      \Delta | \Sigma | \Gamma | \theta \vdash \mbox{Uint }t_1\equiv \mbox{Uint }t_2
+      \rightsquigarrow \theta'
+   } \\
+   \inferrule[NatUint]{}{
+      \Delta | \Sigma | \Gamma | \theta \vdash \mbox{Nat }\equiv \mbox{Uint }t
+      \rightsquigarrow \theta
+   } 
+   \end{mathpar}
+}
+
+\frame{\frametitle{Term Equivalence Rules}
+   \begin{mathpar}
+   \inferrule[TAUT]{}{
+      \Delta | \Sigma | \Gamma | \theta \vdash x \equiv x
+      \rightsquigarrow \theta
+   } \\
+   \inferrule[TermConstant]{
+      x \notin \Delta \\
+      NormalForm(t) \\
+      x \notin dom(\theta)
+   }{
+      \Delta | \Sigma | \Gamma | \theta \vdash x \equiv t
+      \rightsquigarrow \theta,\langle x:t\rangle
+   } \\
+   \inferrule[CondElim]{
+      \Delta \models t_2 \\
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1 \equiv t_3
+      \rightsquigarrow \theta'
+   } {
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1 \equiv t_2 ? t_3 : t_4
+      \rightsquigarrow \theta'
+   } \\
+   \inferrule[TermConstant]{
+      \Delta | \Sigma | \Gamma | \theta \vdash AppOrder(t_1) \equiv AppOrder(t_2) 
+      \rightsquigarrow \theta'
+   }{
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1 \equiv t_2
+      \rightsquigarrow \theta'
+   }
+   \end{mathpar}
+}

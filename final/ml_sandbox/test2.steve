@@ -1,0 +1,12 @@
+
+pdu Pkt = {
+  opcode : Uint 16 0,
+  payload : if (opcode == 2) then Uint 32 0
+}
+
+-- foo1 :: Pkt -> Uint 32 0
+
+foo2 :: Pkt -> Uint 32 0;
+foo2 x = if x . opcode == (magic 16 0 2)
+  then  x.payload
+  else magic 32 0 0;

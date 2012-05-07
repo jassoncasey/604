@@ -3,26 +3,14 @@ module Steve.TypeCheck where
 import Steve.Internal
 
 
--- TypeCheck Monad
-{-============================================================================-}
--- I know either can be used, but I had to learn how to do it myself
-data TypeChecker a = Good a | Bad String deriving (Show,Eq)
+{-
 
-instance Monad TypeChecker where
-  return x = Good x
-  Good x >>= f = f x
-  Bad msg >>= f = Bad msg
-  fail msg = Bad msg
+FIXMES
+  -- pad, uint and array types must be typechecked!
+  -- pdus may only have uint, pad and array type fields
 
--- Take a list of type checked things and return a typechecked list.
--- If any element is Bad, return bad. Otherwise, return a list of Good
-fromTypeCheckList :: [TypeChecker a] -> TypeChecker [a]
-fromTypeCheckList [] = Good []
-fromTypeCheckList ((Good x):xs) = fromTypeCheckList xs>>= \xs' -> return (x:xs')
-fromTypeCheckList ((Bad msg):_) = Bad msg
+-}
 
-mapTC :: (a -> TypeChecker b) -> [a] -> TypeChecker [b]
-mapTC f xs = fromTypeCheckList $ map f xs
 {-============================================================================-}
 
 
@@ -181,9 +169,9 @@ check2 env (Case e cases) = do
 
 
 -- Typechecker mark 3
--- Uses new environment type, doesn't buy us anything :(
+-- Handles PDU construction and enums and Facts
 {-============================================================================-}
-typeCheckM3 :: ([TypeBinding]) -> Term -> TypeChecker Type
+typeCheckM3 :: ([TypeBinding]) -> Term -> TypeChecker (Type)
 typeCheckM3 ctors expr = check3 ((ctors ++ initTypeBinding),[]) expr
 
 check3 :: ([TypeBinding],[Fact]) -> Term -> TypeChecker Type
@@ -231,7 +219,7 @@ check3 (env,facts) (App e1 e2) = do
 check3 (env,facts) (If e1 e2 e3) = do
   conditionType <- check3 (env,facts) e1
   checkSameType SBool conditionType "Error with T-IF conditional:"
-  t  <- check3 (env,facts) e2
+  t  <- check3 (env,(e1):facts) e2
   t' <- check3 (env,facts) e3
   checkSameType t t' "Error with T-IF branches:"
   return t

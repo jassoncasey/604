@@ -33,6 +33,94 @@ The parse tree to AST transformation is complicated so here is a sketch:
   2.
 -}
 
+
+toAsts :: [Declaration] -> Maybe [Ast]
+toAsts ((PduDecl pduInfo) :ds) = do
+  restOfAst <- toAsts ds
+  return ((makePdu pduInfo) : restOfAst)
+toAsts ((NewPduDecl name fields):ds) = do
+  rest <- toAsts ds
+  let fs = map toRecord fields
+  return $ ((PduDef name fs):rest)
+toAsts ((FuncDecl funcDef):ds) = do
+  f <- funcToAst funcDef
+  prgm <- toAsts ds
+  return (f:prgm)
+-- toAst((EnumDecl _):ds) = Enum
+toAsts [] = Just []
+
+
+-- given a list of pdu fields, return records
+toRecord :: PduPField -> (String,Type')
+toRecord x = case x of
+  PPadF ptree -> ("$nil",Uint' (toAst ptree) (Lit' (LitNat 0)))
+  PNormField n ptyp -> (n,toType' ptyp)
+  PIfThenF n ptree ptype -> (n,Dep' (toAst ptree) (toType' ptype) nullUint)
+    where nullUint = Uint' (Lit' (LitNat 0)) (Lit' (LitNat 0))
+
+-- It will be a let
+funcToAst :: (String, PType, [String], PTree) -> Maybe Ast
+funcToAst (f, ptype, params, ptree) = do
+  let t = toType' ptype
+  binding <- bindParamTypes params t
+  let body = toAst ptree
+  let cover = funcCover binding body
+  return $ Let' f t cover Nil  -- Could just put a literal there...
+
+
+-- Takes a ptree and converts it to an Ast
+toAst :: PTree -> Ast
+toAst (Identifier name) = Iden' name
+toAst (Literal c) = Lit' c
+toAst (Application t1 t2) = App' t1' t2'
+  where t1' = toAst t1
+        t2' = toAst t2
+toAst (IfThenElse t1 t2 t3) = If' t1' t2' t3'
+  where t1' = toAst t1
+        t2' = toAst t2
+        t3' = toAst t3
+toAst (Binary bop t1 t2) = App' (App' (Iden' (show bop)) t1') t2'
+  where t1' = toAst t1
+        t2' = toAst t2
+toAst (Unary uop t) = App' (Iden' $ show uop) t'
+  where t' = toAst t
+toAst (Projection ptree label) = Proj' e label
+  where e = toAst ptree
+
+
+-- takes params and makes an abstraction over input ast
+funcCover :: [(String, Type')] -> Ast -> Ast
+funcCover binding e = foldl toAbs e binding
+  where toAbs :: Ast -> (String,Type') -> Ast
+        toAbs e (n,t) = Abs' n t e
+
+
+{-parseTreeToAst (Unary uop t) typBindings = do
+  t' <- parseTreeToAst t typBindings
+  return $ App (Iden $ show uop) t'
+parseTreeToAst (CaseStmt ptree pcases) typBindings = do
+  scrutinee <- parseTreeToAst ptree typBindings
+  let maybeCases = map (caseToAst typBindings) pcases
+  cases <- safeMaybeToList maybeCases
+  return $ Case scrutinee cases
+parseTreeToAst (PduConstructor name) _ = Just $ Pdu $ UserType name-}
+
+
+-- take a list of params and a function type, return thte binding
+bindParamTypes :: [String] -> Type' -> Maybe [(String, Type')]
+bindParamTypes [p] (Func' t1 _) = Just [(p,t1)]
+bindParamTypes (p:ps) (Func' t1 t2) = do
+  bound <- bindParamTypes ps t2
+  return ((p,t1):bound)
+bindParamTypes _ _ = Nothing
+
+
+-- take a pdu and put it in ast form
+makePdu :: PduInfo -> Ast
+makePdu (PduInfo n pfields) = PduDef n fields
+  where fields = map (\(n,pt) -> (n,toType' pt)) pfields
+
+
 -- Process declarations
 -- The result of parseUnit is just a declaration list. processDecls converts the
 -- list of declarations into a list of top-level functions and a type-table.
@@ -223,4 +311,21 @@ toType (PUint ptree1 ptree2) = Uint e1 e2
         e2 = case parseTreeToAst ptree2 [] of
           Just a  -> a
           Nothing -> undefined
+
+toType' :: PType -> Type'
+toType' (PSNat) = SNat'
+toType' (PSChar) = SChar'
+toType' (PSBool) = SBool'
+toType' (PList ptype) = List' $ toType' ptype
+toType' (PFunc ptype1 ptype2) = Func' t1 t2
+  where t1 = toType' ptype1
+        t2 = toType' ptype2
+toType' (PTVar name) = TVar' name
+toType' (PUserType name) = UserType' name
+toType' (PArray ptype ptree) = Array' t e
+  where t = toType' ptype
+        e = toAst ptree
+toType' (PUint ptree1 ptree2) = Uint' e1 e2
+  where e1 = toAst ptree1
+        e2 = toAst ptree2
 {-============================================================================-}
