@@ -60,4 +60,37 @@ with dependency.
 
 \subsection{Prior Work}
 
+PacketTypes~\cite{packet_types} is a first work towards developing a
+language to handle the specific constraints of network protocol
+message formats. The authors' motivate the work with the usual suspects
+of networkk protocol software development: tedious, error-prone, ever-changing,
+etc. Users can specific binary formatted network protocols in the PacketTypes
+overlay language. This language is then compiled down to a set of C
+datastructures and functions. Type checking is performed at the overlay level,
+while runtime checks are provided through their generated C functions.
+
+DataScript~\cite{datascript} is an overlay language designed to provide
+declarative ad-hoc data format specifications. This work aimed to advance the
+work of PacketTypes for more general data formats as well as generate
+traversal functions for verified data. This language targeted the Java
+runtime environment.
+
+Binpac~\cite{binpac} can be viewed as an extension of
+PacketTypes~\cite{packet_types}, the authors' primary view is that
+protocol message formats are merely a grammar problem, and seek
+to generalize a format description language into a `data-model' with
+constraints. The problem is described in the same terms as with PacketTypes:
+tedious, error-prone, hard-to-read, etc. The generalization includes support for
+ASCII based protocols which was not present with previous
+work~\cite{packet_types}. The target application is off-line packet capture
+analysis.
+
+This is a position paper explaining the existing work on
+the PADS project. PADS is a declarative overlay implemented for: C, ML, and
+Haskell as a work in progress. The goal for PADS is to capture the richness
+of ad-hoc data formats: ASCII, binary, Cobol, and `mixed data formats.' The
+targeted user of the PADS system are system administrators who deal with large
+variations and constant change of ad-hoc data formats. The authors give many
+examples detailing various XML and log file processing requirements of network
+service providers.
 
