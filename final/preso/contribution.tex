@@ -20,7 +20,9 @@ test pkt = pkt.payload == 0
 
 -- Safe dependent access
 test :: Pkt -> Bool
-test pkt = if pkt.opcode == 2 then pkt.payload == 0 else False
+test pkt = if pkt.opcode == 2 
+            then pkt.payload == 0 
+            else False
 \end{verbatim}
 \end{frame}
 
