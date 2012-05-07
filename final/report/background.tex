@@ -14,34 +14,27 @@ manner. This work focuses on a network protocol's message format specification.
 Specifically, binary message formats common to network protocols from layers 2-4
 will be studied.
 
-Network protocol message formats can be designed and implemented with an
-inconsistent structure. 
+Binary message formats typically have a self-describing structure called Type
+Length Value (TLV). A fixed length type and length field initially indicate the
+type of the field to follow. The length usually sets an upper bound on the size
+of the following field. This following field may be a single type, a disjoint
+union of types, a list of unique type, or a list of disjoint union of types.
+This highly variable structure can easily lead to inconsistency, resulting in
+unknown behavior without proper message validation. 
 
-\begin{figure}[h]
-   \begin{center}
-   \includegraphics[width=.40\textwidth]{figs/fig1.pdf}
-   \caption{Message Format Dependencies}
-   \label{figure:fig1}
-   \end{center}
-\end{figure}
-
-eliminate entire categories of common security
-vulnerabilities for network protocol message formats. In particular there are
-two common security vulnerabilities that occur in almost all network protocol
-implementations: value constraint, and structural constraint violations. A
-protocol specification might define a subset of the input range for any
+These inconsistencies frequently occur in actual network protocol
+implementations and can be represented by two classes of vulnerabilities:
+value constraint, and structural constraint violations.
+A protocol specification might define a subset of the input range for any
 particular value, leaving the remainder unspecified, value constraints are
 violated when an implementation blindly handles received values without range
 validation allowing for undefined behavior. A structural constraint violation
 occurs when a received message describes its structure in a way that violates
-the structural rules of the format specification. My first paper focuses on
-defining a language for a large subset of IETF binary format based protocols
-with the guarantee all well- formed specifications will not allow any type of
-value or structural constraint violation. The US- CERT vulnerability database
+the structural rules of the format specification. 
+
+The US-CERT vulnerability database
 shows these classes of vulnerabilities exist in current implementations of
 simple, old, well understood protocols by extremely knowledgeable organizations~\cite{us_cert}.
-
-\subsection{Network Protocol Problems }
 
 \begin{tabular}{|c|c|c|c|c|}
    \hline
@@ -52,7 +45,21 @@ simple, old, well understood protocols by extremely knowledgeable organizations~
    1981 & ICMP & Cisco & 2007 & 341288 \\ \hline
    1985 & NTPD & GNU & 2009 & 853097 \\ \hline
    1998 & OSPFv2 & Quagga & 2012 & 551715 \\ \hline
-\end{tabular}
+\end{tabular} \\
+
+At the heart of this
+message structure is type dependency. Precisely sized types may depend on the
+values of previously occurring fields. A small set of typical types
+extended with previous field value dependency can now represent the TLV
+structure of network protocol message formats.
+
+\begin{figure}[h]
+   \begin{center}
+   \includegraphics[width=.40\textwidth]{figs/fig1.pdf}
+   \caption{Message Format Dependencies}
+   \label{figure:fig1}
+   \end{center}
+\end{figure}
 
 \subsection{Prior Work}
 
