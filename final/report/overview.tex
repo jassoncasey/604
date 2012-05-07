@@ -2,19 +2,9 @@
 
 The current process of design, development and verification of network protocols
 and network systems is extremely inefficient, error prone, and does not scale
-well for large networks. For example, in a typical networking course students
-are taught and expected to implement simple protocols. A student will express
-the protocol’s message formats, state machine, initial configuration, and system
-interface requirements in a low level systems programming language; analogous to
-expressing high level algorithms in assembly. This typically consumes
-considerable amounts of time, and still yields results riddled with translation
-defects, representative of the students ability to express the protocol in their
-chosen language. A quick search through the US- CERT vulnerability database
-shows these classes of defects are not limited to students, but are quite common
-from experienced developers who are working with well established protocols [5].
-
-This problem is further complicated by modern network applications, which
-typically involve complex interactions between many protocols. Long Term
+well for large networks. This problem is further complicated by modern network
+applications, which
+involve complex interactions between many protocols. Long Term
 Evolution (LTE) is the technology behind 4th Generation wireless broadband
 networks. A single data flow in a LTE network requires the explicit interaction
 of over 13 unique protocols communicating between a minimum of 7 unique network
@@ -23,9 +13,7 @@ interaction grows even higher. This level of complexity is not unique to LTE,
 but is a trend of modern networks, it can be observed in VoIP, IPTV, broadband
 mobility, and content distribution network architectures. This increase in
 complexity is detrimental to the comprehension, cost, and time of developing
-these architectures. My proposed research will address this relatively
-unexplored area by developing a framework of techniques to manage this
-complexity.
+these architectures. 
 
 First, a protocol specification language will be developed to express protocol
 design. It will be powerful enough to express the definition of a protocol
