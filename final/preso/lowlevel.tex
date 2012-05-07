@@ -52,23 +52,28 @@
 }
 
 \frame{\frametitle{Delta Functions}
+   \scriptsize
    \begin{flushleft}
    \begin{align*}
       \mbox{nat\_plus}&: \Pi a:\mbox{Nat}.\Pi b:\mbox{Nat}.\mbox{Nat} \\
       \mbox{uint}&: \Pi a:\mbox{Nat}.\Pi b:\mbox{Nat}.\mbox{Uint}~a\\
-      \mbox{uint\_plus}&: \Pi a:(\Pi x:\mbox{Nat}.\mbox{Uint}~x).\Pi b:(\Pi y:\mbox{Nat}.\mbox{Uint}~y).\mbox{Uint}~z\\
+      \mbox{uint\_plus}&: \Pi a:(\Pi x:\mbox{Nat}.\mbox{Uint}~x).
+               \Pi b:(\Pi y:\mbox{Nat}.\mbox{Uint}~y).\mbox{Uint}~x>y?x+1:y+1\\
+      \mbox{uint\_bits}&: \Pi a:(\Pi x:\mbox{Nat}.\mbox{Uint }x).\mbox{Nat}
    \end{align*}
    \end{flushleft}
 }
 
 \frame{\frametitle{Application Rules}
-
-   \inferrule[Kind App]{
-      \Sigma | \Gamma \vdash \tau ::\Pi x:\tau_1 .K \\
-      \Sigma | \Gamma \vdash t:\tau_2
+   \begin{mathpar}
+   \inferrule[Type App]{
+      \Sigma | \Gamma \vdash t_1 : \Pi x:\tau_1.\tau_3 \\
+      \Sigma | \Gamma \vdash t_2:\tau_2 \\
+      bw \leftarrow BoundVar(\tau_1)~
+      bv' \leftarrow Fresh(bv) \\
+      \Sigma | \Gamma \vdash [bv'/bv]Body(\tau_1) \equiv \tau_3 \rightsquigarrow \theta
    } {
-      \Sigma | \Gamma \vdash \tau t:[x \mapsto t]K
+      \Sigma | \Gamma ~ t_1 ~ t_2 : [t_2/x][bv'/bv]\tau \rightsquigarrow \theta
    }
-   
-
+   \end{mathpar}
 }
