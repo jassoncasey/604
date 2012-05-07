@@ -1,4 +1,36 @@
 \section{Overview}
 
-stuff
+The current process of design, development and verification of network protocols
+and network systems is extremely inefficient, error prone, and does not scale
+well for large networks. This problem is further complicated by modern network
+applications, which
+involve complex interactions between many protocols. Long Term
+Evolution (LTE) is the technology behind 4th Generation wireless broadband
+networks. A single data flow in a LTE network requires the explicit interaction
+of over 13 unique protocols communicating between a minimum of 7 unique network
+element types. When the mobile device establishes a voice call the protocol
+interaction grows even higher. This level of complexity is not unique to LTE,
+but is a trend of modern networks, it can be observed in VoIP, IPTV, broadband
+mobility, and content distribution network architectures. This increase in
+complexity is detrimental to the comprehension, cost, and time of developing
+these architectures.
+This problem can be mitigated with a network protocol specification language.
 
+Steve, is such a language, and was crafted to support protocol design,
+verification, and testing. Initially, the language focuses on definition and use
+of message formats. The language supports compile time reasoning over the
+consistency of message format declarations as well as the consistent use of
+user defined types. This work provides formal statics for Steve, as
+well as an implementation of these rules.
+This work leverages existing research in dependent types~\cite{dep_types}, 
+dependent records~\cite{dep_rec}, and
+ad-hoc data description languages~\cite{next_700_ddl}.
+
+There is plenty of existing research on improving the quality of network
+software through formal reasoning; however, most of this work requires 
+familiarity with advanced formal verification techniques. Steve discharges the
+user of this burden by lowering reasoning about the protocol into the host 
+language and allowing for automated verification by the compiler. Similar
+approaches have been successful for defining routing protocols 
+(meta-routing~\cite{meta_routing}, NDLog~\cite{ndlog}) and compilers
+(CompCert~\cite{compcert}).
