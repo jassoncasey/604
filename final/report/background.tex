@@ -1,13 +1,31 @@
 \section{Background}
      
 A protocol specification can be broken into four components: message format,
-initial configuration, state machine, and system interface. 
-This work focuses on the message format
-portion of protocol specifications. Packet Types~\cite{packet_types} is one of the earliest
-works where the authors show productivity benefits of having network types in an
-overlay language. PADS~\cite{pads_ml} is a later work that showed formal treatment of 
-network specific types such as Packet Types. I am currently working on a paper
-that leverages these ideas that eliminate entire categories of common security
+initial configuration, state machine, and system interface. Message formats
+define the precise structure of a protocol's messages, their contents, and
+invariants. The state machine defines the number of unique protocol states 
+which an instance of the protocol may be in, along with guarded transition
+functions, transition events, and local state manipulation. The configuration
+contains the initial parameters required to instantiate a state machine.
+Finally, the system interface defines send/receive message passing, time events,
+persistent storage, and a general maintenance. This protocol abstraction is
+quite useful in reasoning and testing the protocol design in an independent
+manner. This work focuses on a network protocol's message format specification.
+Specifically, binary message formats common to network protocols from layers 2-4
+will be studied.
+
+Network protocol message formats can be designed and implemented with an
+inconsistent structure. 
+
+\begin{figure}[h]
+   \begin{center}
+   \includegraphics[width=.40\textwidth]{figs/fig1.pdf}
+   \caption{Message Format Dependencies}
+   \label{figure:fig1}
+   \end{center}
+\end{figure}
+
+eliminate entire categories of common security
 vulnerabilities for network protocol message formats. In particular there are
 two common security vulnerabilities that occur in almost all network protocol
 implementations: value constraint, and structural constraint violations. A
