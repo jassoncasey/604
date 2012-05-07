@@ -397,7 +397,7 @@ betaReduceType from to (Rec' fs) = Rec' $ map betaReduceRecord fs
   where betaReduceRecord :: (String,Type') -> (String,Type')
         betaReduceRecord (n,t) = if n == from
           then (to  ,betaReduceType from to t)
-          else (from,betaReduceType from to t)
+          else (n,betaReduceType from to t)
 betaReduceType from to (Dep' e t1 t2) = Dep' e' t1' t2'
   where e'  = betaReduceTerm from to e
         t1' = betaReduceType from to t1

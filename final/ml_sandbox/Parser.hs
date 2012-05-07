@@ -212,7 +212,7 @@ pduDefinition :: Parser [PduPField]
 pduDefinition = do
     first <- pduField
     rest <- manyAccum (:) (m_reservedOp "," >> pduField)
-    return (first:rest)
+    return (first:(reverse rest))
   <?> "pdu definition"
 
 pduField :: Parser PduPField
@@ -508,12 +508,13 @@ arrayType =  (do
   )
   <?> "array type"
 
-padType :: Parser PType
+{-padType :: Parser PType
 padType = (do
     m_reserved "Pad"
     expr <- term
+    return $ Uint (Lit' (LitNat 0)) (Lit' (LitNat 0))
   )
-  <?> "pad type"
+  <?> "pad type"-}
 
 {-============================================================================-}
 

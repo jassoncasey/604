@@ -49,10 +49,10 @@ kind t g = do
 -- The top leveltype checker
 {-============================================================================-}
 
-topLevelChecker :: ([Sigma],[Gamma]) -> [Ast] -> TypeChecker Type'
+topLevelChecker :: ([Sigma],[Gamma]) -> [Ast] -> TypeChecker (Type',[Sigma])
 
 -- Empty program
-topLevelChecker _ [] = Good SNat'
+topLevelChecker (s,g) [] = Good (SNat',s)
 
 --    Σ|Γ ⊢ T::*    Σ|Γ ⊢ t:τ    Σ|Γ,<f:τ> ⊢ prgm
 --  ------------------------------------------------ TopLevelLet
@@ -111,12 +111,14 @@ check (sigma,gamma) (PduDef n (f:fs)) = do
 check (sigma,gamma) (PduDefPart rec@((l,t):rho)) = do -- ambiguous ...
   notIn l rho
   let labels = lunzip rec
-  let lilGamma = foldl b (Rec' rec) labels --betaReduceType l ("$rho." ++ l) rho
+  let lilGammaRec = foldl b (Rec' rec) labels
+  let (Rec' rhodRecord) = lilGammaRec
+  let lilGamma = map (\(x,y) -> TypeBind x y) rhodRecord
   let t' = foldl b t labels
-  kt <- kind t gamma
+  kt <- kind t (lilGamma ++ gamma)
   return $ Rec' ((l,t'):rho)
     where b :: Type' -> String -> Type'
-    	  b fs l = betaReduceType l ("$rho." ++ l) fs
+    	  b t l = betaReduceType l ("$rho." ++ l) t
   
 
 --   c:T ∊ Γ
