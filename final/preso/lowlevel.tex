@@ -78,6 +78,30 @@
    \end{mathpar}
 }
 
+\frame{\frametitle{Predicate Introduction}
+ \begin{itemize}
+   \item $\Delta$ - set of known facts
+   \item conditional terms introduce predicates
+   \item evaluate sub-terms using new fact established by predicate
+\end{itemize}
+
+\begin{mathpar}
+   \inferrule[Conditional]{
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1 : \mbox{Bool}
+      \rightsquigarrow \theta' \\
+      \Delta, \langle t_1 \rangle | \Sigma | \Gamma | \theta' \vdash
+      t_2 : \tau \rightsquigarrow \theta'' \\
+      \Delta, \langle t_1 \rangle | \Sigma | \Gamma | \theta'' \vdash
+      t_3 : \tau \rightsquigarrow \theta''' \\
+   } {
+      \Delta | \Sigma | \Gamma | \theta \vdash \mbox{if } t_1
+      \mbox{ else } t_2 \mbox{ then } t_3 : \tau
+      \rightsquigarrow \theta'''
+   }
+\end{mathpar}
+
+}
+
 \frame{\frametitle{Type Equivalence Rules}
    \begin{mathpar}
    \inferrule[TAUT]{}{

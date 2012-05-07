@@ -69,36 +69,6 @@ test pkt = if pkt.opcode == 2
 
 \subsection{A Theory of Steve}
 
-\frame{\frametitle{Predicate Introduction}
-\begin{itemize}
-   \item $\Delta$ - set of known facts
-   \item conditional terms introduce predicates
-   \item evaluate sub-terms using new fact established by predicate
-\end{itemize}
- 
-
-
-\begin{prooftree}
-   \scriptsize
-   \def \fCenter{\ \vdash\ }
-   \RightLabel{\textbf{T$_{if}$}}
-   \AxiomC{$\Delta | \Gamma \fCenter\ t_1 : Bool$}
-   \AxiomC{$\Delta,\{t_1\} | \Gamma \fCenter\ t_2 : \tau$}
-   \AxiomC{$\Delta,\{\neg t_1\} | \Gamma \fCenter\ t_3 : \tau$}
-   \TrinaryInfC{$\Delta | \Gamma \fCenter\ $ if $t_1$ then $t_2$ else $t_3 : \tau$}
-\end{prooftree}
-
-\begin{mathpar}
-   \inferrule[K-Proj]{
-        \Gamma \vdash \tau_1 :: \star \\
-        \Gamma, \langle \tau_{i-1} :: \star \rangle \vdash \tau_i :: \star \\
-        \tau,\tau_1 \in RT
-      } {
-         \Gamma \vdash \mbox{ pdu } \{ \ell_i = \tau_i \} }
-\end{mathpar}
-
-}
-
 \frame{\frametitle{Dependency Elimination}
 \begin{itemize}
    \item deduce dependency from known facts
