@@ -1,0 +1,15 @@
+\begin{mathpar}
+   \inferrule[Term App]{
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1 : \Pi x:\tau_1.\tau_3 
+      \rightsquigarrow \theta'\\
+      \Delta | \Sigma | \Gamma | \theta' \vdash t_2:\tau_2 
+      \rightsquigarrow \theta''\\
+      bw \leftarrow BoundVar(\tau_1)~
+      bv' \leftarrow Fresh(bv) \\
+      \Delta | \Sigma | \Gamma | \theta'' \vdash [bv'/bv]Body(\tau_1) \equiv \tau_3 
+      \rightsquigarrow \theta'''
+   } {
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1~t_2:[t_2/x][bv'/bv]\tau 
+      \rightsquigarrow \theta'''
+   }
+\end{mathpar}
