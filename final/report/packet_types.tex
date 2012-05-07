@@ -1,0 +1,83 @@
+\section{Packet Types}
+
+PacketTypes~\cite{packet_types} is a first work towards developing a
+language to handle the specific constraints of network protocol
+message formats. The authors' motivate the work with the usual suspects
+of networkk protocol software development: tedious, error-prone, ever-changing,
+etc. Users can specific binary formatted network protocols in the PacketTypes
+overlay language. This language is then compiled down to a set of C
+datastructures and functions. Type checking is performed at the overlay level,
+while runtime checks are provided through their generated C functions. 
+
+\subsection{Contributions}
+
+The primary contribution of this paper is a network protocol message format
+language. This language includes the following primitives: bit, array, record,
+constraints, refinement, and a variant type. User defined types are supported 
+by assigned a closed type constructor to an identifier. Arrays by have either
+a constant integral size, or are unbounded. Unbounded arrays will match all
+binary data unless there is a size constraint present. Records have the usual
+structure where a set of unique labels may be assigned types. Constraints
+apply to records and may constrain values and types. Constraints are defined
+as assignments or predicates of expressions values or type parameters.
+Expression may contain any previously encountered identifier. Refinement is a
+form of psuedo-subclassing where selected values and types of the super type may
+be overridden. The variant provides a `alternation' of types that may be
+by first match. Types may have attributes that can be used in constraint
+expressions. All types seem to have the attributes: value, numbits, and
+numbytes. Arrays have numelements, and variants have an attribute called alt
+that refers tag of a constructed variant. Expressions support the following
+operators: $=$, $\neq$, $<$, $>$, $\leq$, $\geq$, $||$, $\&\&$, $\times$,
+$/$, $+$, and $-$.
+
+Literals may be used to identify a unique type width and value. These types
+only appear inside of `alternation' constructions.
+
+\subsection{Critique}
+
+Constraints are expressed outside of the context of the constrained type,
+this can be confusing, its not clear why these constraints are not expressed
+directly in the constrained object. This would be possible in their scheme
+by not using the greedy array but [ constraint predicate ] instead. This is
+a minor critique but seems to increase readability of their language.
+
+It is not clear how types are given default initializers or even if this is
+a supported feature.
+
+The `alternation' type matches the first of its potential terms in a choice,
+its not obvious that this match may be directed. Again, it is not clear why
+matching is not obvious within the type definition as this would improve
+readability of the description. Also, it is possible that there are not enough
+constraints in the inner structure and values of types to always allow for
+a disjoint matching condition. In this scenario order of the type definition
+can change the resulting match, which would not be easily understood behavior.
+
+Ultimately, this approach depends on implicit matching as opposed to a guided
+protocol decode. While the goal is to simply the programmer's role of writing
+format handling code, the tool should still resemble the high level
+format specification. When a matching approach is taken this objective does not
+seem possible. Also, it is not clear that performance can be maintained under
+matching occurrence within an `alternation' versus being directed to a specific
+choice. Additionally, refinement matches are all searched for the longest match,
+or `strongest' condition. It is hard to imagine how this is efficient in a 
+system with many active protocol definitions.
+
+There are no apparent methods being used during type checking or code generation
+of the packet types compiler. This high level process described does not seem
+to be based on any principled mechanisms.
+
+The paper refers to refinement selection as `demultiplexiing' and indicates that
+the compiler cannot handle demultiplexing across ranges. Additionally, the
+compiler assumes n-byte alignment on n byte boundaries, which is not the case
+many active protocols.
+
+The algorithms at use in this paper are rather obtuse and not clearly defined. 
+The only thing with a formal definition is the grammar of the language itself.
+
+* not sure if the array allows non-const expression as size
+* overlay language, benefit of type checking is lost by types
+  not carrying over to the execution language
+* one shot parse
+* authors keep switching between syntax and semantic arguments
+  without treating them seperately
+* are alternations/variants truely disjoint?

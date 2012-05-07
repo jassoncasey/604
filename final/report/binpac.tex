@@ -1,0 +1,53 @@
+\section{Binpac}
+
+Binpac~\cite{binpac} can be viewed as an extension of
+PacketTypes~\cite{packet_types}, the authors' primary view is that
+protocol message formats are merely a grammar problem, and seek
+to generalize a format description language into a `data-model' with
+constraints. The problem is described in the same terms as with PacketTypes:
+tedious, error-prone, hard-to-read, etc. The generalization includes support for
+ASCII based protocols which was not present with previous 
+work~\cite{packet_types}. The target application is off-line packet capture
+analysis.
+
+\subsection{Contributions}
+
+The authors' identity several avenues of attack. First, they want to provide for
+parser generation for network protocol message formats that covers both binary
+and ASCII based protocol formats. Second, they want the ability to have
+resumable state parsers (the example given involves TCP processing where the
+application message spans more than one TCP packet). Third, they identify the
+need to perform optimizations on code generation to synthesis efficient code.
+
+Binpac defines the elementary types empty and int/uint{8/16/32}. A string type
+can be defined with a string literal, a regular expression, or bytestring. 
+The composite types are: array, record, and case (variant). The case type is
+uniquely indexed and does not require look-ahead (unlike with packet types).
+Binpac introduces support for state management in order to handle inter-packet
+decodes and manage multiple unique flows. Finally, `refinement' is supported
+which allows field subclasses of records and variants.
+
+Performance was evaluated using a generated and hand coded parser for HTTP and
+DNS. These parsers were then run over traffic collected on a local network. The
+authors' reported throughput, performance, and lines of code (LOC). Binpac always
+produced smaller code footprints, but were almost equivalent in throughput and
+performance.
+
+\subsection{Critique}
+
+It is strange that the author's treat that is `yacc' for network protocol
+implementation. This almost implies that their view of this problem is purely
+with producing a parse from a grammar. This philosophy would omit a large
+subset of bugs that arise from the improper use of message structures.
+
+All array and variant access is checked at runtime by generated code. This could
+lead to poor performance. If field access can be determined to be safe at
+compile time then there is no need for run-time checks. Run-time checks are only
+necessary for single occurrences of unchecked code at compile time. Complete 
+run-time checking is necessary when type information is lost by having a 2-tier
+type system (binpac, c++).
+
+By treating protocol messages as second class citizens binpac misses the
+opportunity to reason about the use of messages at compile time. This seems to
+be one of the most compelling reasons for capturing protocol message structures
+in a language.

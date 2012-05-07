@@ -1,0 +1,59 @@
+\section{DataScript}
+
+DataScript~\cite{datascript} is an overlay language designed to provide 
+declarative ad-hoc data format specifications. This work aimed to advance the 
+work of PacketTypes for more general data formats as well as generate
+traversal functions for verified data. This language targeted the Java
+runtime environment.
+
+\section{Contributions}
+
+The paper presents the following categories of language features:
+primitive types, set types, composite types, array types, constraints,
+type parameters, and labels. The primitive types identified are:
+int/unit 8/16/32/64/128, and these types act as expected. Set types are
+defined as specializations on existing types. An enum type, which is 
+part of the set type category, allows specialization of a type with
+a set of explicit values. Bitmask types are not explained in the paper.
+
+Composite types are defined with records and variants. Records impose
+order, no padding, no packing, etc. Nesting and anonymous composites are
+allowed in the language. Array types are contiguous arrays of homogeneous
+type. Arrays may be defined as having a lower and upper bound, where omission
+of a lower bound implies a lower bound of 0.
+
+Constraints provide an ability to tag declarations with predicate expression
+asserting a match. These expressions include the type C operators along with
+user defined predicates, sizeof, is, and forall. The function sizeof returns
+the number of bytes of the given term. The predicate is determines type
+membership for a term of a variant declaration. Forall is the universal
+quantification operator that predicates over all elements of a range. For a
+term to match against data, its constraints must resolve to true. Empty 
+constraints are always true.
+
+Type parameters are introduced as a mechanism to make type construction
+parametric over terms. Labels are introduced as a mechanism to allow arbitrary 
+offsets of terms. A label is used to decorate any declaration within a record to
+define its beginning address relative to the beginning of the containing record.
+
+Byte order of a declaration may be specified with a prefix. The default order is
+taken from the order of the containing composite type, otherwise it is set to
+Big Indean.
+
+The DataScript compiler generates a Java library based on the specification
+file. The library includes classes for encoding and decoding of data, as well
+as a visitor for an instance of data.
+
+\section{Critique}
+
+This work contributes the language feature of the label, along with increased
+readability over PacketTypes. Labels seem to be the primary contribution of this
+work. Labels are a way to decorate an attribute of a record with a specific
+starting offset relative to the beginning of the structure.
+
+DataScript uses different terminology but provides largely the
+same feature set that PacketTypes provides, with the exception
+of labels. The paper claims to introduce `type parameters', however
+on closer inspection this is just a form of type shape dependency
+over previously occurring terms, which is provided in PacketTypes.
+
