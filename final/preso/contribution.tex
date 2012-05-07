@@ -69,24 +69,6 @@ test pkt = if pkt.opcode == 2
 \input{lowlevel.tex}
 \input{pdu.tex}
 
-\frame{\frametitle{Dependency Deferral}
-\begin{itemize}
-   \item use of type without proof of dependency
-   \item rewrite term using conditional
-   \item eliminate dependency of type
-\end{itemize}
- 
-\begin{prooftree}
-   \scriptsize
-   \def \fCenter{\ \vdash\ }
-   \RightLabel{\textbf{T$_{DepElim_2}$}}
-   \AxiomC{$\Delta | \Gamma \fCenter\ t : \tau ? \delta$}
-   \AxiomC{$\Delta \nvDash \delta$}
-   \BinaryInfC{$\Delta | \Gamma \fCenter\ t : \tau ? \delta \rightsquigarrow$ if $
-   \delta$ then $t$ else $error : \tau$}
-\end{prooftree}
-}
-
 \frame{\frametitle{Top-Level Rules}
 
 \begin{mathpar}
