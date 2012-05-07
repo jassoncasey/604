@@ -108,7 +108,7 @@
       \Delta | \Sigma | \Gamma | \theta \vdash \tau \equiv \tau 
       \rightsquigarrow \theta
    } \\
-   \inferrule[$\Pi$]{
+   \inferrule[Pi]{
       \Delta | \Sigma | \Gamma | \theta \vdash \tau_1 \equiv \tau_3 
       \rightsquigarrow \theta'\\
       \Delta | \Sigma | \Gamma,\langle x:\tau_1 \rangle | \theta' \vdash 
@@ -127,7 +127,7 @@
    \inferrule[NatUint]{}{
       \Delta | \Sigma | \Gamma | \theta \vdash \mbox{Nat }\equiv \mbox{Uint }t
       \rightsquigarrow \theta
-   } \\
+   } 
    \end{mathpar}
 }
 
@@ -138,10 +138,12 @@
       \rightsquigarrow \theta
    } \\
    \inferrule[TermConstant]{
-      x \notin \Delta
+      x \notin \Delta \\
+      NormalForm(t) \\
+      x \notin dom(\theta)
    }{
-      \Delta | \Sigma | \Gamma | \theta \vdash x \equiv c
-      \rightsquigarrow \theta
+      \Delta | \Sigma | \Gamma | \theta \vdash x \equiv t
+      \rightsquigarrow \theta,\langle x:t\rangle
    } \\
    \inferrule[CondElim]{
       \Delta \models t_2 \\
@@ -156,7 +158,7 @@
       \rightsquigarrow \theta'
    }{
       \Delta | \Sigma | \Gamma | \theta \vdash t_1 \equiv t_2
-      \rightsquigarrow \theta
+      \rightsquigarrow \theta'
    }
    \end{mathpar}
 }
