@@ -26,27 +26,27 @@
       \Sigma | \Gamma \vdash \tau_1 ::\star \\
       \Sigma | \Gamma,x:\tau_1 \vdash \tau_2 ::\star
    } {
-      \Gamma \vdash \Pi x:\tau_1.\tau_2 ::\star 
+      \Sigma | \Gamma \vdash \Pi x:\tau_1.\tau_2 ::\star 
    }\\
    \inferrule[Type Abs]{
       \Sigma | \Gamma \vdash \tau_1 ::\star \\
-      \Sigma | \Gamma,x:\tau_1 \vdash t ~:~\tau_2
+      \Delta | \Sigma | \Gamma,x:\tau_1 \vdash t ~:~\tau_2
    } {
-      \Sigma | \Gamma \vdash \lambda x:\tau_1.t ~:~ \Pi x:\tau_1.\tau_2
+      \Delta | \Sigma | \Gamma \vdash \lambda x:\tau_1.t ~:~ \Pi x:\tau_1.\tau_2
    }\\
    \inferrule[Type Let]{
-      \Sigma | \Gamma \vdash t_1 : \tau_1 \\
+      \Delta | \Sigma | \Gamma \vdash t_1 : \tau_1 \\
       \Sigma | \Gamma \vdash \tau_1 ::\star \\
-      \Sigma | \Gamma, \langle x:\tau_1 \rangle \vdash t_2 :\tau_2
+      \Delta | \Sigma | \Gamma, \langle x:\tau_1 \rangle \vdash t_2 :\tau_2
    } {
-      \Sigma | \Gamma \vdash \mbox{let }x = t_1 \mbox{ in } t_2 : \tau_2 
+      \Delta | \Sigma | \Gamma \vdash \mbox{let }x = t_1 \mbox{ in } t_2 : \tau_2 
    }\\
    \inferrule[Type TopLevel Let]{
       \Sigma | \Gamma \vdash \tau ::\star \\
-      \Sigma | \Gamma \vdash t : \tau \\
-      \Sigma | \Gamma, \langle f:\tau \rangle \vdash prgm
+      \Delta | \Sigma | \Gamma \vdash t : \tau \\
+      \Delta | \Sigma | \Gamma, \langle f:\tau \rangle \vdash prgm
    } {
-      \Sigma | \Gamma \vdash \mbox{let }f = t:\tau, prgm 
+      \Delta | \Sigma | \Gamma \vdash \mbox{let }f = t:\tau, prgm 
    }
 \end{mathpar}
 }
@@ -67,13 +67,64 @@
 \frame{\frametitle{Application Rules}
    \begin{mathpar}
    \inferrule[Type App]{
-      \Sigma | \Gamma \vdash t_1 : \Pi x:\tau_1.\tau_3 \\
-      \Sigma | \Gamma \vdash t_2:\tau_2 \\
+      \Delta | \Sigma | \Gamma \vdash t_1 : \Pi x:\tau_1.\tau_3 \\
+      \Delta | \Sigma | \Gamma \vdash t_2:\tau_2 \\
       bw \leftarrow BoundVar(\tau_1)~
       bv' \leftarrow Fresh(bv) \\
-      \Sigma | \Gamma \vdash [bv'/bv]Body(\tau_1) \equiv \tau_3 \rightsquigarrow \theta
+      \Delta | \Sigma | \Gamma \vdash [bv'/bv]Body(\tau_1) \equiv \tau_3 \rightsquigarrow \theta
    } {
-      \Sigma | \Gamma ~ t_1 ~ t_2 : [t_2/x][bv'/bv]\tau \rightsquigarrow \theta
+      \Delta | \Sigma | \Gamma ~ t_1 ~ t_2 : [t_2/x][bv'/bv]\tau \rightsquigarrow \theta
+   }
+   \end{mathpar}
+}
+
+\frame{\frametitle{Type Equivalence Rules}
+   \begin{mathpar}
+   \inferrule[TAUT]{}{
+      \Delta | \Sigma | \Gamma | \theta \vdash \tau \equiv \tau 
+      \rightsquigarrow \theta
+   } \\
+   \inferrule[$\Pi$]{
+      \Delta | \Sigma | \Gamma | \theta \vdash \tau_1 \equiv \tau_3 
+      \rightsquigarrow \theta'\\
+      \Delta | \Sigma | \Gamma,\langle x:\tau_1 \rangle | \theta' \vdash 
+      \tau_2 \equiv \tau_4 \rightsquigarrow \theta''
+   }{
+      \Delta | \Sigma | \Gamma | \theta \vdash \Pi x:\tau_1.\tau_2 \equiv
+      \Pi x:\tau_3.\tau_4 \rightsquigarrow \theta''
+   } \\
+   \inferrule[Uint]{
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1 \equiv t_2
+      \rightsquigarrow \theta'
+   }{
+      \Delta | \Sigma | \Gamma | \theta \vdash \mbox{Uint }t_1\equiv \mbox{Uint }t_2
+      \rightsquigarrow \theta'
+   } \\
+   \inferrule[NatUint]{}{
+      \Delta | \Sigma | \Gamma | \theta \vdash \mbox{Nat }\equiv \mbox{Uint }t
+      \rightsquigarrow \theta
+   } \\
+   \end{mathpar}
+}
+
+\frame{\frametitle{Term Equivalence Rules}
+   \begin{mathpar}
+   \inferrule[TAUT]{}{
+      \Delta | \Sigma | \Gamma | \theta \vdash x \equiv x
+      \rightsquigarrow \theta
+   } \\
+   \inferrule[TermConstant]{
+      x \notin \Delta
+   }{
+      \Delta | \Sigma | \Gamma | \theta \vdash x \equiv c
+      \rightsquigarrow \theta
+   } \\
+   \inferrule[TermConstant]{
+      \Delta | \Sigma | \Gamma | \theta \vdash AppOrder(t_1) \equiv AppOrder(t_2) 
+      \rightsquigarrow \theta'
+   }{
+      \Delta | \Sigma | \Gamma | \theta \vdash t_1 \equiv t_2
+      \rightsquigarrow \theta
    }
    \end{mathpar}
 }
