@@ -22,20 +22,26 @@ union of types, a list of unique type, or a list of disjoint union of types.
 This highly variable structure can easily lead to inconsistency, resulting in
 unknown behavior without proper message validation. 
 
-These inconsistencies frequently occur in actual network protocol
-implementations and can be represented by two classes of vulnerabilities:
-value constraint, and structural constraint violations.
-A protocol specification might define a subset of the input range for any
-particular value, leaving the remainder unspecified, value constraints are
-violated when an implementation blindly handles received values without range
-validation allowing for undefined behavior. A structural constraint violation
-occurs when a received message describes its structure in a way that violates
-the structural rules of the format specification. 
+\begin{figure}[h]
+   \begin{center}
+   \includegraphics[width=.40\textwidth]{figs/fig1.pdf}
+   \caption{Message Format Dependencies}
+   \label{figure:fig1}
+   \end{center}
+\end{figure}
 
-The US-CERT vulnerability database
-shows these classes of vulnerabilities exist in current implementations of
-simple, old, well understood protocols by extremely knowledgeable organizations~\cite{us_cert}.
-
+These inconsistencies frequently manifest as vulnerabilities in network protocol
+implementations and can be represented by two classes: value constraint, and 
+structural constraint violations. A protocol specification might define a subset
+of the input range for any particular field, leaving the remainder unspecified,
+value constraints are violated when an implementation blindly uses received
+values without range validation allowing for undefined behavior. A structural 
+constraint violation occurs when a received message describes its structure in
+a way that is inconsistent with the message formate specification.
+The US-CERT vulnerability database shows these classes of vulnerabilities exist
+and are easy to find in current implementations of simple, mature, protocols by
+experienced engineers and organizations~\cite{us_cert}. \\
+\\
 \begin{tabular}{|c|c|c|c|c|}
    \hline
    Age & Protocol & Vendor & Bug Date & US CERT \# \\ \hline
@@ -47,19 +53,11 @@ simple, old, well understood protocols by extremely knowledgeable organizations~
    1998 & OSPFv2 & Quagga & 2012 & 551715 \\ \hline
 \end{tabular} \\
 
-At the heart of this
-message structure is type dependency. Precisely sized types may depend on the
-values of previously occurring fields. A small set of typical types
-extended with previous field value dependency can now represent the TLV
-structure of network protocol message formats.
-
-\begin{figure}[h]
-   \begin{center}
-   \includegraphics[width=.40\textwidth]{figs/fig1.pdf}
-   \caption{Message Format Dependencies}
-   \label{figure:fig1}
-   \end{center}
-\end{figure}
+At the heart of network protocol message structure is type dependency. Precisely
+sized types can depend on the values from previously occurring fields. This 
+structure can be captured precisely with a small set of primitive types extended
+with dependency.
 
 \subsection{Prior Work}
+
 
