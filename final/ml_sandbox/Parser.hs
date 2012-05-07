@@ -56,7 +56,7 @@ operators = [
   "*","/","%","+","-",          -- Arithmetic
   "<",">","<=",">=","==","!=",  -- Relational
   "not","or","and",             -- Logical
-  ";", ","                      -- Delimiters
+  ";", ",","."                  -- Delimiters
   ]
 
 languageDef =
@@ -66,8 +66,8 @@ languageDef =
   , commentLine  = "--"
   , identStart   = lower
   , identLetter  = alphaNum
-  , opStart  = oneOf "-:oan><%/*+=!;,"
-  , opLetter = oneOf "-:oan><%/*+=!;,"
+  , opStart  = oneOf "-:oan><%/*+=!;,."
+  , opLetter = oneOf "-:oan><%/*+=!;,."
   , reservedOpNames = operators
   , reservedNames   = keywords
 }
@@ -136,7 +136,7 @@ parseDeclaration usedNames =
 
 dataType :: [String] -> Parser Declaration
 dataType usedNames =
-      pdu usedNames
+      newPdu usedNames
   <|> adt usedNames
   <?> "data type declaration"
 
@@ -194,13 +194,13 @@ constructor = (do
   )
   <?> "value constructor"
 
-newPdu :: Parser (String,[PduPField])
-newPdu = do
+newPdu :: [String] -> Parser Declaration
+newPdu str = do
     m_reserved "pdu"
     name <- m_typename
     m_reservedOp "="
     definition <- m_braces pduDefinition
-    return (name, definition)
+    return $ NewPduDecl name definition
   <?> "pdu"
 
 pduDefinition :: Parser [PduPField]
@@ -366,8 +366,17 @@ application = try (do
     restExprs <- manyAccum (:) primary
     let exprList = firstExpr:(reverse restExprs)
     return $ foldl Application iden exprList
-  ) <|> primary
+  ) <|> projection
   <?> "application"
+
+projection :: Parser PTree
+projection = try (do
+    expr <- primary
+    m_reservedOp "."
+    rec <- m_identifier
+    return $ Projection expr rec
+  ) <|> primary
+  <?> "projection"
 
 primary :: Parser PTree
 primary = fmap Identifier m_identifier
@@ -419,6 +428,7 @@ expressionOperators =
      binaryl "^" BitXor, prefix "~" BitNot],
     [binaryl ">" GreaterThan, binaryl "<" LessThan,
      binaryl ">=" GreaterThanEq, binaryl " <=" LessThanEq],
+    [binaryl "==" Equal],
     [prefix "not" Not],
     [binaryl "or" Or, binaryl "and" And]
   ]
@@ -521,6 +531,7 @@ getNamesFromDeclaration :: Declaration -> [String]
 getNamesFromDeclaration (FuncDecl (name,_,_,_)) = [name]
 getNamesFromDeclaration (PduDecl pduInfo) = lunzip $ pduInfoFields pduInfo
 getNamesFromDeclaration (AdtDecl adtInfo) = lunzip $ adtInfoCtors adtInfo
+getNamesFromDeclaration (NewPduDecl n fields) = n : (map getFieldName fields)
 
 -- Handles reserved name errors
 isReservedName name = isReserved theReservedNames caseName

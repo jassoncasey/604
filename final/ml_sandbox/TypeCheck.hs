@@ -11,27 +11,6 @@ FIXMES
 
 -}
 
-
--- TypeCheck Monad
-{-============================================================================-}
--- I know either can be used, but I had to learn how to do it myself
-data TypeChecker a = Good a | Bad String deriving (Show,Eq)
-
-instance Monad TypeChecker where
-  return x = Good x
-  Good x >>= f = f x
-  Bad msg >>= f = Bad msg
-  fail msg = Bad msg
-
--- Take a list of type checked things and return a typechecked list.
--- If any element is Bad, return bad. Otherwise, return a list of Good
-fromTypeCheckList :: [TypeChecker a] -> TypeChecker [a]
-fromTypeCheckList [] = Good []
-fromTypeCheckList ((Good x):xs) = fromTypeCheckList xs>>= \xs' -> return (x:xs')
-fromTypeCheckList ((Bad msg):_) = Bad msg
-
-mapTC :: (a -> TypeChecker b) -> [a] -> TypeChecker [b]
-mapTC f xs = fromTypeCheckList $ map f xs
 {-============================================================================-}
 
 

@@ -38,7 +38,10 @@ toAsts :: [Declaration] -> Maybe [Ast]
 toAsts ((PduDecl pduInfo) :ds) = do
   restOfAst <- toAsts ds
   return ((makePdu pduInfo) : restOfAst)
---toAsts ((AdtDecl _) :ds) = return (makeAst: (toAst ds))
+toAsts ((NewPduDecl name fields):ds) = do
+  rest <- toAsts ds
+  let fs = map toRecord fields
+  return $ ((PduDef name fs):rest)
 toAsts ((FuncDecl funcDef):ds) = do
   f <- funcToAst funcDef
   prgm <- toAsts ds
@@ -47,14 +50,22 @@ toAsts ((FuncDecl funcDef):ds) = do
 toAsts [] = Just []
 
 
+-- given a list of pdu fields, return records
+toRecord :: PduPField -> (String,Type')
+toRecord x = case x of
+  PPadF ptree -> ("$nil",Uint' (toAst ptree) (Lit' (LitNat 0)))
+  PNormField n ptyp -> (n,toType' ptyp)
+  PIfThenF n ptree ptype -> (n,Dep' (toAst ptree) (toType' ptype) nullUint)
+    where nullUint = Uint' (Lit' (LitNat 0)) (Lit' (LitNat 0))
+
 -- It will be a let
 funcToAst :: (String, PType, [String], PTree) -> Maybe Ast
 funcToAst (f, ptype, params, ptree) = do
-  let t = toType ptype
+  let t = toType' ptype
   binding <- bindParamTypes params t
   let body = toAst ptree
   let cover = funcCover binding body
-  return $ Let' f t body Nil  -- Could just put a literal there...
+  return $ Let' f t cover Nil  -- Could just put a literal there...
 
 
 -- Takes a ptree and converts it to an Ast
@@ -73,12 +84,14 @@ toAst (Binary bop t1 t2) = App' (App' (Iden' (show bop)) t1') t2'
         t2' = toAst t2
 toAst (Unary uop t) = App' (Iden' $ show uop) t'
   where t' = toAst t
+toAst (Projection ptree label) = Proj' e label
+  where e = toAst ptree
 
 
 -- takes params and makes an abstraction over input ast
-funcCover :: [TypeBinding] -> Ast -> Ast
+funcCover :: [(String, Type')] -> Ast -> Ast
 funcCover binding e = foldl toAbs e binding
-  where toAbs :: Ast -> (String,Type) -> Ast
+  where toAbs :: Ast -> (String,Type') -> Ast
         toAbs e (n,t) = Abs' n t e
 
 
@@ -94,18 +107,18 @@ parseTreeToAst (PduConstructor name) _ = Just $ Pdu $ UserType name-}
 
 
 -- take a list of params and a function type, return thte binding
-bindParamTypes :: [String] -> Type -> Maybe [TypeBinding]
-bindParamTypes [p] typ = Just [(p,typ)]
-bindParamTypes (p:ps) (Func t1 t2) = do
+bindParamTypes :: [String] -> Type' -> Maybe [(String, Type')]
+bindParamTypes [p] (Func' t1 _) = Just [(p,t1)]
+bindParamTypes (p:ps) (Func' t1 t2) = do
   bound <- bindParamTypes ps t2
   return ((p,t1):bound)
-bindParamTypes (_:_) _ = Nothing
+bindParamTypes _ _ = Nothing
 
 
 -- take a pdu and put it in ast form
 makePdu :: PduInfo -> Ast
 makePdu (PduInfo n pfields) = PduDef n fields
-  where fields = map (\(n,pt) -> (n,toType pt)) pfields
+  where fields = map (\(n,pt) -> (n,toType' pt)) pfields
 
 
 -- Process declarations
@@ -298,4 +311,21 @@ toType (PUint ptree1 ptree2) = Uint e1 e2
         e2 = case parseTreeToAst ptree2 [] of
           Just a  -> a
           Nothing -> undefined
+
+toType' :: PType -> Type'
+toType' (PSNat) = SNat'
+toType' (PSChar) = SChar'
+toType' (PSBool) = SBool'
+toType' (PList ptype) = List' $ toType' ptype
+toType' (PFunc ptype1 ptype2) = Func' t1 t2
+  where t1 = toType' ptype1
+        t2 = toType' ptype2
+toType' (PTVar name) = TVar' name
+toType' (PUserType name) = UserType' name
+toType' (PArray ptype ptree) = Array' t e
+  where t = toType' ptype
+        e = toAst ptree
+toType' (PUint ptree1 ptree2) = Uint' e1 e2
+  where e1 = toAst ptree1
+        e2 = toAst ptree2
 {-============================================================================-}
