@@ -6,18 +6,23 @@
 
 \subsection{Steve: A Network Protocol Specification Language}
 
-\frame{\frametitle{A Problem for Steve}
-pdu Pkt \{
-   opcode=Uint 16
-   payload=Uint opcode==2 ? 16 : 0
-\}
+\begin{frame}[fragile]{A Problem for Steve}
+\begin{verbatim}
+-- Dependent record packing precision types
+pdu Pkt {
+   opcode  = Uint 16
+   payload = Uint (opcode==2 ? 16 : 0)
+}
 
-test :: Pkt -> Uint 16
+-- Unsafe dependent access
+test :: Pkt -> Bool
 test pkt = pkt.payload == 0
 
-test :: Pkt -> Uint
-
-}
+-- Safe dependent access
+test :: Pkt -> Bool
+test pkt = if pkt.opcode == 2 then pkt.payload == 0 else False
+\end{verbatim}
+\end{frame}
 
 \frame{\frametitle{Steve's Terms}
 
