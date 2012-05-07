@@ -1,15 +1,11 @@
 \section{Background}
      
-specification languages. Determining if the input specification is well-formed
-then becomes a variation of type-checking. This phase allows a user of the
-system to receive the benefit of sophisticated verification techniques, without
-having understand them. A similar approach has been successful for defining
 A protocol specification can be broken into four components: message format,
-initial configuration, state machine, and system interface. In am currently in
-the initial phase of my research where I am focusing on the message format
-portion of protocol specifications. Packet Types [4] is one of the earliest
+initial configuration, state machine, and system interface. 
+This work focuses on the message format
+portion of protocol specifications. Packet Types~\cite{packet_types} is one of the earliest
 works where the authors show productivity benefits of having network types in an
-overlay language. PADS [5] is a later work that showed formal treatment of 
+overlay language. PADS~\cite{pads_ml} is a later work that showed formal treatment of 
 network specific types such as Packet Types. I am currently working on a paper
 that leverages these ideas that eliminate entire categories of common security
 vulnerabilities for network protocol message formats. In particular there are
@@ -25,7 +21,7 @@ defining a language for a large subset of IETF binary format based protocols
 with the guarantee all well- formed specifications will not allow any type of
 value or structural constraint violation. The US- CERT vulnerability database
 shows these classes of vulnerabilities exist in current implementations of
-simple, old, well understood protocols by extremely knowledgeable organizations [1].
+simple, old, well understood protocols by extremely knowledgeable organizations~\cite{us_cert}.
 
 \subsection{Network Protocol Problems }
 
@@ -42,4 +38,3 @@ simple, old, well understood protocols by extremely knowledgeable organizations 
 
 \subsection{Prior Work}
 
-Stuff \cite{packet_types}
