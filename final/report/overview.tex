@@ -1,4 +1,83 @@
 \section{Overview}
 
-stuff
+The current process of design, development and verification of network protocols
+and network systems is extremely inefficient, error prone, and does not scale
+well for large networks. For example, in a typical networking course students
+are taught and expected to implement simple protocols. A student will express
+the protocol’s message formats, state machine, initial configuration, and system
+interface requirements in a low level systems programming language; analogous to
+expressing high level algorithms in assembly. This typically consumes
+considerable amounts of time, and still yields results riddled with translation
+defects, representative of the students ability to express the protocol in their
+chosen language. A quick search through the US- CERT vulnerability database
+shows these classes of defects are not limited to students, but are quite common
+from experienced developers who are working with well established protocols [5].
 
+This problem is further complicated by modern network applications, which
+typically involve complex interactions between many protocols. Long Term
+Evolution (LTE) is the technology behind 4th Generation wireless broadband
+networks. A single data flow in a LTE network requires the explicit interaction
+of over 13 unique protocols communicating between a minimum of 7 unique network
+element types. When the mobile device establishes a voice call the protocol
+interaction grows even higher. This level of complexity is not unique to LTE,
+but is a trend of modern networks, it can be observed in VoIP, IPTV, broadband
+mobility, and content distribution network architectures. This increase in
+complexity is detrimental to the comprehension, cost, and time of developing
+these architectures. My proposed research will address this relatively
+unexplored area by developing a framework of techniques to manage this
+complexity.
+
+First, a protocol specification language will be developed to express protocol
+design. It will be powerful enough to express the definition of a protocol
+including: message formats, state machine, initial configuration, and system
+interaction. Second, the specification language should support reasoning over a
+protocols properties as well as over interactions with other protocols. Third,
+rapid prototyping will be supported, allowing a set of specifications to be
+compiled to a low-level language for testing. This framework would allow for
+students, researchers, and industry developers to quickly define a protocol, or
+network of protocols, reason about their properties and interactions, and
+generate prototypes for network testing.
+
+My research will leverage advanced programming language and verification
+techniques for the specification, verification, and synthesis of network
+protocols and network systems, without requiring users to understand complicated
+logic systems or formal verification. In my research I will design a
+light-weight expressive specification language that can be used to specify
+network protocols and network systems. I will be able to guarantee that a
+well-formed specification cannot exhibit entire categories of known problems.
+This is achieved by building on theorem proving techniques and proof assistants
+from the programming language community, to aid in the development of network
+specification languages. Determining if the input specification is well-formed
+then becomes a variation of type-checking. This phase allows a user of the
+system to receive the benefit of sophisticated verification techniques, without
+having understand them. A similar approach has been successful for defining
+routing protocols in meta-routing [2] where any well-formed routing
+specification will always converge. From a specification an implementation must
+be synthesized, and its semantics must be equivalent with the specification.
+Again in my research I will leverage techniques from the programming language
+and verification community to show semantic equivalence of the synthesized 
+system, such as the semantic equivalence verification techniques used by the
+COMPCERT C compiler [3].
+
+A protocol specification can be broken into four components: message format,
+initial configuration, state machine, and system interface. In am currently in
+the initial phase of my research where I am focusing on the message format
+portion of protocol specifications. Packet Types [4] is one of the earliest
+works where the authors show productivity benefits of having network types in an
+overlay language. PADS [5] is a later work that showed formal treatment of
+network specific types such as Packet Types. I am currently working on a paper
+that leverages these ideas that eliminate entire categories of common security
+vulnerabilities for network protocol message formats. In particular there are
+two common security vulnerabilities that occur in almost all network protocol
+implementations: value constraint, and structural constraint violations. A
+protocol specification might define a subset of the input range for any
+particular value, leaving the remainder unspecified, value constraints are
+violated when an implementation blindly handles received values without range
+validation allowing for undefined behavior. A structural constraint violation
+occurs when a received message describes its structure in a way that violates
+the structural rules of the format specification. My first paper focuses on
+defining a language for a large subset of IETF binary format based protocols
+with the guarantee all well- formed specifications will not allow any type of
+value or structural constraint violation. The US- CERT vulnerability database
+shows these classes of vulnerabilities exist in current implementations of
+simple, old, well understood protocols by extremely knowledgeable organizations [1].
