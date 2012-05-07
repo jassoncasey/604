@@ -30,9 +30,43 @@ test pkt = if pkt.opcode == 2
 
 \subsection{Pdu}
 
-
+The pdu type is similar to a record or structure from other languages. It
+consists of a series of label to type bindings. This type is meant to allow
+definition of precise width composite types for overlaying with a raw memory
+buffer received from some form of IO. This implies that implicit padding of
+elements within the pdu for byte, word, double word, and quad word alignment
+are strictly prohibited. The first element begins at bit offset 0 from the base
+of the memory butter, and the ith element begins at the offset defined by the
+bit width of its preceding elements.
 
 \subsection{Uint}
 
+The Uint type represents an unsigned integer of precise width. This type is 
+parametric over a term that defines its width. In the case of opcode from the
+previous example the term is a constant and is clearly determined at compile
+time. However, payload's Uint term is a conditional expression that changes
+the size of the payload based on the value contained within opcode. The precise
+size of payload cannot be determined at compile time, but only by the reception
+of a packet.
+
 \subsection{Dependency}
 
+There are two forms of dependency expressed in this example. First, Uint is a 
+dependent type, its width may depend on any valid term. Second, pdu is a
+dependent record type, meaning any label's type may depend on any of the
+preceding labels. 
+
+The compiler will try and assert that access to any type with a dependency at
+compile time is safe. This is rather difficult when run-time dependencies are
+involved. However, parameters of a function, data constructor capture from case,
+and predicates from conditional expressions all provide some compile time
+information regarding data values. For instance in the example from above the 
+then block of the condition expression is predicated on $pkt.opcode == 2$, which
+happens to be the same dependency that must be satisfied for safe access to 
+$pkt.payload$. Therefore, regardless of any input packet this access is always
+safe, and this may be determined at compile time.
+
+The unsafe access is illustrated in the same example. The current implementation
+of Steve will produce a compile time failure for this access. However, this may
+not be the most useful of actions. Permuting unsafe access to guaranteed safe
+access at compile time is currently being explored.
