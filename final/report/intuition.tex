@@ -1,5 +1,15 @@
 \section{Intuition}
 
+The following example uses a simple message format similar to what is depicted
+in ~\ref{fig:fig1}. This example captures a rich set of the dependencies present
+in network protocols. A message starts with a fixed width field, called opcode,
+that represents an unsigned integer that is 16 bits wide. A second field, called
+payload, is optionally present and depends on the value of opcode. If the opcode
+contains the value 2, then the payload is present and is an unsigned integer 16
+bits wide. If the opcode is not 2 then payload is a 0 bit width type, which 
+implies its absence. Just as with handling network packets, accessing the 
+payload is not safe without first verifying its presence.
+
 \begin{lstlisting}[language=Haskell]
 -- Dependent record packing precision types
 pdu Pkt {
@@ -17,3 +27,12 @@ test pkt = if pkt.opcode == 2
             then pkt.payload == 0 
             else False
 \end{lstlisting}
+
+\subsection{Pdu}
+
+
+
+\subsection{Uint}
+
+\subsection{Dependency}
+
