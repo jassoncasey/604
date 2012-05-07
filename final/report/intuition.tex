@@ -1,0 +1,19 @@
+\section{Intuition}
+
+\begin{lstlisting}[language=Haskell]
+-- Dependent record packing precision types
+pdu Pkt {
+   opcode  = Uint 16
+   payload = Uint (opcode==2 ? 16 : 0)
+}
+
+-- Unsafe dependent access
+test :: Pkt -> Bool
+test pkt = pkt.payload == 0
+
+-- Safe dependent access
+test :: Pkt -> Bool
+test pkt = if pkt.opcode == 2 
+            then pkt.payload == 0 
+            else False
+\end{lstlisting}

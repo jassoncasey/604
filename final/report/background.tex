@@ -97,5 +97,9 @@ PADS/ML~\cite{pads_ml} is the most relevant work related to Steve. Steve
 differs from PADS/ML in the following ways. First, Steve is targeting on-line
 network protocol design, verification, and implementation; while PADS/ML
 targets off-line ad-hoc data format processing. Steve integrates the network
-protocol specification with the host language to allow compile time reasoning
-about correct usage of messages.
+protocol specification within the host language to allow compile time reasoning
+about correct usage of messages. PADS/ML provides an overlay language for format
+specification, type-checks a specification for consistency, and then generates a
+library in the host language for use. By embedding the message format 
+specification in the host language Steve is able to capture value and structural
+constraint violations from format definition and usage at compile time.
