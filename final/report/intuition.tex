@@ -10,7 +10,7 @@ bits wide. If the opcode is not 2 then payload is a 0 bit width type, which
 implies its absence. Just as with handling network packets, accessing the 
 payload is not safe without first verifying its presence.
 
-\begin{lstlisting}[language=Haskell]
+\begin{lstlisting}[language=Haskell, caption={Message Format Usage Example}]
 -- Dependent record packing precision types
 pdu Pkt {
    opcode  = Uint 16
