@@ -11,8 +11,12 @@
 
 \section{Language Specification}
 In this section we present the language specification for the Steve Programming
-Language. The language uses a design where only four types of declarations can
-appear top level.
+Language. It is a declarative language whose syntax resembles Haskell. The
+small level language is an annotated, statically typed extension of lambda
+calculus.
+
+The main contribution of Steve is the use of a fact environment with dependent
+types to produce safe algorithms on 
 
 \subsection{Grammar}
 In this section we present the grammar that is currently in the Steve Language.
@@ -24,8 +28,8 @@ The grammar reflects the top-level design
   \pn{prgm} ::&=~ \pn{datatype} \\
          &~~|~ \pn{function} \\
          &~~|~ \pn{empty} \\
-  \pn{function} ::=&~ \pn{annotation} ~ \pn{func-defn} \\
-  \pn{datatype} ::=&~ \pn{pdu} \\
+  \pn{function} &::=~ \pn{annotation} ~ \pn{func-defn} \\
+  \pn{datatype} &::=~ \pn{pdu} \\
              &~~|~ \pn{adt} \\
   \pn{enum} ::=& \pn{\emph{not yet decided}}
 \end{align*}
@@ -33,43 +37,43 @@ The grammar reflects the top-level design
 \subsubsection{Functions and Expressions}
 
 \begin{align*}
-  \pn{annotation} ::=&~ \pn{identifier :: type-expr ;}\\
-  \pn{func-defn} ::=&~ 
+  \pn{annotation} &::=~ \pn{identifier :: type-expr ;}\\
+  \pn{func-defn} &::=~ 
     \pn{identifier id-seq = func-body ;}\\
-  \pn{func-body} ::=&~ \pn{case-expr} \\
-  \pn{case-expr} ::=&~  \pn{\emph{case} identifier \emph{of} \emph{\{} case-clauses \emph{\}}}\\
-  \pn{case-clause-seq} ::=&~  \pn{case-clause-seq \emph{;} case-clause}\\
+  \pn{func-body} &::=~ \pn{case-expr} \\
+  \pn{case-expr} &::=~  \pn{\emph{case} identifier \emph{of} \emph{\{} case-clauses \emph{\}}}\\
+  \pn{case-clause-seq} &::=~  \pn{case-clause-seq \emph{;} case-clause}\\
     &~~|~ \pn{case-clause}\\
-  \pn{case-clause} ::=&~ 
+  \pn{case-clause} &::=~ 
     \pn{typename parameter-seq $\rightarrow$ case-expr}\\
-  \pn{if-expr} ::=&~ 
+  \pn{if-expr} &::=~ 
     \pn{\emph{if} conditional-expr \emph{then} expr \emph{else} expr}\\
-  \pn{conditional-expr} ::=&~ 
+  \pn{conditional-expr} &::=~ 
     \pn{conditional-expr \emph{and} neg-expr}\\
     &~~|~ \pn{conditional-expr \emph{or}  neg-expr}\\
-  \pn{neg-expr} ::=&~ 
+  \pn{neg-expr} &::=~ 
     \pn{\emph{not} cmpr-expr}\\
     &~~|~ \pn{cmpr-expr}\\
-  \pn{cmpr-expr} ::=&~ 
+  \pn{cmpr-expr} &::=~ 
     \pn{cmpr-expr $<$ plus-expr}\\
     &~~|~ \pn{cmpr-expr $>$ plus-expr}\\
     &~~|~ \pn{cmpr-expr $<=$ plus-expr}\\
     &~~|~ \pn{cmpr-expr $<=$ plus-expr}\\
-  \pn{plus-expr} ::=&~ 
+  \pn{plus-expr} &::=~ 
     \pn{plus-expr \emph{+} times-expr}\\
     &~~|~ \pn{plus-expr \emph{-} times-expr}\\
-  \pn{negative-expr} ::=&~ 
+  \pn{negative-expr} &::=~ 
     \pn{\emph{-} times-expr}\\
     &~~|~ \pn{times-expr}\\
-  \pn{times-expr} ::=&~ 
+  \pn{times-expr} &::=~ 
     \pn{times-expr \emph{*} applicative-expr}\\
     &~~|~ \pn{times-expr \emph{/} applicative-expr}\\
     &~~|~ \pn{times-expr \emph{\%} applicative-expr}\\
-  \pn{applicative-expr} ::=&~ 
+  \pn{applicative-expr} &::=~ 
     \pn{adtConstructor}\\
     &~~|~ \pn{applicative-expr primary}\\
     &~~|~ \pn{primary}\\
-  \pn{primary} ::=&~ 
+  \pn{primary} &::=~ 
     \pn{identifier}\\
     &~~|~ \pn{literal}\\
     &~~|~ \pn{pduConstructor}\\
@@ -79,10 +83,10 @@ The grammar reflects the top-level design
 \subsubsection{Type Expressions}
 
 \begin{align*}
-  \pn{type-expr} ::=&~
+  \pn{type-expr} &::=~
     \pn{type-expr $\rightarrow$ type-term}\\
     &~~|~ \pn{type-term}\\
-  \pn{type-term} ::=&~
+  \pn{type-term} &::=~
     \pn{(type-expr)}\\
     &~~|~ \pn{[type-expr]}\\
     &~~|~ \pn{complex-type}\\
@@ -90,7 +94,7 @@ The grammar reflects the top-level design
     &~~|~ \pn{\emph{Bool}}\\
     &~~|~ \pn{\emph{Char}}\\
     &~~|~ \pn{identifier}\\
-  \pn{complex-type} ::=&~
+  \pn{complex-type} &::=~
     \pn{typename expr-seq} \\
     &~~|~ \pn{\emph{Uint} expr expr} \\
     &~~|~ \pn{\emph{Array} type-term expr}
@@ -99,28 +103,39 @@ The grammar reflects the top-level design
 \subsubsection{Data Declarations}
 
 \begin{align*}
-  \pn{pdu-declaration} ::=&~
+  \pn{pdu-declaration} &::=~
     \pn{\emph{pdu} typename \emph{=} \emph{\{} pdu-field-seq \emph{\}}}\\
-  \pn{pdu-field-seq} ::=&~
+  \pn{pdu-field-seq} &::=~
     \pn{pdu-field-seq , pdu-decl-field}\\
     &~~|~ \pn{pdu-decl-field}\\
-  \pn{pdu-decl-field} ::=&~
+  \pn{pdu-decl-field} &::=~
     \pn{identifier \emph{:} type-expression}\\
-  \pn{adt-declaration} ::=&~
-    \pn{"data" identifier \emph{=} adt-ctor-sequence \emph{;}}\\
-  \pn{adt-ctor-sequence} ::=&~
+  \pn{adt-declaration} &::=~
+    \pn{\emph{data} identifier \emph{=} adt-ctor-sequence \emph{;}}\\
+  \pn{adt-ctor-sequence} &::=~
     \pn{adt-ctor-sequence \emph{|} adt-ctor}\\
     &~~|~ \pn{adt-ctor}\\
-  \pn{adt-ctor} ::=&~
+  \pn{adt-ctor} &::=~
     \pn{typename type-sequence}\\
-  \pn{type-sequence} ::=&~
+  \pn{type-sequence} &::=~
     \pn{type-sequence type-term}\\
     &~~|~ \pn{type-term}\\
     &~~|~ \pn{empty}
 \end{align*}
 
-\subsection{Formal Description}
-The internal language defines a term as:
+We now present the syntax for the lambda calculus that defines the behavior of
+Steve. The syntax below describes an extension of the typed lambda calculus with
+limited support for dependent records and dependent types.
+
+\subsubsection{Syntax}
+  \begin{flushleft}
+  \begin{align*}
+  prgm &::= \epsilon\\
+     &~~|~ pdu \mbox{ id } \{ \overline{\ell = \tau} \},prgm\\
+     &~~|~ enum \mbox{ id } = \{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\},prgm\\
+     &~~|~ let f:\tau = t, prgm
+  \end{align*}
+\end{flushleft}
   \begin{flushleft}
   \begin{align*}
   t &::= t~t ~|~ \lambda x:\tau.t ~|~ x ~|~ c ~|~
@@ -132,14 +147,10 @@ The internal language defines a term as:
       \overline{K~\overline{t} \rightarrow t} \}\\
     &~~|~
     \mbox{uint } t~t ~|~ \mbox{ array } \tau~t ~|~ t[t] ~|~ t.\ell ~|~
-    id \{ \overline{\ell = t} \} \\
-    &~~|~
-    \mbox{data } id = \overline{K \overline{\tau}} ~|~
-    \mbox{pdu } id = \{ \overline{\ell = \tau} \} \\
-    &~~|~ \mbox{enum } id = \{\overline{\tau \rightarrow  \mbox{Bool}, \tau}\}
+    id \{ \overline{\ell = t} \}
   \end{align*}
 \end{flushleft}
-In addition to types, we also reason about kinds.
+
 \begin{flushleft}
    \begin{align*}
       K &::= \star ~|~ \Pi x:\tau.K
@@ -154,61 +165,4 @@ In addition to types, we also reason about kinds.
   \end{align*}
 \end{flushleft}
 
-The Steve Programming Language is a statically typed language that supports
-dependent types and records. Type binding and kind binding information are
-stored in $\Gamma$ and user defined type information is stored in $\Sigma$.
-Steve also has a fact environment $\Delta$ responsible for collecting static
-properties of the program.
-
-Enums are still a work in progress and ADTs are not yet implemented.
-
-\subsubsection{Top-level Typing}
-
-  \begin{mathpar}
-    \inferrule[TopLevel Record]{
-      \Sigma ~|~ \Gamma \vdash \mbox{ pdu } id \{ \overline{\ell_i = \tau_i} \} : \rho \\
-      \Sigma, \langle id : \rho \rangle ~|~ \Gamma, \langle id::\star \rangle  \vdash prgm
-    } {
-      \Sigma ~|~ \Gamma \vdash \mbox{ pdu } id \{ \overline{\ell_i = \tau_i } \} , prgm  
-    }\\
-   \inferrule[Type TopLevel Let]{
-      \Sigma | \Gamma \vdash \tau ::\star \\
-      \Delta | \Sigma | \Gamma \vdash t : \tau \\
-      \Delta | \Sigma | \Gamma, \langle f:\tau \rangle \vdash prgm
-   } {
-      \Delta | \Sigma | \Gamma \vdash \mbox{let }f = t:\tau, prgm 
-   }
-\end{mathpar}
-
-\subsubsection{Fact Rules}
-
-  \begin{mathpar}
-    \inferrule[Conditional]{
-      \Delta | \Sigma | \Gamma | \theta \vdash t_1 : \mbox{Bool}
-      \rightsquigarrow \theta' \\
-      \Delta, \langle t_1 \rangle | \Sigma | \Gamma | \theta' \vdash
-      t_2 : \tau \rightsquigarrow \theta'' \\
-      \Delta, \langle t_1 \rangle | \Sigma | \Gamma | \theta'' \vdash
-      t_3 : \tau \rightsquigarrow \theta''' \\
-    } {
-      \Delta | \Sigma | \Gamma | \theta \vdash \mbox{if } t_1
-      \mbox{ else } t_2 \mbox{ then } t_3 : \tau
-      \rightsquigarrow \theta'''
-    }
-  \end{mathpar}
-
-  \begin{mathpar}
-    \inferrule[Term App]{
-      \Delta | \Sigma | \Gamma | \theta \vdash t_1 : \Pi x:\tau_1.\tau_3 
-      \rightsquigarrow \theta'\\
-      \Delta | \Sigma | \Gamma | \theta' \vdash t_2:\tau_2 
-      \rightsquigarrow \theta''\\
-      bw \leftarrow BoundVar(\tau_1)~
-      bv' \leftarrow Fresh(bv) \\
-      \Delta | \Sigma | \Gamma | \theta'' \vdash [bv'/bv]Body(\tau_1) \equiv \tau_3 
-      \rightsquigarrow \theta'''
-    } {
-      \Delta | \Sigma | \Gamma | \theta \vdash t_1~t_2:[t_2/x][bv'/bv]\tau 
-      \rightsquigarrow \theta'''
-    }
-  \end{mathpar}
+Type binding and kind binding information are stored in $\Gamma$ and user defined type information is stored in $\Sigma$. Steve also has a fact environment $\Delta$ responsible for collecting static properties of the program.

@@ -1,7 +1,32 @@
+
+
 \section{Results}
 
-Put a table here of each of our *.hs files and how they map
-to the architecture, we did something like this in our earlier
-reports from class.
+We constructed a parser and type checker in Haskell for the Steve Programming Language. The parser is built from the Parsec library. The type checker is unfinished and currently parses only simple function definitions and pdu records. There are more complete versions of the type checker included in {\tt TypeCheck.hs}, but they no longer reflect the current scope of Steve.
 
-Maybe push either usage syntax, or example compile ...
+\subsection{Usage}
+The Steve type checker is still being designed so no driver program exists. However,
+there are a handful of working functions in {\tt steve\_impl/Debug.hs} for debugging and testing purposes. To typecheck a file, open an interpreter like ghci and load the files
+\begin{center}
+ {\tt \small >~ghci Internal Parser Ast TypeCheck2 Debug} 
+\end{center}
+The type checker is invoked by {\tt typeCheckFile "file\_name"}. The output at present is a dummy type that denotes a successful type check followed by the output of the user-defined type environment $\Sigma$.
+
+\subsection{Files}
+\begin{tabular}{|l|p{5.5cm}|}
+\hline
+{\bf File}& {\bf Purpose}\\
+\hline
+Internal.hs & Contains all common definitions and functions\\
+\hline
+Parser.hs & Contains all parsers that compose the Steve parser\\
+\hline
+TypeCheck2.hs & Contains the Steve type checker\\
+\hline
+TypeCheck.hs & Contains older versions of the Steve type checker\\
+\hline
+Debug.hs & Driver file. Contains functions to invoke parser, ast transform and \\
+\hline
+test2.steve & Test file\\
+\hline
+\end{tabular}
