@@ -1,0 +1,15 @@
+\begin{mathpar}
+   \inferrule[TAUT]{}{
+      \Delta | \Sigma | \Gamma | \theta \vdash \tau \equiv \tau 
+      \rightsquigarrow \theta
+   } \\
+   \inferrule[Pi]{
+      \Delta | \Sigma | \Gamma | \theta \vdash \tau_1 \equiv \tau_3 
+      \rightsquigarrow \theta'\\
+      \Delta | \Sigma | \Gamma,\langle x:\tau_1 \rangle | \theta' \vdash 
+      \tau_2 \equiv \tau_4 \rightsquigarrow \theta''
+   }{
+      \Delta | \Sigma | \Gamma | \theta \vdash \Pi x:\tau_1.\tau_2 \equiv
+      \Pi x:\tau_3.\tau_4 \rightsquigarrow \theta''
+   } \\
+\end{mathpar}
