@@ -59,3 +59,23 @@
       \Delta ~|~ \Sigma ~|~ \Gamma \vdash t.\ell : [t/\rho] \tau
     }
 \end{mathpar}
+
+\begin{mathpar}
+  \inferrule[New-EmptyRecord]
+  {}{\Delta ~|~ \Sigma ~|~ \Gamma \vdash \{ ~\} : \langle ~ \rangle}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[New-DependantRecord]
+  {
+    \Delta ~|~ \Sigma ~|~ \Gamma \vdash \{ \ell_i = \tau_i \}_{i=1}^n : \rho' \\
+    \ell_n \not \in \{ \ell_i \}_{i=1}^{n-1} \\
+    \sigma = [ \ell_i \mapsto \rho.\ell ]_{i=1}^{n-1} \\
+    \gamma = \sigma flatten(\rho') \\
+    \tau' = \sigma \tau_n \\
+    \Delta ~|~ \Sigma ~|~ \Gamma,\gamma \vdash \tau' :: \star
+  }{
+    \Delta ~|~ \Sigma ~|~ \Gamma \vdash
+      \{ \ell_i = \tau_i \}_{i=1}^n : \langle \rho', \ell_n : \tau' \rangle
+  }
+\end{mathpar}
